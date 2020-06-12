@@ -1,7 +1,6 @@
 ## Load aggregated data
 
 library(dplyr)
-library(imputeTS)
 library(readstata13)
 
 data <- read.dta13("../FINAL.dta", generate.factors=T) # includes variables for 2 analyses + covariates 
