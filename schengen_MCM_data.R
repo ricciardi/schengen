@@ -5,6 +5,18 @@ library(readstata13)
 library(glmnet)
 library(caret)
 
+# Setup parallel processing 
+library(parallel)
+library(doParallel)
+
+cores <- 2#detectCores()
+
+cl <- parallel::makeForkCluster(cores)
+
+doParallel::registerDoParallel(cores) # register cores (<p)
+
+RNGkind("L'Ecuyer-CMRG") # ensure random number generation
+
 data <- read.dta13("../FINAL.dta", generate.factors=T) # includes variables for 2 analyses + covariates 
 
 ## Outcomes:
@@ -62,7 +74,6 @@ covars <- lapply(covariates, function(c){
 })
 
 # Time-invariant covariates
-# fixing them at some pre-determined reference years (e.g. 2018 for the retrospective analysis, 2005 for the forward looking analysis).
 
 covars.cbw.eastern <- as.matrix(bind_cols(sapply(1:length(covars), function(i){ # all post-treatment years
   covars[[i]][,which(colnames(covars[[i]])=='20081'):ncol(covars[[i]])][rownames(covars[[i]]) %in% cbw,]
@@ -84,7 +95,21 @@ covars.lm.swiss <- as.matrix(bind_cols(sapply(1:length(covars), function(i){ # a
 }))) # N x # predictors
 rownames(covars.lm.swiss) <- rownames(covars[[1]][rownames(covars[[1]]) %in% lm,])
 
-# TODO: Remove duplicated columns
+# Remove duplicated columns
+
+covars.cbw.eastern <- covars.cbw.eastern[,!duplicated(t(covars.cbw.eastern))]
+covars.cbw.swiss <- covars.cbw.swiss[,!duplicated(t(covars.cbw.swiss))]
+
+covars.lm.eastern <- covars.lm.eastern[,!duplicated(t(covars.lm.eastern))]
+covars.lm.swiss <- covars.lm.swiss[,!duplicated(t(covars.lm.swiss))]
+
+# Impute missing with column medians
+
+covars.cbw.eastern <- predict(preProcess(covars.cbw.eastern, method = c("medianImpute")), covars.cbw.eastern)
+covars.cbw.swiss <- predict(preProcess(covars.cbw.swiss, method = c("medianImpute")), covars.cbw.swiss)
+
+covars.lm.eastern <- predict(preProcess(covars.lm.eastern, method = c("medianImpute")), covars.lm.eastern)
+covars.lm.swiss <- predict(preProcess(covars.lm.swiss, method = c("medianImpute")), covars.lm.swiss)
 
 for(o in outcomes){
   print(o)
@@ -143,48 +168,87 @@ for(o in outcomes){
     mask.lm.swiss[,colnames(mask.lm.swiss)%in%data$yearquarter[data$REGION==i & data$FoM_LM==1 & data$treated_LM=="2007: FoM; 2009: Schengen"]][rownames(mask.lm.swiss)%in%c(i),] <- 1 # FoM_X=1 from 2007Q2 and SCHENGEN_X=1 from 2009Q1
   }
 
+  ## estimate propensity scores with time-invariant covariates
   
-  # # estimate propensity scores with time-invariant covariates
-  # 
-  # logitMod.x <- cv.glmnet(x=capacity.covars.x, y=as.factor((1-mask.cbw.eastern)[,"20081"]), family="binomial", nfolds= nrow(capacity.covars.x), parallel = TRUE, nlambda=400) # LOO
-  # 
-  # logitMod.z <- cv.glmnet(x=capacity.covars.z, y=as.factor((1-treat_mat)[treated.indices[1],]), family="binomial", nfolds=nrow(capacity.covars.z), parallel = TRUE, nlambda=400)
-  # 
-  # p.weights.x <- as.vector(predict(logitMod.x, capacity.covars.x, type="response", s ="lambda.min"))
-  # p.weights.z <- as.vector(predict(logitMod.z, capacity.covars.z, type="response", s ="lambda.min"))
-  # 
-  # p.weights <- outer(p.weights.x,p.weights.z)   # outer product of fitted values on response scale
-  # p.weights <- t(p.weights) # T x N
-  # rownames(p.weights) <-rownames(data)
-  # colnames(p.weights) <-colnames(data)
-  # 
-  # train_w <- p.weights[,colnames(p.weights)%in%colnames(train_data)][rownames(p.weights)%in%rownames(train_data),]
-  # test_w <- p.weights[,colnames(p.weights)%in%colnames(test_data)][rownames(p.weights)%in%rownames(test_data),]
+  # CBW eastern
   
-  # weights matrix
-  weights.cbw.eastern <- matrix(1/dim(data.cbw)[1]*dim(data.cbw)[2], nrow = nrow(data.cbw ), # equal unit weights
-                             ncol= ncol(data.cbw),
-                             dimnames = list(rownames(data.cbw), colnames(data.cbw))) # (N x T)
+  covars.cbw.eastern.reduced <- covars.cbw.eastern[rownames(covars.cbw.eastern)%in%rownames(mask.cbw.eastern),]
+
+  logitMod.cbw.eastern <- cv.glmnet(x=covars.cbw.eastern.reduced, y=as.factor((1-mask.cbw.eastern)[,"20081"]), family="binomial", nfolds= nrow(covars.cbw.eastern.reduced), parallel = TRUE, nlambda=400) # LOO
+
+  p.weights.cbw.eastern <- as.vector(predict(logitMod.cbw.eastern, covars.cbw.eastern.reduced, type="response", s ="lambda.min"))
+
+  z.cbw.eastern <- round(c(seq(1, 0.01, length.out=which(colnames(mask.cbw.eastern)=="20081")),
+                     seq(0.02, 1, length.out=ncol(mask.cbw.eastern)-which(colnames(mask.cbw.eastern)=="20081"))),3) # elapsed time since treatment
   
-  weights.cbw.swiss <- matrix(1/dim(data.cbw)[1]*dim(data.cbw)[2], nrow = nrow(data.cbw ), 
-                           ncol= ncol(data.cbw),
-                           dimnames = list(rownames(data.cbw), colnames(data.cbw))) # (N x T)
+  p.weights.cbw.eastern <- p.weights.cbw.eastern%*%t(z.cbw.eastern)
+
+  rownames(p.weights.cbw.eastern) <-rownames(mask.cbw.eastern)
+  colnames(p.weights.cbw.eastern) <-colnames(mask.cbw.eastern)
   
-  weights.lm.eastern <- matrix(1/dim(data.cbw)[1]*dim(data.cbw)[2], nrow = nrow(data.lm ), 
-                            ncol= ncol(data.lm),
-                            dimnames = list(rownames(data.lm), colnames(data.lm))) # (N x T)
+  # CBW swiss
   
-  weights.lm.swiss <- matrix(1/dim(data.cbw)[1]*dim(data.cbw)[2], nrow = nrow(data.lm ), 
-                          ncol= ncol(data.lm),
-                          dimnames = list(rownames(data.lm), colnames(data.lm))) # (N x T)
+  covars.cbw.swiss.reduced <- covars.cbw.swiss[rownames(covars.cbw.swiss)%in%rownames(mask.cbw.swiss),]
+  
+  logitMod.cbw.swiss <- cv.glmnet(x=covars.cbw.swiss.reduced, y=as.factor((1-mask.cbw.swiss)[,"20072"]), family="binomial", nfolds= nrow(covars.cbw.swiss.reduced), parallel = TRUE, nlambda=400) # LOO
+  
+  p.weights.cbw.swiss <- as.vector(predict(logitMod.cbw.swiss, covars.cbw.swiss.reduced, type="response", s ="lambda.min"))
+  
+  z.cbw.swiss <- round(c(seq(1, 0.01, length.out=which(colnames(mask.cbw.swiss)=="20072")),
+                           seq(0.02, 1, length.out=ncol(mask.cbw.swiss)-which(colnames(mask.cbw.swiss)=="20072"))),3) # elapsed time since treatment
+  
+  p.weights.cbw.swiss <- p.weights.cbw.swiss%*%t(z.cbw.swiss)
+  
+  rownames(p.weights.cbw.swiss) <-rownames(mask.cbw.swiss)
+  colnames(p.weights.cbw.swiss) <-colnames(mask.cbw.swiss)
+  
+  # LM eastern
+  
+  covars.lm.eastern.reduced <- covars.lm.eastern[rownames(covars.lm.eastern)%in%rownames(mask.lm.eastern),]
+  
+  logitMod.lm.eastern <- cv.glmnet(x=covars.lm.eastern.reduced, y=as.factor((1-mask.lm.eastern)[,"20081"]), family="binomial", nfolds= nrow(covars.lm.eastern.reduced), parallel = TRUE, nlambda=400) # LOO
+  
+  p.weights.lm.eastern <- as.vector(predict(logitMod.lm.eastern, covars.lm.eastern.reduced, type="response", s ="lambda.min"))
+  
+  z.lm.eastern <- round(c(seq(1, 0.01, length.out=which(colnames(mask.lm.eastern)=="20081")),
+                           seq(0.02, 1, length.out=ncol(mask.lm.eastern)-which(colnames(mask.lm.eastern)=="20081"))),3) # elapsed time since treatment
+  
+  p.weights.lm.eastern <- p.weights.lm.eastern%*%t(z.lm.eastern)
+  
+  rownames(p.weights.lm.eastern) <-rownames(mask.lm.eastern)
+  colnames(p.weights.lm.eastern) <-colnames(mask.lm.eastern)
+  
+  # LM swiss
+  
+  covars.lm.swiss.reduced <- covars.lm.swiss[rownames(covars.lm.swiss)%in%rownames(mask.lm.swiss),]
+  
+  logitMod.lm.swiss <- cv.glmnet(x=covars.lm.swiss.reduced, y=as.factor((1-mask.lm.swiss)[,"20072"]), family="binomial", nfolds= nrow(covars.lm.swiss.reduced), parallel = TRUE, nlambda=400) # LOO
+  
+  p.weights.lm.swiss <- as.vector(predict(logitMod.lm.swiss, covars.lm.swiss.reduced, type="response", s ="lambda.min"))
+  
+  z.lm.swiss <- round(c(seq(1, 0.01, length.out=which(colnames(mask.lm.swiss)=="20072")),
+                         seq(0.02, 1, length.out=ncol(mask.lm.swiss)-which(colnames(mask.lm.swiss)=="20072"))),3) # elapsed time since treatment
+  
+  p.weights.lm.swiss <- p.weights.lm.swiss%*%t(z.lm.swiss)
+  
+  rownames(p.weights.lm.swiss) <-rownames(mask.lm.swiss)
+  colnames(p.weights.lm.swiss) <-colnames(mask.lm.swiss)
   
   # Save
   
-  outcomes.cbw.eastern <- list("M"=data.cbw, "mask"=mask.cbw.eastern,"treated"=switch.treated.cbw,"control"=always.treated.cbw)
-  outcomes.lm.eastern <- list("M"=data.lm, "mask"=mask.lm.eastern,"treated"=switch.treated.lm,"control"=never.treated.lm)
+  outcomes.cbw.eastern <- list("M"=data.cbw, "mask"=mask.cbw.eastern, "W"= p.weights.cbw.eastern, "X"=covars.cbw.eastern.reduced, 
+                               "treated"=rownames(mask.cbw.eastern)[rownames(mask.cbw.eastern)%in%switch.treated.cbw],
+                               "control"=rownames(mask.cbw.eastern)[rownames(mask.cbw.eastern)%in%always.treated.cbw])
+  outcomes.lm.eastern <- list("M"=data.lm, "mask"=mask.lm.eastern, "W"= p.weights.lm.eastern, "X"=covars.lm.eastern.reduced, 
+                              "treated"=rownames(mask.lm.eastern)[rownames(mask.lm.eastern)%in%switch.treated.lm],
+                              "control"=rownames(mask.lm.eastern)[rownames(mask.lm.eastern)%in%never.treated.lm])
   
-  outcomes.cbw.swiss <- list("M"=data.cbw, "mask"=mask.cbw.swiss,"treated"=switch.treated.cbw,"control"=always.treated.cbw)
-  outcomes.lm.swiss <- list("M"=data.lm, "mask"=mask.lm.swiss,"treated"=switch.treated.lm,"control"=never.treated.lm)
+  outcomes.cbw.swiss <- list("M"=data.cbw, "mask"=mask.cbw.swiss, "W"= p.weights.cbw.swiss, "X"=covars.cbw.swiss.reduced,
+                             "treated"=rownames(mask.cbw.swiss)[rownames(mask.cbw.swiss)%in%switch.treated.cbw],
+                             "control"=rownames(mask.cbw.swiss)[rownames(mask.cbw.swiss)%in%always.treated.cbw])
+  outcomes.lm.swiss <- list("M"=data.lm, "mask"=mask.lm.swiss, "W"= p.weights.cbw.swiss, "X"=covars.lm.swiss.reduced, 
+                            "treated"=rownames(mask.lm.swiss)[rownames(mask.lm.swiss)%in%switch.treated.lm],
+                            "control"=rownames(mask.lm.swiss)[rownames(mask.lm.swiss)%in%never.treated.lm])
   
   saveRDS(outcomes.cbw.eastern, paste0("data/outcomes-cbw-eastern-",o,".rds"))
   saveRDS(outcomes.lm.eastern, paste0("data/outcomes-lm-eastern-",o,".rds"))
