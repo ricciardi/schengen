@@ -246,7 +246,7 @@ for(o in outcomes){
   outcomes.cbw.swiss <- list("M"=data.cbw, "mask"=mask.cbw.swiss, "W"= p.weights.cbw.swiss, "X"=covars.cbw.swiss.reduced,
                              "treated"=rownames(mask.cbw.swiss)[rownames(mask.cbw.swiss)%in%switch.treated.cbw],
                              "control"=rownames(mask.cbw.swiss)[rownames(mask.cbw.swiss)%in%always.treated.cbw])
-  outcomes.lm.swiss <- list("M"=data.lm, "mask"=mask.lm.swiss, "W"= p.weights.cbw.swiss, "X"=covars.lm.swiss.reduced, 
+  outcomes.lm.swiss <- list("M"=data.lm, "mask"=mask.lm.swiss, "W"= p.weights.lm.swiss, "X"=covars.lm.swiss.reduced, 
                             "treated"=rownames(mask.lm.swiss)[rownames(mask.lm.swiss)%in%switch.treated.lm],
                             "control"=rownames(mask.lm.swiss)[rownames(mask.lm.swiss)%in%never.treated.lm])
   
