@@ -1,18 +1,27 @@
 # schengen
- 
+Code and data for the paper "Retrospective causal inference via elapsed time-weighted
+matrix completion, with an evaluation of the effect of the
+Schengen Area on the labour market of border regions"
 
 Prerequsites
 ------
 
-* **R** >= 3.5.0 (tested on 3.6.1)
- * dplyr, readstata13, glmnet, boot, doParallel, caret
+* **R** >= 3.5.0 (tested on 3.6.0 and 3.6.1)
+ * dplyr, readstata13, glmnet, boot, doParallel, caret,latex2exp
 
 Install the forked MCPanel repo:
 ```R
 install.packages("devtools")
-install.packages("latex2exp")
 library(devtools) 
 install_github("jvpoulos/MCPanel")
+```
+
+Create folders to store outputs:
+
+```bash
+mkdir data
+mkdir results
+mkdir plots
 ```
 
 Run order
@@ -24,6 +33,7 @@ Run order
 	* PolitisWhite.R
 	* MCEstBoot.R
 	* ChernoTest.R
+
 3. mc-plot.R
 
 4. mc-placebo.R

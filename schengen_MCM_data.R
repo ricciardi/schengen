@@ -17,7 +17,7 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-data <- read.dta13("../FINAL.dta", generate.factors=T) # includes variables for 2 analyses + covariates 
+data <- read.dta13("FINAL.dta", generate.factors=T) # includes variables for 2 analyses + covariates 
 
 ## Outcomes:
 ## CBWbord: share of residents working in another country, which shares the border with the region of residence, unconditional on employment
