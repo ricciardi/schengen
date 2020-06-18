@@ -1,12 +1,12 @@
-MCEst <- function(outcomes,covars=NULL) {
+MCEstBoot <- function(tseries,mask,W,covars=NULL) {
   
-  Y <- outcomes$M # NxT 
-  
-  weights <- outcomes$W
+  Y <- t(tseries) # NxT 
+
+  weights <- W
   weights <- weights[rownames(weights) %in% row.names(Y),]
   weights <- weights[row.names(Y),]  # reorder
   
-  treat <- outcomes$mask # NxT masked matrix 
+  treat <- mask # NxT masked matrix 
   
   N <- nrow(treat)
   T <- ncol(treat)
@@ -30,8 +30,8 @@ MCEst <- function(outcomes,covars=NULL) {
     est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + est_model_MCPanel_w$C%*%est_model_MCPanel_w$B + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v))
     
     est_model_MCPanel_w$impact <- (Y-est_model_MCPanel_w$Mhat)
-  
-    return(est_model_MCPanel_w)
+
+    return(est_model_MCPanel_w$impact)
   } else{
     ## ------
     ## MC-NNM
@@ -41,12 +41,12 @@ MCEst <- function(outcomes,covars=NULL) {
                                niter = 1000L, rel_tol = 1e-05)
     
     est_model_MCPanel <- mcnnm_fit(Y_obs, treat_mat, (weights)/(1-weights), to_estimate_u = 1, to_estimate_v = 1, 
-                                  lambda_L = lam.min, niter = 1000, rel_tol = 1e-05, is_quiet = 1)
+                                   lambda_L = lam.min, niter = 1000, rel_tol = 1e-05, is_quiet = 1)
     
     est_model_MCPanel$Mhat <- est_model_MCPanel$L + replicate(T,est_model_MCPanel$u) + t(replicate(N,est_model_MCPanel$v))
 
     est_model_MCPanel$impact <- (Y-est_model_MCPanel$Mhat)
     
-    return(est_model_MCPanel)
+    return(est_model_MCPanel$impact)
   }
 }

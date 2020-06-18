@@ -46,30 +46,19 @@ for(o in outcomes){
   # Block resampling with fixed block lengths of length l)
   source("MCEstBoot.R")
   
-  boot <- tsboot(tseries=ts(t(outcomes.cbw.eastern$M)), MCEstBoot, M.missing=outcomes.cbw.eastern$M.missing, mask=outcomes.cbw.eastern$mask, imputed=TRUE,covars=NULL,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
+  boot <- tsboot(tseries=ts(t(outcomes.cbw.eastern$M)), MCEstBoot, mask=outcomes.cbw.eastern$mask, W=outcomes.cbw.eastern$W, covars=NULL,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
   saveRDS(boot, "results/boot.rds")
   
-  pvals <- FALSE
-  if(pvals){
-    # Get p-values
-    source("ChernoTest.R")
-    
-    t0 <- which(colnames(outcomes.cbw.eastern$M)=="20081")
-    
-    treat_indices_order <- outcomes.cbw.eastern$treated
-    
-    moving.block <- ChernoTest(outcomes=outcomes.cbw.eastern[c("M","M.missing","mask")], ns=500, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0,imputed=TRUE,covars=NULL)
-    saveRDS(moving.block,"results/moving_block.rds")
-    
-    iid.block <- ChernoTest(outcomes=outcomes.cbw.eastern[c("M","M.missing","mask")], ns=500, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0,imputed=TRUE,covars=NULL)
-    saveRDS(iid.block,"results/iid_block.rds")
-    
-    iid <- ChernoTest(outcomes=outcomes.cbw.eastern[c("M","M.missing","mask")],ns=500, treat_indices_order=treat_indices_order, permtype="iid",t0=t0,imputed=TRUE,covars=NULL)
-    saveRDS(iid,"results/iid.rds")
-    
-    mean(iid$real_att)
-    iid$p
-    iid.block$p
-    moving.block$p
-  }
+  # Get p-values
+  source("ChernoTest.R")
+  
+  t0 <- which(colnames(outcomes.cbw.eastern$M)=="20081")
+  
+  treat_indices_order <- outcomes.cbw.eastern$treated
+  
+  iid.block <- ChernoTest(outcomes=outcomes.cbw.eastern[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0,covars=NULL)
+  saveRDS(iid.block,"results/iid_block.rds")
+  
+  mean(iid.block$real_att)
+  iid.block$p
 }
