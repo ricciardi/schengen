@@ -78,7 +78,7 @@ for(o in outcomes){
   # Block resampling with fixed block lengths of length l)
   
   boot <- tsboot(tseries=ts(t(outcomes.cbw.swiss$M)), MCEstBoot, mask=outcomes.cbw.swiss$mask, W=outcomes.cbw.swiss$W, covars=NULL,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
-  saveRDS(boot, "results/boot.rds")
+  saveRDS(boot, "results/boot-cbw-swiss.rds")
   
   # Get p-values
   
@@ -134,7 +134,7 @@ for(o in outcomes){
   # Block resampling with fixed block lengths of length l)
   
   boot <- tsboot(tseries=ts(t(outcomes.lm.swiss$M)), MCEstBoot, mask=outcomes.lm.swiss$mask, W=outcomes.lm.swiss$W, covars=NULL,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
-  saveRDS(boot, "results/boot.rds")
+  saveRDS(boot, "results/boot-lm-swiss.rds")
   
   # Get p-values
   
