@@ -68,7 +68,7 @@ for(o in outcomes){
   # Get treatment effect estimates
   
   mc.estimates.cbw.swiss <- MCEst(outcomes.cbw.swiss, covars=NULL)
-  saveRDS(mc.estimates.cbw.swiss, paste0("results/mc-estimates-cbw-swiss-",0,".rds"))
+  saveRDS(mc.estimates.cbw.swiss, paste0("results/mc-estimates-cbw-swiss-",o,".rds"))
   
   # Get optimal stationary bootstrap lengths
   source("PolitisWhite.R")
@@ -98,7 +98,7 @@ for(o in outcomes){
   # Get treatment effect estimates
   
   mc.estimates.lm.eastern <- MCEst(outcomes.lm.eastern, covars=NULL) 
-  saveRDS(mc.estimates.lm.eastern, paste0("results/mc-estimates-lm-eastern-",0,".rds"))
+  saveRDS(mc.estimates.lm.eastern, paste0("results/mc-estimates-lm-eastern-",o,".rds"))
   
   # Get optimal stationary bootstrap lengths
 

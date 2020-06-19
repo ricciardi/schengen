@@ -73,6 +73,7 @@ PlotMCCapacity <- function(observed,main,y.title,t0,mc_est,boot_result,treated,c
 }
 
 outcomes <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcomes.labels <- c()
 
 for(o in outcomes){
   print(o)
@@ -82,11 +83,11 @@ for(o in outcomes){
   # Eastern cluster
   
   outcomes.cbw.eastern <- readRDS(paste0("data/outcomes-cbw-eastern-",o,".rds"))
-  MC_estimates <- readRDS("results/MC_estimates.rds")
-  boot <- readRDS("results/boot.rds")
+  mc.estimates.cbw.eastern <- readRDS(paste0("results/mc-estimates-cbw-eastern-",o,".rds"))
+  boot.cbw.eastern <- readRDS(paste0("results/boot-cbw-eastern-",o,".rds"))
   
   mc.plot <- PlotMCCapacity(observed = outcomes.east$M, 
-                            y.title="Probability of working in any bordering region",
+                            y.title=outcomes.labels[which(outcomes==o)],
                             main = "Retrospective prediction for switch-treated",
                             t0=which(colnames(outcomes.east$M)=="20081"),
                             mc_est=MC_estimates, boot_result=boot, treated=outcomes.east$treated, control=outcomes.east$control, vline=20081,
