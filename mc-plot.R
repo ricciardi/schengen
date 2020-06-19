@@ -12,7 +12,7 @@ library(latex2exp)
 
 source("TsPlot.R")
 
-PlotMCCapacity <- function(observed,main,y.title,t0,mc_est,boot_result,treated,control,vline,breaks,labels,att.label,rev=TRUE){
+PlotMCCapacity <- function(observed,main,y.title,t0,mc_est,boot_result,treated,control,vline,breaks,labels,att.label,rev){
   ## Create time series data
   
   predicted <- mc_est$Mhat
@@ -67,14 +67,14 @@ PlotMCCapacity <- function(observed,main,y.title,t0,mc_est,boot_result,treated,c
   
   ts.means.m$series<- factor(ts.means.m$series, levels=c("Observed/predicted", att.label)) # reverse order
   
-  ts.plot <- TsPlot(df=ts.means.m,main=main, y.title=y.title,vline,breaks,labels)
+  ts.plot <- TsPlot(df=ts.means.m,main=main, y.title=y.title,vline,breaks,labels,rev)
   
   return(ts.plot)
 }
 
 outcomes <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
-outcomes.labels <- c("Share of residents working in a country that shares the border with the region of residence",
-                     "Share of residents working in a country that shares the border with the region of residence, conditional on employment",
+outcomes.labels <- c("Share of residents working in a border region",
+                     "Share of residents working in a border region, conditional on employment",
                      "Regional employment rate",
                      "Average total working hours",
                      "Unemployment rate",
@@ -102,7 +102,7 @@ for(o in outcomes){
                             treated=outcomes.cbw.eastern$treated, control=outcomes.cbw.eastern$control, vline=20081,
                             breaks=c(20042,20081,20121,20161,20184),
                             labels=c(20042,20081,20121,20161,20184),
-                            att.label = TeX("$\\\hat{\bar{\tau}}_{t}$"),
+                            att.label = ATT,
                             rev=TRUE)
   
   ggsave(paste0("plots/mc-estimates-cbw-eastern-",o,".png"), mc.plot, width=8.5, height=11)
@@ -121,7 +121,7 @@ for(o in outcomes){
                             treated=outcomes.cbw.swiss$treated, control=outcomes.cbw.swiss$control, vline=20072,
                             breaks=c(20042,20081,20121,20161,20184),
                             labels=c(20042,20081,20121,20161,20184),
-                            att.label = TeX("$\\\hat{\bar{\tau}}_{t}$"),
+                            att.label = ATT,
                             rev=TRUE)
   
   ggsave(paste0("plots/mc-estimates-cbw-swiss-",o,".png"), mc.plot, width=8.5, height=11)
@@ -142,7 +142,7 @@ for(o in outcomes){
                             treated=outcomes.lm.eastern$treated, control=outcomes.lm.eastern$control, vline=20081,
                             breaks=c(20042,20081,20121,20161,20184),
                             labels=c(20042,20081,20121,20161,20184),
-                            att.label = TeX("$\\\hat{\bar{\tau}}_{t}$"),
+                            att.label = ATT,
                             rev=FALSE)
   
   ggsave(paste0("plots/mc-estimates-lm-eastern-",o,".png"), mc.plot, width=8.5, height=11)
@@ -161,7 +161,7 @@ for(o in outcomes){
                             treated=outcomes.lm.swiss$treated, control=outcomes.lm.swiss$control, vline=20072,
                             breaks=c(20042,20081,20121,20161,20184),
                             labels=c(20042,20081,20121,20161,20184),
-                            att.label = TeX("$\\\hat{\bar{\tau}}_{t}$"),
+                            att.label = ATT,
                             rev=FALSE)
   
   ggsave(paste0("plots/mc-estimates-lm-swiss-",o,".png"), mc.plot, width=8.5, height=11)

@@ -6,7 +6,8 @@ MCEstBoot <- function(tseries,mask,W,covars=NULL) {
   weights <- weights[rownames(weights) %in% row.names(Y),]
   weights <- weights[row.names(Y),]  # reorder
   
-  weights <- (weights)/(1-weights)
+  weights[rownames(weights) %in% outcomes$control,] <- (weights[rownames(weights) %in% outcomes$control,])/(1-weights[rownames(weights) %in% outcomes$control,]) # control
+  weights[rownames(weights) %in% outcomes$treated,] <- 1/weights[rownames(weights) %in% outcomes$treated,] # treated
   
   treat <- mask # NxT masked matrix 
   
@@ -22,12 +23,9 @@ MCEstBoot <- function(tseries,mask,W,covars=NULL) {
     ## MC-NNM-W
     ## ------
     
-    lam.min <- mcnnm_wc_lam_range(M=Y_obs, C=weights, X=matrix(0L,0,0), Z=matrix(0L,0,0), mask=treat_mat, W=weights, 
-                                  to_estimate_u = 1L, to_estimate_v = 1L, niter = 1000L, rel_tol = 1e-05)
-    
-    est_model_MCPanel_w <- mcnnm_wc_fit(M=Y_obs, C=weights, X=matrix(0L,0,0), Z=matrix(0L,0,0), mask=treat_mat, W=weights,
-                                        lambda_L=lam.min$lambda_L_max, lambda_H=lam.min$lambda_H_max, lambda_B=lam.min$lambda_B_max, 
-                                        to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, to_add_ID = 1, niter = 1000, rel_tol = 1e-05, is_quiet = 1) 
+    est_model_MCPanel_w <- mcnnm_wc_cv(M=Y_obs, C=weights, mask=treat_mat, W=weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1,
+                                       num_lam_L = 30, num_lam_B = 30, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 3,
+                                       is_quiet = 1) 
     
     est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + est_model_MCPanel_w$C%*%est_model_MCPanel_w$B + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v))
     
@@ -39,11 +37,8 @@ MCEstBoot <- function(tseries,mask,W,covars=NULL) {
     ## MC-NNM
     ## ------
     
-    lam.min <- mcnnm_lam_range(Y_obs, treat_mat, weights, to_estimate_u = 1L, to_estimate_v = 1L,
-                               niter = 1000L, rel_tol = 1e-05)
-    
-    est_model_MCPanel <- mcnnm_fit(Y_obs, treat_mat, weights, to_estimate_u = 1, to_estimate_v = 1, 
-                                   lambda_L = lam.min, niter = 1000, rel_tol = 1e-05, is_quiet = 1)
+    est_model_MCPanel <- mcnnm_cv(Y_obs, treat_mat, weights, to_estimate_u = 1, to_estimate_v = 1, 
+                                  num_lam_L=100, niter = 1000, rel_tol = 1e-05, cv_ratio=0.8, num_folds=3, is_quiet = 1)
     
     est_model_MCPanel$Mhat <- est_model_MCPanel$L + replicate(T,est_model_MCPanel$u) + t(replicate(N,est_model_MCPanel$v))
 

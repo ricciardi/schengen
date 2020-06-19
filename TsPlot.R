@@ -1,4 +1,4 @@
-TsPlot <- function(df, main = "",y.title,vline,breaks,labels,rev=TRUE) {
+TsPlot <- function(df, main = "",y.title,vline,breaks,labels) {
   library(ggplot2)
   library(zoo)
   library(scales)
