@@ -4,7 +4,7 @@
 ##, permuting {û_t } is equivalent to permuting {Z_t }.
 ## modified from https://github.com/ebenmichael/ents
 
-ChernoTest <- function(outcomes, ns=100, q=c(1,2), t.stat=NULL, treat_indices_order,permtype=c("iid", "moving.block", "iid.block"),t0,covars=NULL,bopt=NULL) {
+ChernoTest <- function(outcomes, ns=100, q=c(1,2), t.stat=NULL, treat_indices_order,permtype=c("iid", "moving.block", "iid.block"),t0,rev=FALSE,covars=NULL,bopt=NULL) {
   
   t_final <- ncol(outcomes$M) # all periods
   
@@ -28,8 +28,12 @@ ChernoTest <- function(outcomes, ns=100, q=c(1,2), t.stat=NULL, treat_indices_or
       
       ## get treatment effect estimates
       
-      att <- as.matrix(colMeans(mc.fit$impact[,t0:t_final,drop=FALSE][rownames(mc.fit$impact) %in% treat_indices_order,], na.rm = TRUE)) # get mean post-period impact on treated
-      
+      if(rev){
+        att <- as.matrix(colMeans(mc.fit$impact[,1:(t0-1),drop=FALSE][rownames(mc.fit$impact) %in% treat_indices_order,], na.rm = TRUE)) # get mean pre-period impact on treated
+      }else{
+        att <- as.matrix(colMeans(mc.fit$impact[,t0:t_final,drop=FALSE][rownames(mc.fit$impact) %in% treat_indices_order,], na.rm = TRUE)) # get mean post-period impact on treated
+      }
+
       teststats[i,] <- sapply(q,
                               function(j) ((1/sqrt(length(att))) * sum(abs(att)^q[j]))^(1/q[j]) )
     }
@@ -52,7 +56,11 @@ ChernoTest <- function(outcomes, ns=100, q=c(1,2), t.stat=NULL, treat_indices_or
       
       ## get treatment effect estimates
       
-      att <- as.matrix(colMeans(mc.fit$impact[,t0:t_final,drop=FALSE][rownames(mc.fit$impact) %in% treat_indices_order,], na.rm = TRUE)) # get mean post-period impact on treated
+      if(rev){
+        att <- as.matrix(colMeans(mc.fit$impact[,1:(t0-1),drop=FALSE][rownames(mc.fit$impact) %in% treat_indices_order,], na.rm = TRUE)) # get mean pre-period impact on treated
+      }else{
+        att <- as.matrix(colMeans(mc.fit$impact[,t0:t_final,drop=FALSE][rownames(mc.fit$impact) %in% treat_indices_order,], na.rm = TRUE)) # get mean post-period impact on treated
+      }
       
       teststats[i,] <- sapply(q,
                               function(j) ((1/sqrt(length(att))) * sum(abs(att)^q[j]))^(1/q[j]) )      
@@ -91,7 +99,11 @@ ChernoTest <- function(outcomes, ns=100, q=c(1,2), t.stat=NULL, treat_indices_or
       
       ## get treatment effect estimates
       
-      att <- as.matrix(colMeans(mc.fit$impact[,t0:t_final,drop=FALSE][rownames(mc.fit$impact) %in% treat_indices_order,], na.rm = TRUE)) # get mean post-period impact on treated
+      if(rev){
+        att <- as.matrix(colMeans(mc.fit$impact[,1:(t0-1),drop=FALSE][rownames(mc.fit$impact) %in% treat_indices_order,], na.rm = TRUE)) # get mean pre-period impact on treated
+      }else{
+        att <- as.matrix(colMeans(mc.fit$impact[,t0:t_final,drop=FALSE][rownames(mc.fit$impact) %in% treat_indices_order,], na.rm = TRUE)) # get mean post-period impact on treated
+      }
       
       teststats[i,] <- sapply(q,
                               function(j) ((1/sqrt(length(att))) * sum(abs(att)^q[j]))^(1/q[j]) )   
@@ -105,7 +117,12 @@ ChernoTest <- function(outcomes, ns=100, q=c(1,2), t.stat=NULL, treat_indices_or
     real_att <- t.stat
   } else{
     mc.fit.actual <-  MCEst(outcomes,covars=NULL)
-    real_att <- as.matrix(colMeans(mc.fit.actual$impact[,t0:t_final,drop=FALSE][rownames(mc.fit.actual$impact) %in% treat_indices_order,], na.rm = TRUE)) # get mean post-period impact on treated
+    
+    if(rev){
+      real_att <- as.matrix(colMeans(mc.fit.actual$impact[,1:(t0-1),drop=FALSE][rownames(mc.fit.actual$impact) %in% treat_indices_order,], na.rm = TRUE)) # get mean pre-period impact on treated
+    }else{
+      real_att <- as.matrix(colMeans(mc.fit.actual$impact[,t0:t_final,drop=FALSE][rownames(mc.fit.actual$impact) %in% treat_indices_order,], na.rm = TRUE)) # get mean post-period impact on treated
+    }
   }
   real_teststat <- sapply(q,
                           function(j) ((1/sqrt(length(real_att))) * sum(abs(real_att)^q[j]))^(1/q[j]))

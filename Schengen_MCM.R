@@ -27,6 +27,7 @@ for(o in outcomes){
   ## Analysis 1: ST vs AT (retrospective, X=CBW) 
   
   # Eastern cluster
+  print(paste0("Estimates for Analysis 1, Eastern cluster, outcome:",o))
   
   outcomes.cbw.eastern <- readRDS(paste0("data/outcomes-cbw-eastern-",o,".rds"))
   
@@ -56,10 +57,17 @@ for(o in outcomes){
   
   treat_indices_order <- outcomes.cbw.eastern$treated
   
-  iid.block <- ChernoTest(outcomes=outcomes.cbw.eastern[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0,covars=NULL)
+  iid.block <- ChernoTest(outcomes=outcomes.cbw.eastern[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0,rev=TRUE,covars=NULL)
   saveRDS(iid.block,paste0("results/iid-block-cbw-eastern-",o,".rds"))
   
+  iid <- ChernoTest(outcomes=outcomes.cbw.eastern[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0,rev=TRUE,covars=NULL)
+  saveRDS(iid,paste0("results/iid-cbw-eastern-",o,".rds"))
+  
+  moving.block <- ChernoTest(outcomes=outcomes.cbw.eastern[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0,rev=TRUE,covars=NULL)
+  saveRDS(moving.block,paste0("results/moving-block-cbw-eastern-",o,".rds"))
+  
   # Swiss cluster
+  print(paste0("Estimates for Analysis 1, Swiss cluster, outcome:",o))
   
   outcomes.cbw.swiss <- readRDS(paste0("data/outcomes-cbw-swiss-",o,".rds"))
   
@@ -86,12 +94,19 @@ for(o in outcomes){
   
   treat_indices_order <- outcomes.cbw.swiss$treated
   
-  iid.block <- ChernoTest(outcomes=outcomes.cbw.swiss[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0,covars=NULL)
+  iid.block <- ChernoTest(outcomes=outcomes.cbw.swiss[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0,rev=TRUE,covars=NULL)
   saveRDS(iid.block,paste0("results/iid-block-cbw-swiss-",o,".rds"))
+  
+  moving.block <- ChernoTest(outcomes=outcomes.cbw.swiss[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0,rev=TRUE,covars=NULL)
+  saveRDS(moving.block,paste0("results/moving-block-cbw-swiss-",o,".rds"))
+  
+  iid <- ChernoTest(outcomes=outcomes.cbw.swiss[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0,rev=TRUE,covars=NULL)
+  saveRDS(iid,paste0("results/iid-cbw-swiss-",o,".rds"))
 
   ## Analysis 2: ST vs NT (forward, X=LM)
   
   # Eastern cluster
+  print(paste0("Estimates for Analysis 2, Eastern cluster, outcome:",o))
   
   outcomes.lm.eastern <- readRDS(paste0("data/outcomes-lm-eastern-",o,".rds"))
   
@@ -118,7 +133,14 @@ for(o in outcomes){
   iid.block <- ChernoTest(outcomes=outcomes.lm.eastern[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0,covars=NULL)
   saveRDS(iid.block,paste0("results/iid-block-lm-eastern-",o,".rds"))
   
+  moving.block <- ChernoTest(outcomes=outcomes.lm.eastern[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0,covars=NULL)
+  saveRDS(moving.block,paste0("results/moving-block-lm-eastern-",o,".rds"))
+  
+  iid <- ChernoTest(outcomes=outcomes.lm.eastern[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0,covars=NULL)
+  saveRDS(iid,paste0("results/iid-lm-eastern-",o,".rds"))
+  
   # Swiss cluster
+  print(paste0("Estimates for Analysis 2, Swiss cluster, outcome:",o))
   
   outcomes.lm.swiss <- readRDS(paste0("data/outcomes-lm-swiss-",o,".rds"))
   
@@ -144,4 +166,10 @@ for(o in outcomes){
   
   iid.block <- ChernoTest(outcomes=outcomes.lm.swiss[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0,covars=NULL)
   saveRDS(iid.block,paste0("results/iid-block-lm-swiss-",o,".rds"))
+  
+  moving.block <- ChernoTest(outcomes=outcomes.lm.swiss[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0,covars=NULL)
+  saveRDS(moving.block,paste0("results/moving-block-lm-swiss-",o,".rds"))
+  
+  iid <- ChernoTest(outcomes=outcomes.lm.swiss[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0,covars=NULL)
+  saveRDS(iid,paste0("results/iid-lm-swiss-",o,".rds"))
 }

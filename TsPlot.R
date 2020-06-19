@@ -1,4 +1,4 @@
-TsPlot <- function(df, main = "",y.title,vline,breaks,labels) {
+TsPlot <- function(df, main = "",y.title,vline,breaks,labels,rev=TRUE) {
   library(ggplot2)
   library(zoo)
   library(scales)
@@ -48,17 +48,30 @@ TsPlot <- function(df, main = "",y.title,vline,breaks,labels) {
   #                        series = factor("Time-series", levels = c("Time-series", "Per-period effect")),
   #                        lab = c("pre-period","post-period"))
   
+  if(rev){
   # legend 
-  lines <- scale_linetype_manual(name="", values = c("observed.control" = "dashed",
-                                              "observed.treated" = "solid",
-                                              "predicted.treated" = "dotted"),
-                          labels=c("Observed always-treated", "Observed switch-treated", 
-                                   "Predicted switch-treated")) 
-  colours <-     scale_colour_manual(name="", values = c(  "observed.control" = wes_palette("Darjeeling1")[1],
-                                                           "observed.treated" = wes_palette("Darjeeling1")[5], 
-                                                           "predicted.treated" = wes_palette("Darjeeling1")[5]),
-                                     labels=c("Observed always-treated", "Observed switch-treated", 
-                                              "Predicted switch-treated")) 
+    lines <- scale_linetype_manual(name="", values = c("observed.control" = "dashed",
+                                                       "observed.treated" = "solid",
+                                                       "predicted.treated" = "dotted"),
+                                   labels=c("Observed always-treated", "Observed later-treated", 
+                                            "Predicted later-treated")) 
+    colours <-     scale_colour_manual(name="", values = c(  "observed.control" = wes_palette("Darjeeling1")[1],
+                                                             "observed.treated" = wes_palette("Darjeeling1")[5], 
+                                                             "predicted.treated" = wes_palette("Darjeeling1")[5]),
+                                       labels=c("Observed always-treated", "Observed later-treated", 
+                                                "Predicted later-treated")) 
+  }else{
+    lines <- scale_linetype_manual(name="", values = c("observed.control" = "dashed",
+                                                       "observed.treated" = "solid",
+                                                       "predicted.treated" = "dotted"),
+                                   labels=c("Observed never-treated", "Observed later-treated", 
+                                            "Predicted later-treated")) 
+    colours <-     scale_colour_manual(name="", values = c(  "observed.control" = wes_palette("Darjeeling1")[1],
+                                                             "observed.treated" = wes_palette("Darjeeling1")[5], 
+                                                             "predicted.treated" = wes_palette("Darjeeling1")[5]),
+                                       labels=c("Observed never-treated", "Observed later-treated", 
+                                                "Predicted later-treated")) 
+  }
   gg.xts <- gg.xts +
     intervention +
     ticks + 
