@@ -36,7 +36,7 @@ for(o in outcomes){
     
   source('MCEst.R')
   mc.estimates.cbw.eastern <- MCEst(outcomes.cbw.eastern, covars=NULL) 
-  saveRDS(mc.estimates.cbw.eastern, "results/mc-estimates-cbw-eastern.rds")
+  saveRDS(mc.estimates.cbw.eastern, paste0("results/mc-estimates-cbw-eastern-",o,".rds"))
   
   # Get optimal stationary bootstrap lengths
   source("PolitisWhite.R")
@@ -47,7 +47,7 @@ for(o in outcomes){
   source("MCEstBoot.R")
   
   boot <- tsboot(tseries=ts(t(outcomes.cbw.eastern$M)), MCEstBoot, mask=outcomes.cbw.eastern$mask, W=outcomes.cbw.eastern$W, covars=NULL,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
-  saveRDS(boot, "results/boot-cbw-eastern.rds")
+  saveRDS(boot, paste0("results/boot-cbw-eastern-",o,".rds"))
   
   # Get p-values
   source("ChernoTest.R")
@@ -57,7 +57,7 @@ for(o in outcomes){
   treat_indices_order <- outcomes.cbw.eastern$treated
   
   iid.block <- ChernoTest(outcomes=outcomes.cbw.eastern[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0,covars=NULL)
-  saveRDS(iid.block,"results/iid-block-cbw-eastern.rds")
+  saveRDS(iid.block,paste0("results/iid-block-cbw-eastern-",o,".rds"))
   
   # Swiss cluster
   
@@ -68,7 +68,7 @@ for(o in outcomes){
   # Get treatment effect estimates
   
   mc.estimates.cbw.swiss <- MCEst(outcomes.cbw.swiss, covars=NULL)
-  saveRDS(mc.estimates.cbw.swiss, "results/mc-estimates-cbw-swiss.rds")
+  saveRDS(mc.estimates.cbw.swiss, paste0("results/mc-estimates-cbw-swiss-",0,".rds"))
   
   # Get optimal stationary bootstrap lengths
   source("PolitisWhite.R")
@@ -78,7 +78,7 @@ for(o in outcomes){
   # Block resampling with fixed block lengths of length l)
   
   boot <- tsboot(tseries=ts(t(outcomes.cbw.swiss$M)), MCEstBoot, mask=outcomes.cbw.swiss$mask, W=outcomes.cbw.swiss$W, covars=NULL,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
-  saveRDS(boot, "results/boot-cbw-swiss.rds")
+  saveRDS(boot, paste0("results/boot-cbw-swiss-",o,".rds"))
   
   # Get p-values
   
@@ -87,7 +87,7 @@ for(o in outcomes){
   treat_indices_order <- outcomes.cbw.swiss$treated
   
   iid.block <- ChernoTest(outcomes=outcomes.cbw.swiss[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0,covars=NULL)
-  saveRDS(iid.block,"results/iid-block-cbw-swiss.rds")
+  saveRDS(iid.block,paste0("results/iid-block-cbw-swiss-",o,".rds"))
 
   ## Analysis 2: ST vs NT (forward, X=LM)
   
@@ -98,7 +98,7 @@ for(o in outcomes){
   # Get treatment effect estimates
   
   mc.estimates.lm.eastern <- MCEst(outcomes.lm.eastern, covars=NULL) 
-  saveRDS(mc.estimates.lm.eastern, "results/mc-estimates-lm-eastern.rds")
+  saveRDS(mc.estimates.lm.eastern, paste0("results/mc-estimates-lm-eastern-",0,".rds"))
   
   # Get optimal stationary bootstrap lengths
 
@@ -107,7 +107,7 @@ for(o in outcomes){
   # Block resampling with fixed block lengths of length l)
   
   boot <- tsboot(tseries=ts(t(outcomes.lm.eastern$M)), MCEstBoot, mask=outcomes.lm.eastern$mask, W=outcomes.lm.eastern$W, covars=NULL,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
-  saveRDS(boot, "results/boot-lm-eastern.rds")
+  saveRDS(boot, paste0("results/boot-lm-eastern-",o,".rds"))
   
   # Get p-values
 
@@ -116,7 +116,7 @@ for(o in outcomes){
   treat_indices_order <- outcomes.lm.eastern$treated
   
   iid.block <- ChernoTest(outcomes=outcomes.lm.eastern[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0,covars=NULL)
-  saveRDS(iid.block,"results/iid-block-lm-eastern.rds")
+  saveRDS(iid.block,paste0("results/iid-block-lm-eastern-",o,".rds"))
   
   # Swiss cluster
   
@@ -125,7 +125,7 @@ for(o in outcomes){
   # Get treatment effect estimates
   
   mc.estimates.lm.swiss <- MCEst(outcomes.lm.swiss, covars=NULL) 
-  saveRDS(mc.estimates.lm.swiss, "results/mc-estimates-lm-swiss.rds")
+  saveRDS(mc.estimates.lm.swiss, paste0("results/mc-estimates-lm-swiss-",o,".rds"))
   
   # Get optimal stationary bootstrap lengths
   
@@ -134,7 +134,7 @@ for(o in outcomes){
   # Block resampling with fixed block lengths of length l)
   
   boot <- tsboot(tseries=ts(t(outcomes.lm.swiss$M)), MCEstBoot, mask=outcomes.lm.swiss$mask, W=outcomes.lm.swiss$W, covars=NULL,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
-  saveRDS(boot, "results/boot-lm-swiss.rds")
+  saveRDS(boot, paste0("results/boot-lm-swiss-",o,".rds"))
   
   # Get p-values
   
@@ -143,5 +143,5 @@ for(o in outcomes){
   treat_indices_order <- outcomes.lm.swiss$treated
   
   iid.block <- ChernoTest(outcomes=outcomes.lm.swiss[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0,covars=NULL)
-  saveRDS(iid.block,"results/iid-block-lm-swiss.rds")
+  saveRDS(iid.block,paste0("results/iid-block-lm-swiss-",o,".rds"))
 }

@@ -35,6 +35,7 @@ Run order
 	* ChernoTest.R
 
 3. mc-plot.R
+	* TsPlot.R
 
 4. mc-placebo.R
 5. mc-placebo-plot.R
