@@ -7,7 +7,6 @@ Prerequsites
 ------
 
 * **R** >= 3.5.0 (tested on 3.6.0 and 3.6.1)
- * dplyr, readstata13, glmnet, boot, doParallel, caret,latex2exp
 
 Install the forked MCPanel repo:
 ```R
@@ -27,6 +26,7 @@ mkdir plots
 Run order
 ------
 
+0. package-list.R
 1. schengen_MCM_data.R
 2. Schengen_MCM.R
 	* MCEst.R

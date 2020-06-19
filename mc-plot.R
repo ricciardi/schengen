@@ -9,6 +9,7 @@ require(matrixStats)
 require(tseries)
 require(ggplot2)
 library(latex2exp)
+library(wesanderson)
 
 source("TsPlot.R")
 
@@ -72,7 +73,9 @@ PlotMCCapacity <- function(observed,main,y.title,t0,mc_est,boot_result,treated,c
   return(ts.plot)
 }
 
-outcomes <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+## Plot time-series
+
+outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 outcomes.labels <- c("Share of residents working in a border region",
                      "Share of residents working in a border region, conditional on employment",
                      "Regional employment rate",
@@ -83,7 +86,7 @@ outcomes.labels <- c("Share of residents working in a border region",
                      "% of unemployed with unemployment duration less than 1-2 months",
                      "% of unemployed with unemployment duration less than 3 months or more")
 
-for(o in outcomes){
+for(o in outcome.vars){
   print(o)
   
   ## Analysis 1: ST vs AT (retrospective, X=CBW) 
@@ -166,3 +169,5 @@ for(o in outcomes){
   
   ggsave(paste0("plots/mc-estimates-lm-swiss-",o,".png"), mc.plot, width=8.5, height=11)
 }
+
+## Plot p-values
