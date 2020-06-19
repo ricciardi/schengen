@@ -1,4 +1,4 @@
-MCEstBoot <- function(tseries,mask,W,covars=NULL) {
+MCEstBoot <- function(tseries,mask,W,treated,control,covars=NULL) {
   
   Y <- t(tseries) # NxT 
 
@@ -6,8 +6,8 @@ MCEstBoot <- function(tseries,mask,W,covars=NULL) {
   weights <- weights[rownames(weights) %in% row.names(Y),]
   weights <- weights[row.names(Y),]  # reorder
   
-  weights[rownames(weights) %in% outcomes$control,] <- (weights[rownames(weights) %in% outcomes$control,])/(1-weights[rownames(weights) %in% outcomes$control,]) # control
-  weights[rownames(weights) %in% outcomes$treated,] <- 1/weights[rownames(weights) %in% outcomes$treated,] # treated
+  weights[rownames(weights) %in% control,] <- (weights[rownames(weights) %in% control,])/(1-weights[rownames(weights) %in% control,]) # control
+  weights[rownames(weights) %in% treated,] <- 1/weights[rownames(weights) %in% treated,] # treated
   
   treat <- mask # NxT masked matrix 
   
