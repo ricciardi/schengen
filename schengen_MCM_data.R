@@ -176,12 +176,12 @@ for(o in outcomes){
 
   logitMod.cbw.eastern <- cv.glmnet(x=covars.cbw.eastern.reduced, y=as.factor((1-mask.cbw.eastern)[,"20081"]), family="binomial", nfolds= nrow(covars.cbw.eastern.reduced), parallel = TRUE, nlambda=400) # LOO
 
-  p.weights.cbw.eastern <- as.vector(predict(logitMod.cbw.eastern, covars.cbw.eastern.reduced, type="response", s ="lambda.min"))
+  covars.cbw.eastern.preds <- as.vector(predict(logitMod.cbw.eastern, covars.cbw.eastern.reduced, type="response", s ="lambda.min"))
 
-  z.cbw.eastern <- round(c(seq(1, 0.7, length.out=which(colnames(mask.cbw.eastern)=="20081")),
-                     seq(0.71, 1, length.out=ncol(mask.cbw.eastern)-which(colnames(mask.cbw.eastern)=="20081"))),3) # elapsed time since treatment
+  z.cbw.eastern <- round(c(seq(1, 0.8, length.out=which(colnames(mask.cbw.eastern)=="20081")),
+                     seq(0.81, 1, length.out=ncol(mask.cbw.eastern)-which(colnames(mask.cbw.eastern)=="20081"))),3) # elapsed time since treatment
   
-  p.weights.cbw.eastern <- p.weights.cbw.eastern%*%t(z.cbw.eastern)
+  p.weights.cbw.eastern <- covars.cbw.eastern.preds%*%t(z.cbw.eastern)
 
   rownames(p.weights.cbw.eastern) <-rownames(mask.cbw.eastern)
   colnames(p.weights.cbw.eastern) <-colnames(mask.cbw.eastern)
@@ -192,12 +192,12 @@ for(o in outcomes){
   
   logitMod.cbw.swiss <- cv.glmnet(x=covars.cbw.swiss.reduced, y=as.factor((1-mask.cbw.swiss)[,"20072"]), family="binomial", nfolds= nrow(covars.cbw.swiss.reduced), parallel = TRUE, nlambda=400) # LOO
   
-  p.weights.cbw.swiss <- as.vector(predict(logitMod.cbw.swiss, covars.cbw.swiss.reduced, type="response", s ="lambda.min"))
+  covars.cbw.swiss.preds <- as.vector(predict(logitMod.cbw.swiss, covars.cbw.swiss.reduced, type="response", s ="lambda.min"))
   
-  z.cbw.swiss <- round(c(seq(1, 0.7, length.out=which(colnames(mask.cbw.swiss)=="20072")),
-                           seq(0.71, 1, length.out=ncol(mask.cbw.swiss)-which(colnames(mask.cbw.swiss)=="20072"))),3) # elapsed time since treatment
+  z.cbw.swiss <- round(c(seq(1, 0.8, length.out=which(colnames(mask.cbw.swiss)=="20072")),
+                           seq(0.81, 1, length.out=ncol(mask.cbw.swiss)-which(colnames(mask.cbw.swiss)=="20072"))),3) # elapsed time since treatment
   
-  p.weights.cbw.swiss <- p.weights.cbw.swiss%*%t(z.cbw.swiss)
+  p.weights.cbw.swiss <- covars.cbw.swiss.preds%*%t(z.cbw.swiss)
   
   rownames(p.weights.cbw.swiss) <-rownames(mask.cbw.swiss)
   colnames(p.weights.cbw.swiss) <-colnames(mask.cbw.swiss)
@@ -208,12 +208,12 @@ for(o in outcomes){
   
   logitMod.lm.eastern <- cv.glmnet(x=covars.lm.eastern.reduced, y=as.factor((1-mask.lm.eastern)[,"20081"]), family="binomial", nfolds= nrow(covars.lm.eastern.reduced), parallel = TRUE, nlambda=400) # LOO
   
-  p.weights.lm.eastern <- as.vector(predict(logitMod.lm.eastern, covars.lm.eastern.reduced, type="response", s ="lambda.min"))
+  covars.lm.eastern.preds <- as.vector(predict(logitMod.lm.eastern, covars.lm.eastern.reduced, type="response", s ="lambda.min"))
   
-  z.lm.eastern <- round(c(seq(1, 0.7, length.out=which(colnames(mask.lm.eastern)=="20081")),
-                           seq(0.71, 1, length.out=ncol(mask.lm.eastern)-which(colnames(mask.lm.eastern)=="20081"))),3) # elapsed time since treatment
+  z.lm.eastern <- round(c(seq(1, 0.8, length.out=which(colnames(mask.lm.eastern)=="20081")),
+                           seq(0.81, 1, length.out=ncol(mask.lm.eastern)-which(colnames(mask.lm.eastern)=="20081"))),3) # elapsed time since treatment
   
-  p.weights.lm.eastern <- p.weights.lm.eastern%*%t(z.lm.eastern)
+  p.weights.lm.eastern <- covars.lm.eastern.preds%*%t(z.lm.eastern)
   
   rownames(p.weights.lm.eastern) <-rownames(mask.lm.eastern)
   colnames(p.weights.lm.eastern) <-colnames(mask.lm.eastern)
@@ -224,12 +224,12 @@ for(o in outcomes){
   
   logitMod.lm.swiss <- cv.glmnet(x=covars.lm.swiss.reduced, y=as.factor((1-mask.lm.swiss)[,"20072"]), family="binomial", nfolds= nrow(covars.lm.swiss.reduced), parallel = TRUE, nlambda=400) # LOO
   
-  p.weights.lm.swiss <- as.vector(predict(logitMod.lm.swiss, covars.lm.swiss.reduced, type="response", s ="lambda.min"))
+  covars.lm.swiss.preds <- as.vector(predict(logitMod.lm.swiss, covars.lm.swiss.reduced, type="response", s ="lambda.min"))
   
-  z.lm.swiss <- round(c(seq(1, 0.7, length.out=which(colnames(mask.lm.swiss)=="20072")),
-                         seq(0.71, 1, length.out=ncol(mask.lm.swiss)-which(colnames(mask.lm.swiss)=="20072"))),3) # elapsed time since treatment
+  z.lm.swiss <- round(c(seq(1, 0.8, length.out=which(colnames(mask.lm.swiss)=="20072")),
+                         seq(0.81, 1, length.out=ncol(mask.lm.swiss)-which(colnames(mask.lm.swiss)=="20072"))),3) # elapsed time since treatment
   
-  p.weights.lm.swiss <- p.weights.lm.swiss%*%t(z.lm.swiss)
+  p.weights.lm.swiss <- covars.lm.swiss.preds%*%t(z.lm.swiss)
   
   rownames(p.weights.lm.swiss) <-rownames(mask.lm.swiss)
   colnames(p.weights.lm.swiss) <-colnames(mask.lm.swiss)
