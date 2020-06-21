@@ -76,15 +76,15 @@ PlotMCCapacity <- function(observed,main,y.title,t0,mc_est,boot_result,treated,c
 ## Plot time-series
 
 outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
-outcomes.labels <- c("Share of residents working in a border region",
-                     "Share of residents working in a border region, conditional on employment",
+outcomes.labels <- c("Share of residents working in border region",
+                     "Share of employed residents working in border region",
                      "Regional employment rate",
                      "Average total working hours",
                      "Unemployment rate",
                      "Inactivity rate",
-                     "% of unemployed with unemployment duration less than 1 month",
-                     "% of unemployed with unemployment duration less than 1-2 months",
-                     "% of unemployed with unemployment duration less than 3 months or more")
+                     "% unemployed for < 1 month",
+                     "% unemployed for < 1-2 months",
+                     "% unemployed for < 3 months")
 
 for(o in outcome.vars){
   print(o)
@@ -105,7 +105,7 @@ for(o in outcome.vars){
                             treated=outcomes.cbw.eastern$treated, control=outcomes.cbw.eastern$control, vline=20081,
                             breaks=c(20042,20081,20121,20161,20184),
                             labels=c(20042,20081,20121,20161,20184),
-                            att.label = "ATT",
+                            att.label = TeX("$\\hat{\\bar{\\tau}}_{t}$"),
                             rev=TRUE)
   
   ggsave(paste0("plots/mc-estimates-cbw-eastern-",o,".png"), mc.plot, width=8.5, height=11)
@@ -124,7 +124,7 @@ for(o in outcome.vars){
                             treated=outcomes.cbw.swiss$treated, control=outcomes.cbw.swiss$control, vline=20072,
                             breaks=c(20042,20081,20121,20161,20184),
                             labels=c(20042,20081,20121,20161,20184),
-                            att.label = "ATT",
+                            att.label = TeX("$\\hat{\\bar{\\tau}}_{t}$"),
                             rev=TRUE)
   
   ggsave(paste0("plots/mc-estimates-cbw-swiss-",o,".png"), mc.plot, width=8.5, height=11)
@@ -145,7 +145,7 @@ for(o in outcome.vars){
                             treated=outcomes.lm.eastern$treated, control=outcomes.lm.eastern$control, vline=20081,
                             breaks=c(20042,20081,20121,20161,20184),
                             labels=c(20042,20081,20121,20161,20184),
-                            att.label = "ATT",
+                            att.label = TeX("$\\hat{\\bar{\\tau}}_{t}$"),
                             rev=FALSE)
   
   ggsave(paste0("plots/mc-estimates-lm-eastern-",o,".png"), mc.plot, width=8.5, height=11)
@@ -164,51 +164,234 @@ for(o in outcome.vars){
                             treated=outcomes.lm.swiss$treated, control=outcomes.lm.swiss$control, vline=20072,
                             breaks=c(20042,20081,20121,20161,20184),
                             labels=c(20042,20081,20121,20161,20184),
-                            att.label = "ATT",
+                            att.label = TeX("$\\hat{\\bar{\\tau}}_{t}$"),
                             rev=FALSE)
   
   ggsave(paste0("plots/mc-estimates-lm-swiss-",o,".png"), mc.plot, width=8.5, height=11)
 }
 
-## Plot p-values ## REVISE
+## Plot p-values
 
-iid.placebo <- readRDS("results/iid_placebo.rds")
+## Analysis 1: ST vs AT (retrospective, X=CBW) 
 
-iid.block.placebo <- readRDS("results/iid_block_placebo.rds")
+# Eastern cluster
 
-moving.block.placebo <- readRDS("results/moving_block_placebo.rds")
+iid <- lapply(outcome.vars, function(o){
+  p <- readRDS(paste0("results/iid-cbw-eastern-",o,".rds"))
+  return(p)
+})
+names(iid) <- outcome.vars
 
-p.values <- data.frame("iid"=c(sapply(taus, function(i) iid.placebo[[i]]$p)[1,],sapply(taus, function(i) iid.placebo[[i]]$p)[2,]),
-                       "iid.block"=c(sapply(taus, function(i) iid.block.placebo[[i]]$p)[1,],sapply(taus, function(i) iid.block.placebo[[i]]$p)[2,]),
-                       "moving.block"=c(sapply(taus, function(i) moving.block.placebo[[i]]$p)[1,],sapply(taus, function(i) moving.block.placebo[[i]]$p)[2,]),
-                       "q"=c(rep(1, length(taus)), rep(2, length(taus))),
-                       "tau"=rep(taus,2))
+iid.block <- lapply(outcome.vars, function(o){
+  p <- readRDS(paste0("results/iid-block-cbw-eastern-",o,".rds"))
+  return(p)
+})
+names(iid.block) <- outcome.vars
 
-p.values.m <-melt(p.values,id.vars = c("tau","q"))
+moving.block <- lapply(outcome.vars, function(o){
+  p <- readRDS(paste0("results/moving-block-cbw-eastern-",o,".rds"))
+  return(p)
+})
+names(moving.block) <- outcome.vars
+
+p.values <- data.frame("iid"=c(sapply(outcome.vars, function(i) iid[[i]]$p)[1,],sapply(outcome.vars, function(i) iid[[i]]$p)[2,]),
+                       "iid.block"=c(sapply(outcome.vars, function(i) iid.block[[i]]$p)[1,],sapply(outcome.vars, function(i) iid.block[[i]]$p)[2,]),
+                       "moving.block"=c(sapply(outcome.vars, function(i) moving.block[[i]]$p)[1,],sapply(outcome.vars, function(i) moving.block[[i]]$p)[2,]),
+                       "q"=c(rep(1, length(outcome.vars)), rep(2, length(outcome.vars))),
+                       "outcomes"=c(rep(outcome.vars, length(outcome.vars)), rep(outcome.vars, length(outcome.vars))))
+
+p.values.m <-melt(p.values,id.vars = c("outcomes","q"))
 
 p.values.m$Type <- paste0(p.values.m$variable, ", q=", p.values.m$q)
 
 # Plot
-mc.placebo.plot <- ggplot(p.values.m, aes(x=value, y=tau)) + 
+mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) + 
   geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
-  labs(title="Placebo test", 
-       x="Randomization p-values",
-       y=expression(tau)) + 
+  labs(title="Retrospective analysis: swiss cluster", 
+       y="Randomization p-values",
+       y="Outcomes") + 
   geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
-  scale_x_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
+  scale_y_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
                      labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
-  scale_y_continuous(breaks=seq(3,15,3), 
-                     labels=c("3",  "6", "9", "12","15"))+
+  scale_x_discrete(labels=rev(outcomes.labels), limits = rev(levels(p.values.m$outcomes)))+
   coord_flip() +
   scale_shape_manual(name="", values = c("1" = 2,
                                          "2" = 4),
                      labels=c("q=1", "q=2")) +
-  scale_colour_manual(name="Randomization methods", values = c(  "iid" = wes_palette("Darjeeling1")[1],
+  scale_colour_manual(name="Randomization type", values = c(  "iid" = wes_palette("Darjeeling1")[1],
                                                                  "iid.block" = wes_palette("Darjeeling1")[2], 
                                                                  "moving.block" = wes_palette("Darjeeling1")[4]),
                       labels=c("IID", "IID Block", 
                                "Moving block")) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank())) + theme(plot.title = element_text(hjust = 0.5)) # rm background
+        panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
+  theme(axis.text.y = element_text(size=8))
 
-ggsave(filename = "plots/mc-placebo-plot.png",plot = mc.placebo.plot)
+ggsave(filename = "plots/pvals-cbw-eastern.png",plot = mc.pvals.plot)
+
+# Swiss cluster
+
+iid <- lapply(outcome.vars, function(o){
+  p <- readRDS(paste0("results/iid-cbw-swiss-",o,".rds"))
+  return(p)
+})
+names(iid) <- outcome.vars
+
+iid.block <- lapply(outcome.vars, function(o){
+  p <- readRDS(paste0("results/iid-block-cbw-swiss-",o,".rds"))
+  return(p)
+})
+names(iid.block) <- outcome.vars
+
+moving.block <- lapply(outcome.vars, function(o){
+  p <- readRDS(paste0("results/moving-block-cbw-swiss-",o,".rds"))
+  return(p)
+})
+names(moving.block) <- outcome.vars
+
+p.values <- data.frame("iid"=c(sapply(outcome.vars, function(i) iid[[i]]$p)[1,],sapply(outcome.vars, function(i) iid[[i]]$p)[2,]),
+                       "iid.block"=c(sapply(outcome.vars, function(i) iid.block[[i]]$p)[1,],sapply(outcome.vars, function(i) iid.block[[i]]$p)[2,]),
+                       "moving.block"=c(sapply(outcome.vars, function(i) moving.block[[i]]$p)[1,],sapply(outcome.vars, function(i) moving.block[[i]]$p)[2,]),
+                       "q"=c(rep(1, length(outcome.vars)), rep(2, length(outcome.vars))),
+                       "outcomes"=c(rep(outcome.vars, length(outcome.vars)), rep(outcome.vars, length(outcome.vars))))
+
+p.values.m <-melt(p.values,id.vars = c("outcomes","q"))
+
+p.values.m$Type <- paste0(p.values.m$variable, ", q=", p.values.m$q)
+
+# Plot
+mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) + 
+  geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
+  labs(title="Retrospective analysis: Swiss cluster", 
+       y="Randomization p-values",
+       x="Outcomes") + 
+  geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
+  scale_y_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
+                     labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
+  scale_x_discrete(labels=rev(outcomes.labels), limits = rev(levels(p.values.m$outcomes)))+
+  coord_flip() +
+  scale_shape_manual(name="", values = c("1" = 2,
+                                         "2" = 4),
+                     labels=c("q=1", "q=2")) +
+  scale_colour_manual(name="Randomization type", values = c(  "iid" = wes_palette("Darjeeling1")[1],
+                                                                 "iid.block" = wes_palette("Darjeeling1")[2], 
+                                                                 "moving.block" = wes_palette("Darjeeling1")[4]),
+                      labels=c("IID", "IID Block", 
+                               "Moving block")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
+  theme(axis.text.y = element_text(size=8))
+
+ggsave(filename = "plots/pvals-cbw-swiss.png",plot = mc.pvals.plot)
+
+## Analysis 2:  ST vs NT (forward, X=LM)
+
+# Eastern cluster
+
+iid <- lapply(outcome.vars, function(o){
+  p <- readRDS(paste0("results/iid-lm-eastern-",o,".rds"))
+  return(p)
+})
+names(iid) <- outcome.vars
+
+iid.block <- lapply(outcome.vars, function(o){
+  p <- readRDS(paste0("results/iid-block-lm-eastern-",o,".rds"))
+  return(p)
+})
+names(iid.block) <- outcome.vars
+
+moving.block <- lapply(outcome.vars, function(o){
+  p <- readRDS(paste0("results/moving-block-lm-eastern-",o,".rds"))
+  return(p)
+})
+names(moving.block) <- outcome.vars
+
+p.values <- data.frame("iid"=c(sapply(outcome.vars, function(i) iid[[i]]$p)[1,],sapply(outcome.vars, function(i) iid[[i]]$p)[2,]),
+                       "iid.block"=c(sapply(outcome.vars, function(i) iid.block[[i]]$p)[1,],sapply(outcome.vars, function(i) iid.block[[i]]$p)[2,]),
+                       "moving.block"=c(sapply(outcome.vars, function(i) moving.block[[i]]$p)[1,],sapply(outcome.vars, function(i) moving.block[[i]]$p)[2,]),
+                       "q"=c(rep(1, length(outcome.vars)), rep(2, length(outcome.vars))),
+                       "outcomes"=c(rep(outcome.vars, length(outcome.vars)), rep(outcome.vars, length(outcome.vars))))
+
+p.values.m <-melt(p.values,id.vars = c("outcomes","q"))
+
+p.values.m$Type <- paste0(p.values.m$variable, ", q=", p.values.m$q)
+
+# Plot
+mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) + 
+  geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
+  labs(title="Prospective analysis: swiss cluster", 
+       y="Randomization p-values",
+       x="Outcomes") + 
+  geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
+  scale_y_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
+                     labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
+  scale_x_discrete(labels=rev(outcomes.labels), limits = rev(levels(p.values.m$outcomes)))+
+  coord_flip() +
+  scale_shape_manual(name="", values = c("1" = 2,
+                                         "2" = 4),
+                     labels=c("q=1", "q=2")) +
+  scale_colour_manual(name="Randomization type", values = c(  "iid" = wes_palette("Darjeeling1")[1],
+                                                                 "iid.block" = wes_palette("Darjeeling1")[2], 
+                                                                 "moving.block" = wes_palette("Darjeeling1")[4]),
+                      labels=c("IID", "IID Block", 
+                               "Moving block")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
+  theme(axis.text.y = element_text(size=8))
+
+ggsave(filename = "plots/pvals-lm-eastern.png",plot = mc.pvals.plot)
+
+# Swiss cluster
+
+iid <- lapply(outcome.vars, function(o){
+  p <- readRDS(paste0("results/iid-lm-swiss-",o,".rds"))
+  return(p)
+})
+names(iid) <- outcome.vars
+
+iid.block <- lapply(outcome.vars, function(o){
+  p <- readRDS(paste0("results/iid-block-lm-swiss-",o,".rds"))
+  return(p)
+})
+names(iid.block) <- outcome.vars
+
+moving.block <- lapply(outcome.vars, function(o){
+  p <- readRDS(paste0("results/moving-block-lm-swiss-",o,".rds"))
+  return(p)
+})
+names(moving.block) <- outcome.vars
+
+p.values <- data.frame("iid"=c(sapply(outcome.vars, function(i) iid[[i]]$p)[1,],sapply(outcome.vars, function(i) iid[[i]]$p)[2,]),
+                       "iid.block"=c(sapply(outcome.vars, function(i) iid.block[[i]]$p)[1,],sapply(outcome.vars, function(i) iid.block[[i]]$p)[2,]),
+                       "moving.block"=c(sapply(outcome.vars, function(i) moving.block[[i]]$p)[1,],sapply(outcome.vars, function(i) moving.block[[i]]$p)[2,]),
+                       "q"=c(rep(1, length(outcome.vars)), rep(2, length(outcome.vars))),
+                       "outcomes"=c(rep(outcome.vars, length(outcome.vars)), rep(outcome.vars, length(outcome.vars))))
+
+p.values.m <-melt(p.values,id.vars = c("outcomes","q"))
+
+p.values.m$Type <- paste0(p.values.m$variable, ", q=", p.values.m$q)
+
+# Plot
+mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) + 
+  geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
+  labs(title="Prospective analysis: Swiss cluster", 
+       y="Randomization p-values",
+       x="Outcomes") + 
+  geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
+  scale_y_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
+                     labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
+  scale_x_discrete(labels=rev(outcomes.labels), limits = rev(levels(p.values.m$outcomes)))+
+  coord_flip() +
+  scale_shape_manual(name="", values = c("1" = 2,
+                                         "2" = 4),
+                     labels=c("q=1", "q=2")) +
+  scale_colour_manual(name="Randomization type", values = c(  "iid" = wes_palette("Darjeeling1")[1],
+                                                                 "iid.block" = wes_palette("Darjeeling1")[2], 
+                                                                 "moving.block" = wes_palette("Darjeeling1")[4]),
+                      labels=c("IID", "IID Block", 
+                               "Moving block")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
+  theme(axis.text.y = element_text(size=8))
+
+ggsave(filename = "plots/pvals-lm-swiss.png",plot = mc.pvals.plot)
