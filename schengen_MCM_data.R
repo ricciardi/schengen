@@ -178,8 +178,8 @@ for(o in outcomes){
 
   covars.cbw.eastern.preds <- as.vector(predict(logitMod.cbw.eastern, covars.cbw.eastern.reduced, type="response", s ="lambda.min"))
 
-  z.cbw.eastern <- round(c(seq(1, 0.8, length.out=which(colnames(mask.cbw.eastern)=="20081")),
-                     seq(0.81, 1, length.out=ncol(mask.cbw.eastern)-which(colnames(mask.cbw.eastern)=="20081"))),3) # elapsed time since treatment
+  z.cbw.eastern <- round(c(seq(1, 0.5, length.out=which(colnames(mask.cbw.eastern)=="20081")),
+                     seq(0.51, 1, length.out=ncol(mask.cbw.eastern)-which(colnames(mask.cbw.eastern)=="20081"))),3) # elapsed time since treatment
   
   p.weights.cbw.eastern <- covars.cbw.eastern.preds%*%t(z.cbw.eastern)
 
@@ -194,8 +194,8 @@ for(o in outcomes){
   
   covars.cbw.swiss.preds <- as.vector(predict(logitMod.cbw.swiss, covars.cbw.swiss.reduced, type="response", s ="lambda.min"))
   
-  z.cbw.swiss <- round(c(seq(1, 0.8, length.out=which(colnames(mask.cbw.swiss)=="20072")),
-                           seq(0.81, 1, length.out=ncol(mask.cbw.swiss)-which(colnames(mask.cbw.swiss)=="20072"))),3) # elapsed time since treatment
+  z.cbw.swiss <- round(c(seq(1, 0.5, length.out=which(colnames(mask.cbw.swiss)=="20072")),
+                           seq(0.51, 1, length.out=ncol(mask.cbw.swiss)-which(colnames(mask.cbw.swiss)=="20072"))),3) # elapsed time since treatment
   
   p.weights.cbw.swiss <- covars.cbw.swiss.preds%*%t(z.cbw.swiss)
   
@@ -210,8 +210,8 @@ for(o in outcomes){
   
   covars.lm.eastern.preds <- as.vector(predict(logitMod.lm.eastern, covars.lm.eastern.reduced, type="response", s ="lambda.min"))
   
-  z.lm.eastern <- round(c(seq(1, 0.8, length.out=which(colnames(mask.lm.eastern)=="20081")),
-                           seq(0.81, 1, length.out=ncol(mask.lm.eastern)-which(colnames(mask.lm.eastern)=="20081"))),3) # elapsed time since treatment
+  z.lm.eastern <- round(c(seq(1, 0.5, length.out=which(colnames(mask.lm.eastern)=="20081")),
+                           seq(0.51, 1, length.out=ncol(mask.lm.eastern)-which(colnames(mask.lm.eastern)=="20081"))),3) # elapsed time since treatment
   
   p.weights.lm.eastern <- covars.lm.eastern.preds%*%t(z.lm.eastern)
   
@@ -226,8 +226,8 @@ for(o in outcomes){
   
   covars.lm.swiss.preds <- as.vector(predict(logitMod.lm.swiss, covars.lm.swiss.reduced, type="response", s ="lambda.min"))
   
-  z.lm.swiss <- round(c(seq(1, 0.8, length.out=which(colnames(mask.lm.swiss)=="20072")),
-                         seq(0.81, 1, length.out=ncol(mask.lm.swiss)-which(colnames(mask.lm.swiss)=="20072"))),3) # elapsed time since treatment
+  z.lm.swiss <- round(c(seq(1, 0.5, length.out=which(colnames(mask.lm.swiss)=="20072")),
+                         seq(0.51, 1, length.out=ncol(mask.lm.swiss)-which(colnames(mask.lm.swiss)=="20072"))),3) # elapsed time since treatment
   
   p.weights.lm.swiss <- covars.lm.swiss.preds%*%t(z.lm.swiss)
   

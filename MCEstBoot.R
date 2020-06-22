@@ -1,4 +1,4 @@
-MCEstBoot <- function(tseries,mask,W=NULL,treated,control,covars=FALSE) {
+MCEstBoot <- function(tseries,mask,W,treated,control,covars=TRUE) {
   
   Y <- t(tseries) # NxT 
   
@@ -24,8 +24,7 @@ MCEstBoot <- function(tseries,mask,W=NULL,treated,control,covars=FALSE) {
     ## MC-NNM-W
     ## ------
     
-    est_model_MCPanel_w <- mcnnm_wc_fit(M = Y_obs, C = weights, mask = treat_mat, W = weights, lambda_L=0.1, lambda_B=0.1, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1,
-                                        niter = 1000, rel_tol = 1e-05, is_quiet = 1) 
+    est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = weights, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 10, num_lam_B = 10, niter = 1000, rel_tol = 1e-03, cv_ratio = 0.5, num_folds = 2, is_quiet = 1) 
     
     est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + est_model_MCPanel_w$C*est_model_MCPanel_w$B + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v))
     
@@ -37,8 +36,7 @@ MCEstBoot <- function(tseries,mask,W=NULL,treated,control,covars=FALSE) {
     ## MC-NNM
     ## ------
     
-    est_model_MCPanel <- mcnnm_fit(M = Y_obs, mask = treat_mat, lambda_L = 0.1, to_estimate_u = 1, to_estimate_v = 1, 
-                                   niter = 1000, rel_tol = 1e-05, is_quiet = 1)
+    est_model_MCPanel <- mcnnm_cv(M = Y_obs, mask = treat_mat, W = weights, to_estimate_u = 1, to_estimate_v = 1,  num_lam_L = 10, niter = 1000, rel_tol = 1e-03, cv_ratio = 0.5, num_folds = 2, is_quiet = 1)
     
     est_model_MCPanel$Mhat <- est_model_MCPanel$L + replicate(T,est_model_MCPanel$u) + t(replicate(N,est_model_MCPanel$v))
     

@@ -4,7 +4,7 @@
 ##, permuting {û_t } is equivalent to permuting {Z_t }.
 ## modified from https://github.com/ebenmichael/ents
 
-ChernoTest <- function(outcomes, ns=100, q=c(1,2), t.stat=NULL, treat_indices_order,permtype=c("iid", "moving.block", "iid.block"),t0,rev=FALSE,covars=FALSE,bopt=NULL) {
+ChernoTest <- function(outcomes, ns=100, q=c(1,2), t.stat=NULL, treat_indices_order,permtype=c("iid", "moving.block", "iid.block"),t0,rev=FALSE,covars=TRUE,bopt=NULL) {
   
   t_final <- ncol(outcomes$M) # all periods
   
@@ -24,7 +24,7 @@ ChernoTest <- function(outcomes, ns=100, q=c(1,2), t.stat=NULL, treat_indices_or
         new_mc_data[[x]] <- new_mc_data[[x]][,reorder,drop=FALSE]
       }, simplify = FALSE,USE.NAMES = TRUE)
       
-      mc.fit <-  MCEst(new_mc_data,covars=FALSE)
+      mc.fit <-  MCEst(new_mc_data,covars)
       
       ## get treatment effect estimates
       
@@ -52,7 +52,7 @@ ChernoTest <- function(outcomes, ns=100, q=c(1,2), t.stat=NULL, treat_indices_or
         new_mc_data[[x]] <- new_mc_data[[x]][,reorder,drop=FALSE]
       }, simplify = FALSE,USE.NAMES = TRUE)
       
-      mc.fit <-  MCEst(new_mc_data,covars=FALSE)
+      mc.fit <-  MCEst(new_mc_data,covars)
       
       ## get treatment effect estimates
       
@@ -96,7 +96,7 @@ ChernoTest <- function(outcomes, ns=100, q=c(1,2), t.stat=NULL, treat_indices_or
         new_mc_data[[x]] <- new_mc_data[[x]][,reorder,drop=FALSE]
       }, simplify = FALSE,USE.NAMES = TRUE)
       
-      mc.fit <-  MCEst(new_mc_data,covars=FALSE)
+      mc.fit <-  MCEst(new_mc_data,covars)
       
       ## get treatment effect estimates
       
@@ -117,7 +117,7 @@ ChernoTest <- function(outcomes, ns=100, q=c(1,2), t.stat=NULL, treat_indices_or
   if(!is.null(t.stat)){
     real_att <- t.stat
   } else{
-    mc.fit.actual <-  MCEst(outcomes,covars=FALSE)
+    mc.fit.actual <-  MCEst(outcomes,covars)
     
     if(rev){
       real_att <- as.matrix(colMeans(mc.fit.actual$impact[,1:(t0-1),drop=FALSE][rownames(mc.fit.actual$impact) %in% treat_indices_order,], na.rm = TRUE)) # get mean pre-period impact on treated

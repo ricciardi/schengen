@@ -47,7 +47,7 @@ for(o in outcome.vars){
   # Block resampling with fixed block lengths of length l)
   source("MCEstBoot.R")
   
-  boot <- tsboot(tseries=ts(t(outcomes.cbw.eastern$M)), MCEstBoot, mask=outcomes.cbw.eastern$mask, treated=outcomes.cbw.eastern$treated, control=outcomes.cbw.eastern$control, covars=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
+  boot <- tsboot(tseries=ts(t(outcomes.cbw.eastern$M)), MCEstBoot, mask=outcomes.cbw.eastern$mask, W=outcomes.cbw.eastern$W, treated=outcomes.cbw.eastern$treated, control=outcomes.cbw.eastern$control, covars=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
   saveRDS(boot, paste0("results/boot-cbw-eastern-",o,".rds"))
   
   # Get p-values
@@ -85,7 +85,7 @@ for(o in outcome.vars){
   
   # Block resampling with fixed block lengths of length l)
   
-  boot <- tsboot(tseries=ts(t(outcomes.cbw.swiss$M)), MCEstBoot, mask=outcomes.cbw.swiss$mask, treated=outcomes.cbw.swiss$treated, control=outcomes.cbw.swiss$control, covars=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
+  boot <- tsboot(tseries=ts(t(outcomes.cbw.swiss$M)), MCEstBoot, mask=outcomes.cbw.swiss$mask, W=outcomes.cbw.swiss$W, treated=outcomes.cbw.swiss$treated, control=outcomes.cbw.swiss$control, covars=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
   saveRDS(boot, paste0("results/boot-cbw-swiss-",o,".rds"))
   
   # Get p-values
@@ -121,7 +121,7 @@ for(o in outcome.vars){
   
   # Block resampling with fixed block lengths of length l)
   
-  boot <- tsboot(tseries=ts(t(outcomes.lm.eastern$M)), MCEstBoot, mask=outcomes.lm.eastern$mask, treated=outcomes.lm.eastern$treated, control=outcomes.lm.eastern$control, covars=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
+  boot <- tsboot(tseries=ts(t(outcomes.lm.eastern$M)), MCEstBoot, mask=outcomes.lm.eastern$mask, W=outcomes.lm.eastern$W, treated=outcomes.lm.eastern$treated, control=outcomes.lm.eastern$control, covars=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
   saveRDS(boot, paste0("results/boot-lm-eastern-",o,".rds"))
   
   # Get p-values
@@ -155,7 +155,7 @@ for(o in outcome.vars){
   
   # Block resampling with fixed block lengths of length l)
   
-  boot <- tsboot(tseries=ts(t(outcomes.lm.swiss$M)), MCEstBoot, mask=outcomes.lm.swiss$mask, treated=outcomes.lm.swiss$treated, control=outcomes.lm.swiss$control, covars=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
+  boot <- tsboot(tseries=ts(t(outcomes.lm.swiss$M)), MCEstBoot, mask=outcomes.lm.swiss$mask, W=outcomes.lm.swiss$W, treated=outcomes.lm.swiss$treated, control=outcomes.lm.swiss$control, covars=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
   saveRDS(boot, paste0("results/boot-lm-swiss-",o,".rds"))
   
   # Get p-values

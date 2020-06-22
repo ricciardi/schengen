@@ -28,8 +28,7 @@ Run order
 
 0. package-list.R
 1. schengen_MCM_data.R
-2. Schengen_MCM.R (without weights) 
-	or Schengen_MCM_covars.R (with weights)
+2. Schengen_MCM_covars.R 
 	* MCEst.R
 	* PolitisWhite.R
 	* MCEstBoot.R
@@ -38,6 +37,5 @@ Run order
 3. mc-plot.R
 	* TsPlot.R
 
-4. mc-placebo.R (without weights)
-	or mc-placebo_covars.R (with weights)
-5. mc-placebo-plot.R
+4. mc-placebo_covars.R
+5. mc-placebo-plot.R 

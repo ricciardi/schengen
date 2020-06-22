@@ -14,21 +14,23 @@ outcomes.labels <- c("Share of residents working in border region",
                      "% unemployed for < 1-2 months",
                      "% unemployed for < 3 months")
 
+covarflag <- c("","-covars")
+
 for(o in outcome.vars){
   print(o)
   
   ## Analysis 1: ST vs AT (retrospective, X=CBW) 
   
   # Eastern cluster
-  print(paste0("Estimates for Analysis 1, Eastern cluster, outcome:",o))
+  print(paste0("Estimates for Analysis 1, Eastern cluster, outcome:",o,covarflag))
   
   # get placebo results
   
-  iid.placebo <- readRDS(paste0("results/no-covars/iid-placebo-cbw-eastern-",o,".rds"))
+  iid.placebo <- readRDS(paste0("results/iid-placebo-cbw-eastern-",o,covarflag,".rds"))
   
-  iid.block.placebo <- readRDS(paste0("results/no-covars/iid-block-placebo-cbw-eastern-",o,".rds"))
+  iid.block.placebo <- readRDS(paste0("results/iid-block-placebo-cbw-eastern-",o,covarflag,".rds"))
   
-  moving.block.placebo <- readRDS(paste0("results/no-covars/moving-block-placebo-cbw-eastern-",o,".rds"))
+  moving.block.placebo <- readRDS(paste0("results/moving-block-placebo-cbw-eastern-",o,covarflag,".rds"))
   
   taus <- 1:length(iid.placebo)
   
@@ -66,18 +68,18 @@ for(o in outcome.vars){
           panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
     theme(axis.text.y = element_text(size=8))
   
-  ggsave(filename = "plots/no-covars/placebo-pvals-cbw-eastern.png",plot = mc.placebo.plot)
+  ggsave(filename = paste0("plots/placebo-pvals-cbw-eastern-",o,covarflag,".png"),plot = mc.placebo.plot)
   
   # Swiss cluster
-  print(paste0("Estimates for Analysis 1, Swiss cluster, outcome:",o))
+  print(paste0("Estimates for Analysis 1, Swiss cluster, outcome:",o,covarflag))
   
   # get placebo results
   
-  iid.placebo <- readRDS(paste0("results/no-covars/iid-placebo-cbw-swiss-",o,".rds"))
+  iid.placebo <- readRDS(paste0("results/iid-placebo-cbw-swiss-",o,covarflag,".rds"))
   
-  iid.block.placebo <- readRDS(paste0("results/no-covars/iid-block-placebo-cbw-swiss-",o,".rds"))
+  iid.block.placebo <- readRDS(paste0("results/iid-block-placebo-cbw-swiss-",o,covarflag,".rds"))
   
-  moving.block.placebo <- readRDS(paste0("results/no-covars/moving-block-placebo-cbw-swiss-",o,".rds"))
+  moving.block.placebo <- readRDS(paste0("results/moving-block-placebo-cbw-swiss-",o,covarflag,".rds"))
   
   taus <- 1:length(iid.placebo)
   
@@ -115,20 +117,20 @@ for(o in outcome.vars){
           panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
     theme(axis.text.y = element_text(size=8))
   
-  ggsave(filename = "plots/no-covars/placebo-pvals-cbw-swiss.png",plot = mc.placebo.plot)
+  ggsave(filename = paste0("plots/placebo-pvals-cbw-swiss-",o,covarflag,".png") ,plot = mc.placebo.plot)
   
   ## Analysis 2: ST vs NT (retrospective, X=LM) 
   
   # Eastern cluster
-  print(paste0("Estimates for Analysis 2, Eastern cluster, outcome:",o))
+  print(paste0("Estimates for Analysis 2, Eastern cluster, outcome:",o,covarflag))
   
   # get placebo results
   
-  iid.placebo <- readRDS(paste0("results/no-covars/no-covars/iid-placebo-lm-eastern-",o,".rds"))
+  iid.placebo <- readRDS(paste0("results/iid-placebo-lm-eastern-",o,covarflag,".rds"))
   
-  iid.block.placebo <- readRDS(paste0("results/no-covars/no-covars/iid-block-placebo-lm-eastern-",o,".rds"))
+  iid.block.placebo <- readRDS(paste0("results/iid-block-placebo-lm-eastern-",o,covarflag,".rds"))
   
-  moving.block.placebo <- readRDS(paste0("results/no-covars/no-covars/moving-block-placebo-lm-eastern-",o,".rds"))
+  moving.block.placebo <- readRDS(paste0("results/moving-block-placebo-lm-eastern-",o,covarflag,".rds"))
   
   taus <- 1:length(iid.placebo)
   
@@ -166,18 +168,18 @@ for(o in outcome.vars){
           panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
     theme(axis.text.y = element_text(size=8))
   
-  ggsave(filename = "plots/no-covars/placebo-pvals-lm-eastern.png",plot = mc.placebo.plot)
+  ggsave(filename = paste0("plots/placebo-pvals-lm-eastern-",o,covarflag,".png"),plot = mc.placebo.plot)
   
   # Swiss cluster
-  print(paste0("Estimates for Analysis 1, Swiss cluster, outcome:",o))
+  print(paste0("Estimates for Analysis 1, Swiss cluster, outcome:",o,covarflag))
   
   # get placebo results
   
-  iid.placebo <- readRDS(paste0("results/no-covars/no-covars/iid-placebo-lm-swiss-",o,".rds"))
+  iid.placebo <- readRDS(paste0("results/iid-placebo-lm-swiss-",o,covarflag,".rds"))
   
-  iid.block.placebo <- readRDS(paste0("results/no-covars/no-covars/iid-block-placebo-lm-swiss-",o,".rds"))
+  iid.block.placebo <- readRDS(paste0("results/iid-block-placebo-lm-swiss-",o,covarflag,".rds"))
   
-  moving.block.placebo <- readRDS(paste0("results/no-covars/no-covars/moving-block-placebo-lm-swiss-",o,".rds"))
+  moving.block.placebo <- readRDS(paste0("results/moving-block-placebo-lm-swiss-",o,covarflag,".rds"))
   
   taus <- 1:length(iid.placebo)
   
@@ -215,5 +217,5 @@ for(o in outcome.vars){
           panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
     theme(axis.text.y = element_text(size=8))
   
-  ggsave(filename = "plots/no-covars/placebo-pvals-lm-swiss.png",plot = mc.placebo.plot)
+  ggsave(filename = paste0("plots/placebo-pvals-lm-swiss-",o,covarflag,".png"),plot = mc.placebo.plot)
 }
