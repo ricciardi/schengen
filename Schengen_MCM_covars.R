@@ -11,7 +11,7 @@ library(glmnet)
 library(parallel)
 library(doParallel)
 
-cores <- 2#detectCores()
+cores <- detectCores()
 
 cl <- parallel::makeForkCluster(cores)
 

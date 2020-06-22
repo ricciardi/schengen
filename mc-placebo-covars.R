@@ -11,7 +11,7 @@ library(ggplot2)
 library(parallel)
 library(doParallel)
 
-cores <- 4#detectCores()
+cores <- detectCores()
 
 cl <- parallel::makeForkCluster(cores)
 
