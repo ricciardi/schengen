@@ -28,7 +28,7 @@ TsPlot <- function(df, main = "",y.title,vline,breaks,labels,rev) {
     ylab(y.title) +
     
     # x-axis title
-    xlab("\nTime") +
+    xlab("YearQuarter") +
   
     # main chart title
     ggtitle(main)
@@ -76,7 +76,7 @@ TsPlot <- function(df, main = "",y.title,vline,breaks,labels,rev) {
     intervention +
     ticks + 
     theme( legend.title = element_blank()
-           , plot.title = element_text(hjust = 0.5)
+           , plot.title = element_text(hjust = 0.5, size = 16)
            , legend.justification = c(1,0)
             , legend.position = "bottom"
            , legend.background = element_rect()

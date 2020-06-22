@@ -24,11 +24,11 @@ for(o in outcome.vars){
   
   # get placebo results
   
-  iid.placebo <- readRDS(paste0("results/iid-placebo-cbw-eastern-",o,".rds"))
+  iid.placebo <- readRDS(paste0("results/no-covars/iid-placebo-cbw-eastern-",o,".rds"))
   
-  iid.block.placebo <- readRDS(paste0("results/iid-block-placebo-cbw-eastern-",o,".rds"))
+  iid.block.placebo <- readRDS(paste0("results/no-covars/iid-block-placebo-cbw-eastern-",o,".rds"))
   
-  moving.block.placebo <- readRDS(paste0("results/moving-block-placebo-cbw-eastern-",o,".rds"))
+  moving.block.placebo <- readRDS(paste0("results/no-covars/moving-block-placebo-cbw-eastern-",o,".rds"))
   
   taus <- 1:length(iid.placebo)
   
@@ -47,7 +47,7 @@ for(o in outcome.vars){
     geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
     labs(title="Placebo test", 
          x="Randomization p-values",
-         y=paste0("t distance from ", TeX("$T_0 - 1$"))) + 
+         y="Distance from initial treatment period") + 
     geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
     scale_x_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
                        labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
@@ -66,18 +66,18 @@ for(o in outcome.vars){
           panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
     theme(axis.text.y = element_text(size=8))
   
-  ggsave(filename = "plots/placebo-pvals-cbw-eastern.png",plot = mc.placebo.plot)
+  ggsave(filename = "plots/no-covars/placebo-pvals-cbw-eastern.png",plot = mc.placebo.plot)
   
   # Swiss cluster
   print(paste0("Estimates for Analysis 1, Swiss cluster, outcome:",o))
   
   # get placebo results
   
-  iid.placebo <- readRDS(paste0("results/iid-placebo-cbw-swiss-",o,".rds"))
+  iid.placebo <- readRDS(paste0("results/no-covars/iid-placebo-cbw-swiss-",o,".rds"))
   
-  iid.block.placebo <- readRDS(paste0("results/iid-block-placebo-cbw-swiss-",o,".rds"))
+  iid.block.placebo <- readRDS(paste0("results/no-covars/iid-block-placebo-cbw-swiss-",o,".rds"))
   
-  moving.block.placebo <- readRDS(paste0("results/moving-block-placebo-cbw-swiss-",o,".rds"))
+  moving.block.placebo <- readRDS(paste0("results/no-covars/moving-block-placebo-cbw-swiss-",o,".rds"))
   
   taus <- 1:length(iid.placebo)
   
@@ -96,7 +96,7 @@ for(o in outcome.vars){
     geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
     labs(title="Placebo test", 
          x="Randomization p-values",
-         y=paste0("t distance from ", TeX("$T_0 - 1$"))) + 
+         y="Distance from initial treatment period") + 
     geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
     scale_x_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
                        labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
@@ -115,7 +115,7 @@ for(o in outcome.vars){
           panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
     theme(axis.text.y = element_text(size=8))
   
-  ggsave(filename = "plots/placebo-pvals-cbw-swiss.png",plot = mc.placebo.plot)
+  ggsave(filename = "plots/no-covars/placebo-pvals-cbw-swiss.png",plot = mc.placebo.plot)
   
   ## Analysis 2: ST vs NT (retrospective, X=LM) 
   
@@ -124,11 +124,11 @@ for(o in outcome.vars){
   
   # get placebo results
   
-  iid.placebo <- readRDS(paste0("results/iid-placebo-lm-eastern-",o,".rds"))
+  iid.placebo <- readRDS(paste0("results/no-covars/no-covars/iid-placebo-lm-eastern-",o,".rds"))
   
-  iid.block.placebo <- readRDS(paste0("results/iid-block-placebo-lm-eastern-",o,".rds"))
+  iid.block.placebo <- readRDS(paste0("results/no-covars/no-covars/iid-block-placebo-lm-eastern-",o,".rds"))
   
-  moving.block.placebo <- readRDS(paste0("results/moving-block-placebo-lm-eastern-",o,".rds"))
+  moving.block.placebo <- readRDS(paste0("results/no-covars/no-covars/moving-block-placebo-lm-eastern-",o,".rds"))
   
   taus <- 1:length(iid.placebo)
   
@@ -147,7 +147,7 @@ for(o in outcome.vars){
     geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
     labs(title="Placebo test", 
          x="Randomization p-values",
-         y=paste0("t distance from ", TeX("$T_0 - 1$"))) + 
+         y= "Distance from initial treatment period") + 
     geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
     scale_x_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
                        labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
@@ -166,18 +166,18 @@ for(o in outcome.vars){
           panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
     theme(axis.text.y = element_text(size=8))
   
-  ggsave(filename = "plots/placebo-pvals-lm-eastern.png",plot = mc.placebo.plot)
+  ggsave(filename = "plots/no-covars/placebo-pvals-lm-eastern.png",plot = mc.placebo.plot)
   
   # Swiss cluster
   print(paste0("Estimates for Analysis 1, Swiss cluster, outcome:",o))
   
   # get placebo results
   
-  iid.placebo <- readRDS(paste0("results/iid-placebo-lm-swiss-",o,".rds"))
+  iid.placebo <- readRDS(paste0("results/no-covars/no-covars/iid-placebo-lm-swiss-",o,".rds"))
   
-  iid.block.placebo <- readRDS(paste0("results/iid-block-placebo-lm-swiss-",o,".rds"))
+  iid.block.placebo <- readRDS(paste0("results/no-covars/no-covars/iid-block-placebo-lm-swiss-",o,".rds"))
   
-  moving.block.placebo <- readRDS(paste0("results/moving-block-placebo-lm-swiss-",o,".rds"))
+  moving.block.placebo <- readRDS(paste0("results/no-covars/no-covars/moving-block-placebo-lm-swiss-",o,".rds"))
   
   taus <- 1:length(iid.placebo)
   
@@ -196,7 +196,7 @@ for(o in outcome.vars){
     geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
     labs(title="Placebo test", 
          x="Randomization p-values",
-         y=paste0("t distance from ", TeX("$T_0 - 1$"))) + 
+         y=paste0("Distance from initial treatment period")) + 
     geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
     scale_x_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
                        labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
@@ -215,5 +215,5 @@ for(o in outcome.vars){
           panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
     theme(axis.text.y = element_text(size=8))
   
-  ggsave(filename = "plots/placebo-pvals-lm-swiss.png",plot = mc.placebo.plot)
+  ggsave(filename = "plots/no-covars/placebo-pvals-lm-swiss.png",plot = mc.placebo.plot)
 }

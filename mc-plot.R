@@ -94,8 +94,8 @@ for(o in outcome.vars){
   # Eastern cluster
   
   outcomes.cbw.eastern <- readRDS(paste0("data/outcomes-cbw-eastern-",o,".rds"))
-  mc.estimates.cbw.eastern <- readRDS(paste0("results/mc-estimates-cbw-eastern-",o,".rds"))
-  boot.cbw.eastern <- readRDS(paste0("results/boot-cbw-eastern-",o,".rds"))
+  mc.estimates.cbw.eastern <- readRDS(paste0("results/no-covars/mc-estimates-cbw-eastern-",o,".rds"))
+  boot.cbw.eastern <- readRDS(paste0("results/no-covars/boot-cbw-eastern-",o,".rds"))
   
   mc.plot <- PlotMCCapacity(observed = outcomes.cbw.eastern$M, 
                             y.title=outcomes.labels[which(outcome.vars==o)],
@@ -105,16 +105,16 @@ for(o in outcome.vars){
                             treated=outcomes.cbw.eastern$treated, control=outcomes.cbw.eastern$control, vline=20081,
                             breaks=c(20042,20081,20121,20161,20184),
                             labels=c(20042,20081,20121,20161,20184),
-                            att.label = TeX("$\\hat{\\bar{\\tau}}_{t}$"),
+                            att.label = "ATT",
                             rev=TRUE)
   
-  ggsave(paste0("plots/mc-estimates-cbw-eastern-",o,".png"), mc.plot, width=8.5, height=11)
+  ggsave(paste0("plots/no-covars/mc-estimates-cbw-eastern-",o,".png"), mc.plot, width=8.5, height=11)
   
   # Swiss cluster
   
   outcomes.cbw.swiss <- readRDS(paste0("data/outcomes-cbw-swiss-",o,".rds"))
-  mc.estimates.cbw.swiss <- readRDS(paste0("results/mc-estimates-cbw-swiss-",o,".rds"))
-  boot.cbw.swiss <- readRDS(paste0("results/boot-cbw-swiss-",o,".rds"))
+  mc.estimates.cbw.swiss <- readRDS(paste0("results/no-covars/mc-estimates-cbw-swiss-",o,".rds"))
+  boot.cbw.swiss <- readRDS(paste0("results/no-covars/boot-cbw-swiss-",o,".rds"))
   
   mc.plot <- PlotMCCapacity(observed = outcomes.cbw.swiss$M, 
                             y.title=outcomes.labels[which(outcome.vars==o)],
@@ -124,18 +124,18 @@ for(o in outcome.vars){
                             treated=outcomes.cbw.swiss$treated, control=outcomes.cbw.swiss$control, vline=20072,
                             breaks=c(20042,20081,20121,20161,20184),
                             labels=c(20042,20081,20121,20161,20184),
-                            att.label = TeX("$\\hat{\\bar{\\tau}}_{t}$"),
+                            att.label = "ATT",
                             rev=TRUE)
   
-  ggsave(paste0("plots/mc-estimates-cbw-swiss-",o,".png"), mc.plot, width=8.5, height=11)
+  ggsave(paste0("plots/no-covars/mc-estimates-cbw-swiss-",o,".png"), mc.plot, width=8.5, height=11)
   
   ## Analysis 2:  ST vs NT (forward, X=LM)
   
   # Eastern cluster
   
   outcomes.lm.eastern <- readRDS(paste0("data/outcomes-lm-eastern-",o,".rds"))
-  mc.estimates.lm.eastern <- readRDS(paste0("results/mc-estimates-lm-eastern-",o,".rds"))
-  boot.lm.eastern <- readRDS(paste0("results/boot-lm-eastern-",o,".rds"))
+  mc.estimates.lm.eastern <- readRDS(paste0("results/no-covars/mc-estimates-lm-eastern-",o,".rds"))
+  boot.lm.eastern <- readRDS(paste0("results/no-covars/boot-lm-eastern-",o,".rds"))
   
   mc.plot <- PlotMCCapacity(observed = outcomes.lm.eastern$M, 
                             y.title=outcomes.labels[which(outcome.vars==o)],
@@ -145,16 +145,16 @@ for(o in outcome.vars){
                             treated=outcomes.lm.eastern$treated, control=outcomes.lm.eastern$control, vline=20081,
                             breaks=c(20042,20081,20121,20161,20184),
                             labels=c(20042,20081,20121,20161,20184),
-                            att.label = TeX("$\\hat{\\bar{\\tau}}_{t}$"),
+                            att.label = "ATT",
                             rev=FALSE)
   
-  ggsave(paste0("plots/mc-estimates-lm-eastern-",o,".png"), mc.plot, width=8.5, height=11)
+  ggsave(paste0("plots/no-covars/mc-estimates-lm-eastern-",o,".png"), mc.plot, width=8.5, height=11)
   
   # Swiss cluster
   
   outcomes.lm.swiss <- readRDS(paste0("data/outcomes-lm-swiss-",o,".rds"))
-  mc.estimates.lm.swiss <- readRDS(paste0("results/mc-estimates-lm-swiss-",o,".rds"))
-  boot.lm.swiss <- readRDS(paste0("results/boot-lm-swiss-",o,".rds"))
+  mc.estimates.lm.swiss <- readRDS(paste0("results/no-covars/mc-estimates-lm-swiss-",o,".rds"))
+  boot.lm.swiss <- readRDS(paste0("results/no-covars/boot-lm-swiss-",o,".rds"))
   
   mc.plot <- PlotMCCapacity(observed = outcomes.lm.swiss$M, 
                             y.title=outcomes.labels[which(outcome.vars==o)],
@@ -164,10 +164,10 @@ for(o in outcome.vars){
                             treated=outcomes.lm.swiss$treated, control=outcomes.lm.swiss$control, vline=20072,
                             breaks=c(20042,20081,20121,20161,20184),
                             labels=c(20042,20081,20121,20161,20184),
-                            att.label = TeX("$\\hat{\\bar{\\tau}}_{t}$"),
+                            att.label = "ATT",
                             rev=FALSE)
   
-  ggsave(paste0("plots/mc-estimates-lm-swiss-",o,".png"), mc.plot, width=8.5, height=11)
+  ggsave(paste0("plots/no-covars/mc-estimates-lm-swiss-",o,".png"), mc.plot, width=8.5, height=11)
 }
 
 ## Plot p-values
@@ -177,19 +177,19 @@ for(o in outcome.vars){
 # Eastern cluster
 
 iid <- lapply(outcome.vars, function(o){
-  p <- readRDS(paste0("results/iid-cbw-eastern-",o,".rds"))
+  p <- readRDS(paste0("results/no-covars/iid-cbw-eastern-",o,".rds"))
   return(p)
 })
 names(iid) <- outcome.vars
 
 iid.block <- lapply(outcome.vars, function(o){
-  p <- readRDS(paste0("results/iid-block-cbw-eastern-",o,".rds"))
+  p <- readRDS(paste0("results/no-covars/iid-block-cbw-eastern-",o,".rds"))
   return(p)
 })
 names(iid.block) <- outcome.vars
 
 moving.block <- lapply(outcome.vars, function(o){
-  p <- readRDS(paste0("results/moving-block-cbw-eastern-",o,".rds"))
+  p <- readRDS(paste0("results/no-covars/moving-block-cbw-eastern-",o,".rds"))
   return(p)
 })
 names(moving.block) <- outcome.vars
@@ -211,8 +211,8 @@ mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) +
        y="Randomization p-values",
        y="Outcomes") + 
   geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
-  scale_y_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
-                     labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
+  scale_y_continuous(breaks=c(0.05,0.25,0.5,0.75,1), 
+                     labels=c("0.05","0.25","0.50","0.75","1")) +
   scale_x_discrete(labels=rev(outcomes.labels), limits = rev(levels(p.values.m$outcomes)))+
   coord_flip() +
   scale_shape_manual(name="", values = c("1" = 2,
@@ -227,24 +227,24 @@ mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) +
         panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
   theme(axis.text.y = element_text(size=8))
 
-ggsave(filename = "plots/pvals-cbw-eastern.png",plot = mc.pvals.plot)
+ggsave(filename = "plots/no-covars/pvals-cbw-eastern.png",plot = mc.pvals.plot)
 
 # Swiss cluster
 
 iid <- lapply(outcome.vars, function(o){
-  p <- readRDS(paste0("results/iid-cbw-swiss-",o,".rds"))
+  p <- readRDS(paste0("results/no-covars/iid-cbw-swiss-",o,".rds"))
   return(p)
 })
 names(iid) <- outcome.vars
 
 iid.block <- lapply(outcome.vars, function(o){
-  p <- readRDS(paste0("results/iid-block-cbw-swiss-",o,".rds"))
+  p <- readRDS(paste0("results/no-covars/iid-block-cbw-swiss-",o,".rds"))
   return(p)
 })
 names(iid.block) <- outcome.vars
 
 moving.block <- lapply(outcome.vars, function(o){
-  p <- readRDS(paste0("results/moving-block-cbw-swiss-",o,".rds"))
+  p <- readRDS(paste0("results/no-covars/moving-block-cbw-swiss-",o,".rds"))
   return(p)
 })
 names(moving.block) <- outcome.vars
@@ -266,8 +266,8 @@ mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) +
        y="Randomization p-values",
        x="Outcomes") + 
   geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
-  scale_y_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
-                     labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
+  scale_y_continuous(breaks=c(0.05,0.25,0.5,0.75,1), 
+                     labels=c("0.05","0.25","0.50","0.75","1")) +
   scale_x_discrete(labels=rev(outcomes.labels), limits = rev(levels(p.values.m$outcomes)))+
   coord_flip() +
   scale_shape_manual(name="", values = c("1" = 2,
@@ -282,26 +282,26 @@ mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) +
         panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
   theme(axis.text.y = element_text(size=8))
 
-ggsave(filename = "plots/pvals-cbw-swiss.png",plot = mc.pvals.plot)
+ggsave(filename = "plots/no-covars/pvals-cbw-swiss.png",plot = mc.pvals.plot)
 
 ## Analysis 2:  ST vs NT (forward, X=LM)
 
 # Eastern cluster
 
 iid <- lapply(outcome.vars, function(o){
-  p <- readRDS(paste0("results/iid-lm-eastern-",o,".rds"))
+  p <- readRDS(paste0("results/no-covars/iid-lm-eastern-",o,".rds"))
   return(p)
 })
 names(iid) <- outcome.vars
 
 iid.block <- lapply(outcome.vars, function(o){
-  p <- readRDS(paste0("results/iid-block-lm-eastern-",o,".rds"))
+  p <- readRDS(paste0("results/no-covars/iid-block-lm-eastern-",o,".rds"))
   return(p)
 })
 names(iid.block) <- outcome.vars
 
 moving.block <- lapply(outcome.vars, function(o){
-  p <- readRDS(paste0("results/moving-block-lm-eastern-",o,".rds"))
+  p <- readRDS(paste0("results/no-covars/moving-block-lm-eastern-",o,".rds"))
   return(p)
 })
 names(moving.block) <- outcome.vars
@@ -323,8 +323,8 @@ mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) +
        y="Randomization p-values",
        x="Outcomes") + 
   geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
-  scale_y_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
-                     labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
+  scale_y_continuous(breaks=c(0.05,0.25,0.5,0.75,1), 
+                     labels=c("0.05","0.25","0.50","0.75","1")) +
   scale_x_discrete(labels=rev(outcomes.labels), limits = rev(levels(p.values.m$outcomes)))+
   coord_flip() +
   scale_shape_manual(name="", values = c("1" = 2,
@@ -339,24 +339,24 @@ mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) +
         panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
   theme(axis.text.y = element_text(size=8))
 
-ggsave(filename = "plots/pvals-lm-eastern.png",plot = mc.pvals.plot)
+ggsave(filename = "plots/no-covars/pvals-lm-eastern.png",plot = mc.pvals.plot)
 
 # Swiss cluster
 
 iid <- lapply(outcome.vars, function(o){
-  p <- readRDS(paste0("results/iid-lm-swiss-",o,".rds"))
+  p <- readRDS(paste0("results/no-covars/iid-lm-swiss-",o,".rds"))
   return(p)
 })
 names(iid) <- outcome.vars
 
 iid.block <- lapply(outcome.vars, function(o){
-  p <- readRDS(paste0("results/iid-block-lm-swiss-",o,".rds"))
+  p <- readRDS(paste0("results/no-covars/iid-block-lm-swiss-",o,".rds"))
   return(p)
 })
 names(iid.block) <- outcome.vars
 
 moving.block <- lapply(outcome.vars, function(o){
-  p <- readRDS(paste0("results/moving-block-lm-swiss-",o,".rds"))
+  p <- readRDS(paste0("results/no-covars/moving-block-lm-swiss-",o,".rds"))
   return(p)
 })
 names(moving.block) <- outcome.vars
@@ -373,13 +373,13 @@ p.values.m$Type <- paste0(p.values.m$variable, ", q=", p.values.m$q)
 
 # Plot
 mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) + 
-  geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
+  geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5, )  +
   labs(title="Prospective analysis: Swiss cluster", 
        y="Randomization p-values",
        x="Outcomes") + 
   geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
-  scale_y_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
-                     labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
+  scale_y_continuous(breaks=c(0.05,0.25,0.5,0.75,1), 
+                     labels=c("0.05","0.25","0.50","0.75","1")) +
   scale_x_discrete(labels=rev(outcomes.labels), limits = rev(levels(p.values.m$outcomes)))+
   coord_flip() +
   scale_shape_manual(name="", values = c("1" = 2,
@@ -394,4 +394,4 @@ mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) +
         panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
   theme(axis.text.y = element_text(size=8))
 
-ggsave(filename = "plots/pvals-lm-swiss.png",plot = mc.pvals.plot)
+ggsave(filename = "plots/no-covars/pvals-lm-swiss.png",plot = mc.pvals.plot)
