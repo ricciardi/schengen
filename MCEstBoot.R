@@ -11,14 +11,14 @@ MCEstBoot <- function(tseries,mask,W,treated,control,covars=TRUE) {
   
   Y_obs <- Y * treat_mat
   
+  weights <- W
+  weights <- weights[rownames(weights) %in% row.names(Y),]
+  weights <- weights[row.names(Y),]  # reorder
+  
+  weights[rownames(weights) %in% control,] <- (weights[rownames(weights) %in% control,])/(1-weights[rownames(weights) %in% control,]) # control
+  weights[rownames(weights) %in% treated,] <- 1/weights[rownames(weights) %in% treated,] # treated
+  
   if(covars){
-    
-    weights <- W
-    weights <- weights[rownames(weights) %in% row.names(Y),]
-    weights <- weights[row.names(Y),]  # reorder
-    
-    weights[rownames(weights) %in% control,] <- (weights[rownames(weights) %in% control,])/(1-weights[rownames(weights) %in% control,]) # control
-    weights[rownames(weights) %in% treated,] <- 1/weights[rownames(weights) %in% treated,] # treated
     
     ## ------
     ## MC-NNM-W

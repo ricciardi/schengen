@@ -11,14 +11,14 @@ MCEst <- function(outcomes,covars=TRUE) {
   
   Y_obs <- Y * treat_mat
   
+  weights <- outcomes$W
+  weights <- weights[rownames(weights) %in% row.names(Y),]
+  weights <- weights[row.names(Y),]  # reorder
+  
+  weights[rownames(weights) %in% outcomes$control,] <- (weights[rownames(weights) %in% outcomes$control,])/(1-weights[rownames(weights) %in% outcomes$control,]) # control
+  weights[rownames(weights) %in% outcomes$treated,] <- 1/weights[rownames(weights) %in% outcomes$treated,] # treated
+  
   if(covars){
-    
-    weights <- outcomes$W
-    weights <- weights[rownames(weights) %in% row.names(Y),]
-    weights <- weights[row.names(Y),]  # reorder
-    
-    weights[rownames(weights) %in% outcomes$control,] <- (weights[rownames(weights) %in% outcomes$control,])/(1-weights[rownames(weights) %in% outcomes$control,]) # control
-    weights[rownames(weights) %in% outcomes$treated,] <- 1/weights[rownames(weights) %in% outcomes$treated,] # treated
     
     ## ------
     ## MC-NNM-W
