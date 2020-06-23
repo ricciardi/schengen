@@ -46,31 +46,31 @@ TsPlot <- function(df, main = "",y.title,vline,breaks,labels,rev) {
   
   # ann_text <- data.frame(year = c(20074, 20084), value=0.001,
   #                        series = factor("Time-series", levels = c("Time-series", "Per-period effect")),
-  #                        lab = c("pre-period","post-period"))
+  #                        lab = c("Pre","Post"))
   
   if(rev){
   # legend 
     lines <- scale_linetype_manual(name="", values = c("observed.control" = "dashed",
                                                        "observed.treated" = "solid",
                                                        "predicted.treated" = "dotted"),
-                                   labels=c("Observed always-treated", "Observed later-treated", 
-                                            "Predicted later-treated")) 
+                                   labels=c("Observed AT", "Observed LT", 
+                                            "Predicted LT")) 
     colours <-     scale_colour_manual(name="", values = c(  "observed.control" = wes_palette("Darjeeling1")[1],
                                                              "observed.treated" = wes_palette("Darjeeling1")[5], 
                                                              "predicted.treated" = wes_palette("Darjeeling1")[5]),
-                                       labels=c("Observed always-treated", "Observed later-treated", 
-                                                "Predicted later-treated")) 
+                                       labels=c("Observed AT", "Observed LT", 
+                                                "Predicted LT")) 
   }else{
     lines <- scale_linetype_manual(name="", values = c("observed.control" = "dashed",
                                                        "observed.treated" = "solid",
                                                        "predicted.treated" = "dotted"),
-                                   labels=c("Observed never-treated", "Observed later-treated", 
-                                            "Predicted later-treated")) 
+                                   labels=c("Observed NT", "Observed LT", 
+                                            "Predicted LT")) 
     colours <-     scale_colour_manual(name="", values = c(  "observed.control" = wes_palette("Darjeeling1")[1],
                                                              "observed.treated" = wes_palette("Darjeeling1")[5], 
                                                              "predicted.treated" = wes_palette("Darjeeling1")[5]),
-                                       labels=c("Observed never-treated", "Observed later-treated", 
-                                                "Predicted later-treated")) 
+                                       labels=c("Observed NT", "Observed LT", 
+                                                "Predicted LT")) 
   }
   gg.xts <- gg.xts +
     intervention +
@@ -84,13 +84,14 @@ TsPlot <- function(df, main = "",y.title,vline,breaks,labels,rev) {
            , axis.title.x=element_text(size = 16)
            , axis.title.y=element_text(size = 16)
            , legend.text=element_text(size=14, family = "serif")
-           , legend.box = "horizontal" 
+           , legend.box = "horizontal"
+           , legend.key = element_blank()
     ) +
    #+ geom_text(data = ann_text,aes(y = value, label =lab), family="serif", fontface="italic",  size=6) +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_line(colour = "black")) + # rm background
     colours+ 
     lines +
-    theme(legend.key.width=unit(4,"line")) 
+    theme(legend.key.width=unit(4,"line"))
   return(gg.xts)
 }

@@ -24,9 +24,9 @@ MCEst <- function(outcomes,covars=TRUE) {
     ## MC-NNM-W
     ## ------
     
-    est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = weights, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 10, num_lam_B = 10, niter = 1000, rel_tol = 1e-03, cv_ratio = 0.5, num_folds = 2, is_quiet = 1) 
+    est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = weights, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 5, num_lam_B = 5, niter = 100, rel_tol = 1e-03, cv_ratio = 0.5, num_folds = 2, is_quiet = 1) 
     
-    est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + est_model_MCPanel_w$C*est_model_MCPanel_w$B + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v))
+    est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + weights*est_model_MCPanel_w$B + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v))
     
     est_model_MCPanel_w$impact <- (Y-est_model_MCPanel_w$Mhat)
   
