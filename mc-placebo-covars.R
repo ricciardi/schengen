@@ -6,6 +6,7 @@
 library(MCPanel)
 library(glmnet)
 library(ggplot2)
+library(inline)
 
 # Setup parallel processing 
 library(parallel)
@@ -18,6 +19,10 @@ cl <- parallel::makeForkCluster(cores)
 doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
+
+includes <- '#include <sys/wait.h>' # create a function that waits on all child processes to get rid of zombie processes
+code <- 'int wstat; while (waitpid(-1, &wstat, WNOHANG) > 0) {};'
+wait <- cfunction(body=code, includes=includes, convention='.C')
 
 outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 
@@ -50,17 +55,20 @@ for(o in outcome.vars){
   
   moving.block.placebo <- foreach(t = taus) %dopar% {
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
-    ChernoTest(outcomes=outcomes.cbw.eastern.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0_placebo,rev=TRUE,covars=TRUE)}
+    ChernoTest(outcomes=outcomes.cbw.eastern.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0_placebo,rev=TRUE,covars=TRUE)
+    wait()}
   saveRDS(moving.block.placebo,paste0("results/moving-block-placebo-cbw-eastern-",o,"-covars.rds"))
   
   iid.block.placebo <- foreach(t = taus) %dopar% {
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
-    ChernoTest(outcomes=outcomes.cbw.eastern.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0_placebo,rev=TRUE,covars=TRUE)}
+    ChernoTest(outcomes=outcomes.cbw.eastern.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0_placebo,rev=TRUE,covars=TRUE)
+    wait()}
   saveRDS(iid.block.placebo,paste0("results/iid-block-placebo-cbw-eastern-",o,"-covars.rds"))
   
   iid.placebo <- foreach(t = taus) %dopar% {
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
-    ChernoTest(outcomes=outcomes.cbw.eastern.placebo[c("M","mask","W")],ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0_placebo,rev=TRUE,covars=TRUE)}
+    ChernoTest(outcomes=outcomes.cbw.eastern.placebo[c("M","mask","W")],ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0_placebo,rev=TRUE,covars=TRUE)
+    wait()}
   saveRDS(iid.placebo,paste0("results/iid-placebo-cbw-eastern-",o,"-covars.rds"))
   
   # Swiss cluster
@@ -85,17 +93,20 @@ for(o in outcome.vars){
   
   moving.block.placebo <- foreach(t = taus) %dopar% {
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
-    ChernoTest(outcomes=outcomes.cbw.swiss.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0_placebo,rev=TRUE,covars=TRUE)}
+    ChernoTest(outcomes=outcomes.cbw.swiss.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0_placebo,rev=TRUE,covars=TRUE)
+    wait()}
   saveRDS(moving.block.placebo,paste0("results/moving-block-placebo-cbw-swiss-",o,"-covars.rds"))
   
   iid.block.placebo <- foreach(t = taus) %dopar% {
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
-    ChernoTest(outcomes=outcomes.cbw.swiss.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0_placebo,rev=TRUE,covars=TRUE)}
+    ChernoTest(outcomes=outcomes.cbw.swiss.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0_placebo,rev=TRUE,covars=TRUE)
+    wait()}
   saveRDS(iid.block.placebo,paste0("results/iid-block-placebo-cbw-swiss-",o,"-covars.rds"))
   
   iid.placebo <- foreach(t = taus) %dopar% {
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
-    ChernoTest(outcomes=outcomes.cbw.swiss.placebo[c("M","mask","W")],ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0_placebo,rev=TRUE,covars=TRUE)}
+    ChernoTest(outcomes=outcomes.cbw.swiss.placebo[c("M","mask","W")],ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0_placebo,rev=TRUE,covars=TRUE)
+    wait()}
   saveRDS(iid.placebo,paste0("results/iid-placebo-cbw-swiss-",o,"-covars.rds"))
   
   ## Analysis 2: ST vs NT (forward, X=LM)
@@ -120,17 +131,20 @@ for(o in outcome.vars){
   
   moving.block.placebo <- foreach(t = taus) %dopar% {
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
-    ChernoTest(outcomes=outcomes.lm.eastern.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0_placebo,rev=TRUE,covars=TRUE)}
+    ChernoTest(outcomes=outcomes.lm.eastern.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0_placebo,rev=FALSE,covars=TRUE)
+    wait()}
   saveRDS(moving.block.placebo,paste0("results/moving-block-placebo-lm-eastern-",o,"-covars.rds"))
   
   iid.block.placebo <- foreach(t = taus) %dopar% {
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
-    ChernoTest(outcomes=outcomes.lm.eastern.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0_placebo,rev=TRUE,covars=TRUE)}
+    ChernoTest(outcomes=outcomes.lm.eastern.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0_placebo,rev=FALSE,covars=TRUE)
+    wait()}
   saveRDS(iid.block.placebo,paste0("results/iid-block-placebo-lm-eastern-",o,"-covars.rds"))
   
   iid.placebo <- foreach(t = taus) %dopar% {
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
-    ChernoTest(outcomes=outcomes.lm.eastern.placebo[c("M","mask","W")],ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0_placebo,rev=TRUE,covars=TRUE)}
+    ChernoTest(outcomes=outcomes.lm.eastern.placebo[c("M","mask","W")],ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0_placebo,rev=FALSE,covars=TRUE)
+    wait()}
   saveRDS(iid.placebo,paste0("results/iid-placebo-lm-eastern-",o,"-covars.rds"))
   
   # Swiss cluster
@@ -153,16 +167,19 @@ for(o in outcome.vars){
   
   moving.block.placebo <- foreach(t = taus) %dopar% {
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
-    ChernoTest(outcomes=outcomes.lm.swiss.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0_placebo,rev=TRUE,covars=TRUE)}
+    ChernoTest(outcomes=outcomes.lm.swiss.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0_placebo,rev=FALSE,covars=TRUE)
+    wait()}
   saveRDS(moving.block.placebo,paste0("results/moving-block-placebo-lm-swiss-",o,"-covars.rds"))
   
   iid.block.placebo <- foreach(t = taus) %dopar% {
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
-    ChernoTest(outcomes=outcomes.lm.swiss.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0_placebo,rev=TRUE,covars=TRUE)}
+    ChernoTest(outcomes=outcomes.lm.swiss.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0_placebo,rev=FALSE,covars=TRUE)
+    wait()}
   saveRDS(iid.block.placebo,paste0("results/iid-block-placebo-lm-swiss-",o,"-covars.rds"))
   
   iid.placebo <- foreach(t = taus) %dopar% {
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
-    ChernoTest(outcomes=outcomes.lm.swiss.placebo[c("M","mask","W")],ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0_placebo,rev=TRUE,covars=TRUE)}
+    ChernoTest(outcomes=outcomes.lm.swiss.placebo[c("M","mask","W")],ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0_placebo,rev=FALSE,covars=TRUE)
+    wait()}
   saveRDS(iid.placebo,paste0("results/iid-placebo-lm-swiss-",o,"-covars.rds"))
 }
