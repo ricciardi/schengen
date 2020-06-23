@@ -7,7 +7,7 @@ library(MCPanel)
 library(glmnet)
 library(ggplot2)
 
-# Setup parallel processing 
+# Setup parallel processing
 library(parallel)
 library(doParallel)
 
@@ -36,6 +36,7 @@ for(o in outcome.vars){
   # Discard post-treatment periods
   outcomes.cbw.eastern.placebo <- outcomes.cbw.eastern
   outcomes.cbw.eastern.placebo$M <- outcomes.cbw.eastern$M[,1:which(colnames(outcomes.cbw.eastern$M)=="20081")-1]
+  outcomes.cbw.eastern.placebo$W <- outcomes.cbw.eastern$W[,1:which(colnames(outcomes.cbw.eastern$W)=="20081")-1]
   outcomes.cbw.eastern.placebo$mask <- outcomes.cbw.eastern$mask[,1:which(colnames(outcomes.cbw.eastern$mask)=="20081")-1]
   
   # Get p-values
@@ -76,6 +77,7 @@ for(o in outcome.vars){
   # Discard post-treatment periods
   outcomes.cbw.swiss.placebo <- outcomes.cbw.swiss
   outcomes.cbw.swiss.placebo$M <- outcomes.cbw.swiss$M[,1:which(colnames(outcomes.cbw.swiss$M)=="20072")-1]
+  outcomes.cbw.swiss.placebo$W <- outcomes.cbw.swiss$W[,1:which(colnames(outcomes.cbw.swiss$W)=="20072")-1]
   outcomes.cbw.swiss.placebo$mask <- outcomes.cbw.swiss$mask[,1:which(colnames(outcomes.cbw.swiss$mask)=="20072")-1]
   
   # Get p-values
@@ -114,6 +116,7 @@ for(o in outcome.vars){
   # Discard post-treatment periods
   outcomes.lm.eastern.placebo <- outcomes.lm.eastern
   outcomes.lm.eastern.placebo$M <- outcomes.lm.eastern$M[,1:which(colnames(outcomes.lm.eastern$M)=="20081")-1]
+  outcomes.lm.eastern.placebo$W <- outcomes.lm.eastern$W[,1:which(colnames(outcomes.lm.eastern$W)=="20081")-1]
   outcomes.lm.eastern.placebo$mask <- outcomes.lm.eastern$mask[,1:which(colnames(outcomes.lm.eastern$mask)=="20081")-1]
   
   # Get p-values
@@ -150,6 +153,7 @@ for(o in outcome.vars){
   # Discard post-treatment periods
   outcomes.lm.swiss.placebo <- outcomes.lm.swiss
   outcomes.lm.swiss.placebo$M <- outcomes.lm.swiss$M[,1:which(colnames(outcomes.lm.swiss$M)=="20072")-1]
+  outcomes.lm.swiss.placebo$W <- outcomes.lm.swiss$W[,1:which(colnames(outcomes.lm.swiss$W)=="20072")-1]
   outcomes.lm.swiss.placebo$mask <- outcomes.lm.swiss$mask[,1:which(colnames(outcomes.lm.swiss$mask)=="20072")-1]
   
   # Get p-values
