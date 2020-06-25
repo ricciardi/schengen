@@ -29,7 +29,7 @@ for(o in outcome.vars){
   # Eastern cluster
   print(paste0("Estimates for Analysis 1, outcome:",o))
   
-  outcomes.cbw <- readRDS(paste0("data/outcomes-cbw",o,".rds"))
+  outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
   
   # Discard post-treatment periods
   outcomes.cbw.placebo <- outcomes.cbw
@@ -51,26 +51,26 @@ for(o in outcome.vars){
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
     ChernoTest(outcomes=outcomes.cbw.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0_placebo,rev=TRUE,covars=TRUE)
     })
-  saveRDS(moving.block.placebo,paste0("results/moving-block-placebo-cbw",o,"-covars.rds"))
+  saveRDS(moving.block.placebo,paste0("results/moving-block-placebo-cbw-",o,"-covars.rds"))
   
   iid.block.placebo <- lapply(taus, function(t){
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
     ChernoTest(outcomes=outcomes.cbw.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0_placebo,rev=TRUE,covars=TRUE)
     })
-  saveRDS(iid.block.placebo,paste0("results/iid-block-placebo-cbw",o,"-covars.rds"))
+  saveRDS(iid.block.placebo,paste0("results/iid-block-placebo-cbw-",o,"-covars.rds"))
   
   iid.placebo <- lapply(taus, function(t){
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
     ChernoTest(outcomes=outcomes.cbw.placebo[c("M","mask","W")],ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0_placebo,rev=TRUE,covars=TRUE)
     })
-  saveRDS(iid.placebo,paste0("results/iid-placebo-cbw",o,"-covars.rds"))
+  saveRDS(iid.placebo,paste0("results/iid-placebo-cbw-",o,"-covars.rds"))
   
   ## Analysis 2: ST vs NT (forward, X=LM)
   
   # Eastern cluster
   print(paste0("Estimates for Analysis 2, outcome:",o))
   
-  outcomes.lm <- readRDS(paste0("data/outcomes-lm",o,".rds"))
+  outcomes.lm <- readRDS(paste0("data/outcomes-lm-",o,".rds"))
   
   # Discard post-treatment periods
   outcomes.lm.placebo <- outcomes.lm
@@ -90,17 +90,17 @@ for(o in outcome.vars){
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
     ChernoTest(outcomes=outcomes.lm.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0_placebo,rev=FALSE,covars=TRUE)
     })
-  saveRDS(moving.block.placebo,paste0("results/moving-block-placebo-lm",o,"-covars.rds"))
+  saveRDS(moving.block.placebo,paste0("results/moving-block-placebo-lm-",o,"-covars.rds"))
   
   iid.block.placebo <- lapply(taus, function(t){
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
     ChernoTest(outcomes=outcomes.lm.placebo[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0_placebo,rev=FALSE,covars=TRUE)
     })
-  saveRDS(iid.block.placebo,paste0("results/iid-block-placebo-lm",o,"-covars.rds"))
+  saveRDS(iid.block.placebo,paste0("results/iid-block-placebo-lm-",o,"-covars.rds"))
   
   iid.placebo <- lapply(taus, function(t){
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
     ChernoTest(outcomes=outcomes.lm.placebo[c("M","mask","W")],ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0_placebo,rev=FALSE,covars=TRUE)
     })
-  saveRDS(iid.placebo,paste0("results/iid-placebo-lm",o,"-covars.rds"))
+  saveRDS(iid.placebo,paste0("results/iid-placebo-lm-",o,"-covars.rds"))
 }
