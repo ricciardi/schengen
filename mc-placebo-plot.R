@@ -2,6 +2,7 @@
 library(ggplot2)
 library(wesanderson)
 library(reshape2)
+library(latex2exp)
 
 outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 outcomes.labels <- c("Share of residents working in border region",
@@ -49,9 +50,10 @@ for(o in outcome.vars){
     # Plot
     mc.placebo.plot <- ggplot(p.values.m, aes(x=value, y=tau)) + 
       geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
-      labs(title="Placebo test", 
+      labs(title="Retrospective prediction for later-treated in Eastern cluster", 
+           subtitle=outcomes.labels[which(outcome.vars==o)],
            x="Randomization p-values",
-           y="t distance from \TeX("$T_0 - 1$")") + 
+           y="t distance from the period before the initial placebo treatment period") + 
       geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
       scale_x_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
                          labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
@@ -67,7 +69,7 @@ for(o in outcome.vars){
                           labels=c("IID", "IID Block", 
                                    "Moving block")) +
       theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-            panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
+            panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14), plot.subtitle = element_text(hjust = 0.5, size=12)) + 
       theme(axis.text.y = element_text(size=8))
     
     ggsave(filename = paste0("plots/placebo-pvals-cbw-eastern-",o,c,".png"),plot = mc.placebo.plot)
@@ -98,9 +100,10 @@ for(o in outcome.vars){
     # Plot
     mc.placebo.plot <- ggplot(p.values.m, aes(x=value, y=tau)) + 
       geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
-      labs(title="Placebo test", 
+      labs(title="Retrospective prediction for later-treated in Swiss cluster", 
+           subtitle=outcomes.labels[which(outcome.vars==o)],
            x="Randomization p-values",
-           y="t distance from \TeX("$T_0 - 1$")") + 
+           y="t distance from the period before the initial placebo treatment period") + 
       geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
       scale_x_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
                          labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
@@ -116,12 +119,12 @@ for(o in outcome.vars){
                           labels=c("IID", "IID Block", 
                                    "Moving block")) +
       theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-            panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
+            panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14), plot.subtitle = element_text(hjust = 0.5, size=12)) + 
       theme(axis.text.y = element_text(size=8))
     
     ggsave(filename = paste0("plots/placebo-pvals-cbw-swiss-",o,c,".png") ,plot = mc.placebo.plot)
     
-    ## Analysis 2: ST vs NT (retrospective, X=LM) 
+    ## Analysis 2: ST vs NT (Prospective, X=LM) 
     
     # Eastern cluster
     print(paste0("Estimates for Analysis 2, Eastern cluster, outcome:",o,c))
@@ -149,9 +152,10 @@ for(o in outcome.vars){
     # Plot
     mc.placebo.plot <- ggplot(p.values.m, aes(x=value, y=tau)) + 
       geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
-      labs(title="Placebo test", 
+      labs(title="Prospective prediction for later-treated in Eastern cluster", 
+           subtitle=outcomes.labels[which(outcome.vars==o)],
            x="Randomization p-values",
-           y= TeX("t distance from $T_0 - 1$")) + 
+           y= "t distance from the period before the initial placebo treatment period") + 
       geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
       scale_x_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
                          labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
@@ -167,7 +171,7 @@ for(o in outcome.vars){
                           labels=c("IID", "IID Block", 
                                    "Moving block")) +
       theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-            panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
+            panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14), plot.subtitle = element_text(hjust = 0.5, size=12)) + 
       theme(axis.text.y = element_text(size=8))
     
     ggsave(filename = paste0("plots/placebo-pvals-lm-eastern-",o,c,".png"),plot = mc.placebo.plot)
@@ -198,9 +202,10 @@ for(o in outcome.vars){
     # Plot
     mc.placebo.plot <- ggplot(p.values.m, aes(x=value, y=tau)) + 
       geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
-      labs(title="Placebo test", 
+      labs(title="Prospective prediction for later-treated in Swiss cluster", 
+           subtitle=outcomes.labels[which(outcome.vars==o)],
            x="Randomization p-values",
-           y=TeX("t distance from $T_0 - 1$")) + 
+           y="t distance from the period before the initial placebo treatment period") + 
       geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
       scale_x_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
                          labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
@@ -216,7 +221,7 @@ for(o in outcome.vars){
                           labels=c("IID", "IID Block", 
                                    "Moving block")) +
       theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-            panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
+            panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14), plot.subtitle = element_text(hjust = 0.5, size=12)) + 
       theme(axis.text.y = element_text(size=8))
     
     ggsave(filename = paste0("plots/placebo-pvals-lm-swiss-",o,c,".png"),plot = mc.placebo.plot)

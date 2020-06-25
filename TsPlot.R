@@ -1,4 +1,4 @@
-TsPlot <- function(df, main = "",y.title,vline,breaks,labels,rev) {
+TsPlot <- function(df, main = "",y.title,vline,vline2,breaks,labels,rev) {
   library(ggplot2)
   library(zoo)
   library(scales)
@@ -36,6 +36,7 @@ TsPlot <- function(df, main = "",y.title,vline,breaks,labels,rev) {
   # vertical line to indicate intervention
   
   intervention <- geom_vline(xintercept=vline, linetype=2)
+  intervention2 <- geom_vline(xintercept=vline2, linetype=3)
   
   # horizontal ticks
   
@@ -73,7 +74,7 @@ TsPlot <- function(df, main = "",y.title,vline,breaks,labels,rev) {
                                                 "Predicted LT")) 
   }
   gg.xts <- gg.xts +
-    intervention +
+    intervention + intervention2 +
     ticks + 
     theme( legend.title = element_blank()
            , plot.title = element_text(hjust = 0.5, size = 16)

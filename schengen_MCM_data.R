@@ -9,7 +9,7 @@ library(caret)
 library(parallel)
 library(doParallel)
 
-cores <- 2#detectCores()
+cores <- detectCores()
 
 cl <- parallel::makeForkCluster(cores)
 
@@ -48,16 +48,21 @@ length(always.treated.cbw[!always.treated.cbw%in%switch.treated.cbw]) == length(
 lm <- unique(data$REGION[which(data$treated_LM!=-1)])
 
 never.treated.lm <- unique(data$REGION[which(data$treated_LM=="Controls (internal regions)")])
-switch.treated.lm <- unique(data$REGION[which(data$treated_LM==c("2008: Schengen; 2011: FoM", "2007: FoM; 2009: Schengen"))])
+switch.treated.lm <- unique(data$REGION[which(data$treated_LM==c("2008: Schengen; 2011: FoM", "2007: FoM; 2009: Schengen"))]) # Slovenia (country=="SI") are only in the CBW analysis since they only have treated regions and no suitable internal control regions for the LM analysis
 length(never.treated.lm[!never.treated.lm%in%switch.treated.lm]) == length(never.treated.lm) # ensure these groups don't overlap
 
 # Clusters
+## For X in (CBW,LM)
 ## Eastern cluster (treated_X=1)
 ### SCHENGEN_X=1 from 20081 and FoM_X=1 from 20111
 ## Swiss cluster (treated_X=2)
 ### FoM_X=1 from 2007Q2 and SCHENGEN_X=1 from 2009Q1
 
-# no. results = 2*2*2*9 = 72
+eastern.cluster.cbw <- unique(data$REGION[which(data$treated_CBW %in% c("2008: Schengen; 2011: FoM"))])
+eastern.cluster.lm <- unique(data$REGION[which(data$treated_LM %in% c("2008: Schengen; 2011: FoM"))])
+
+swiss.cluster.cbw <- unique(data$REGION[which(data$treated_CBW %in% c("2007: FoM; 2009: Schengen"))])
+swiss.cluster.lm <- unique(data$REGION[which(data$treated_LM %in% c("2007: FoM; 2009: Schengen"))])
 
 # create yearquarter
 data$quarter <-NA
@@ -75,41 +80,27 @@ covars <- lapply(covariates, function(c){
 
 # Time-invariant covariates
 
-covars.cbw.eastern <- as.matrix(bind_cols(sapply(1:length(covars), function(i){ # all post-treatment years
-  covars[[i]][,which(colnames(covars[[i]])=='20081'):ncol(covars[[i]])][rownames(covars[[i]]) %in% cbw,]
+covars.cbw <- as.matrix(bind_cols(sapply(1:length(covars), function(i){ # only post-treatment years
+  covars[[i]][,which(colnames(covars[[i]])=='20111'):ncol(covars[[i]])][rownames(covars[[i]]) %in% cbw,]
 }))) # N x # predictors
-rownames(covars.cbw.eastern) <- rownames(covars[[1]][rownames(covars[[1]]) %in% cbw,])
+rownames(covars.cbw) <- rownames(covars[[1]][rownames(covars[[1]]) %in% cbw,])
 
-covars.cbw.swiss <- as.matrix(bind_cols(sapply(1:length(covars), function(i){ # all post-treatment years
-  covars[[i]][,which(colnames(covars[[i]])=='20072'):ncol(covars[[i]])][rownames(covars[[i]]) %in% cbw,]
-}))) # N x # predictors
-rownames(covars.cbw.swiss) <- rownames(covars[[1]][rownames(covars[[1]]) %in% cbw,])
-
-covars.lm.eastern <- as.matrix(bind_cols(sapply(1:length(covars), function(i){ # all pre-treatment years
-  covars[[i]][,1:which(colnames(covars[[i]])=='20074')][rownames(covars[[i]]) %in% lm,]
-}))) # N x # predictors
-rownames(covars.lm.eastern) <- rownames(covars[[1]][rownames(covars[[1]]) %in% lm,])
-
-covars.lm.swiss <- as.matrix(bind_cols(sapply(1:length(covars), function(i){ # all pre-treatment years
+covars.lm <- as.matrix(bind_cols(sapply(1:length(covars), function(i){ # only pre-treatment years
   covars[[i]][,1:which(colnames(covars[[i]])=='20071')][rownames(covars[[i]]) %in% lm,]
 }))) # N x # predictors
-rownames(covars.lm.swiss) <- rownames(covars[[1]][rownames(covars[[1]]) %in% lm,])
+rownames(covars.lm) <- rownames(covars[[1]][rownames(covars[[1]]) %in% lm,])
 
 # Remove duplicated columns
 
-covars.cbw.eastern <- covars.cbw.eastern[,!duplicated(t(covars.cbw.eastern))]
-covars.cbw.swiss <- covars.cbw.swiss[,!duplicated(t(covars.cbw.swiss))]
+covars.cbw <- covars.cbw[,!duplicated(t(covars.cbw))]
 
-covars.lm.eastern <- covars.lm.eastern[,!duplicated(t(covars.lm.eastern))]
-covars.lm.swiss <- covars.lm.swiss[,!duplicated(t(covars.lm.swiss))]
+covars.lm <- covars.lm[,!duplicated(t(covars.lm))]
 
 # Impute missing with column medians
 
-covars.cbw.eastern <- predict(preProcess(covars.cbw.eastern, method = c("medianImpute")), covars.cbw.eastern)
-covars.cbw.swiss <- predict(preProcess(covars.cbw.swiss, method = c("medianImpute")), covars.cbw.swiss)
+covars.cbw <- predict(preProcess(covars.cbw, method = c("medianImpute")), covars.cbw)
 
-covars.lm.eastern <- predict(preProcess(covars.lm.eastern, method = c("medianImpute")), covars.lm.eastern)
-covars.lm.swiss <- predict(preProcess(covars.lm.swiss, method = c("medianImpute")), covars.lm.swiss)
+covars.lm <- predict(preProcess(covars.lm, method = c("medianImpute")), covars.lm)
 
 for(o in outcomes){
   print(o)
@@ -136,123 +127,88 @@ for(o in outcomes){
   } 
   
   # Masked matrix for which 0=control units and treated units before treatment and 1=treated units after treatment
-  mask.cbw.eastern <- matrix(0, nrow = nrow(data.cbw ), 
+  mask.cbw <- matrix(0, nrow = nrow(data.cbw ), 
                              ncol= ncol(data.cbw),
                              dimnames = list(rownames(data.cbw), colnames(data.cbw))) # (N x T)
   
-  mask.cbw.swiss <- matrix(0, nrow = nrow(data.cbw ), 
-                           ncol= ncol(data.cbw),
-                           dimnames = list(rownames(data.cbw), colnames(data.cbw))) # (N x T)
-  
-  mask.lm.eastern <- matrix(0, nrow = nrow(data.lm ), 
+  mask.lm <- matrix(0, nrow = nrow(data.lm ), 
                             ncol= ncol(data.lm),
                             dimnames = list(rownames(data.lm), colnames(data.lm))) # (N x T)
   
-  mask.lm.swiss <- matrix(0, nrow = nrow(data.lm ), 
+  # for the eastern group, the treatment period is 20111-20181 (both FoM and Schengen in place)
+  # for the Swiss group, we have 20091-20181 as treatment period (both FoM and Schengen in place)
+  for(i in switch.treated.cbw){
+    mask.cbw[,colnames(mask.cbw)%in%data$yearquarter[data$REGION==i & data$SCHENGEN_CBW==1 & data$FoM_CBW==1]][rownames(mask.cbw)%in%c(i),] <- 1 # retrospective analysis: estimate Y(1)_LT,pre
+  }
+   mask.cbw[rownames(mask.cbw)%in%rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],] <- abs(mask.cbw[rownames(mask.cbw)%in%rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],]-1) # retrospective analysis: estimate Y(1)_LT,pre
+
+  for(i in switch.treated.lm){
+    mask.lm[,colnames(mask.lm)%in%data$yearquarter[data$REGION==i & data$SCHENGEN_LM==1 & data$FoM_LM==1]][rownames(mask.lm)%in%c(i),] <- 1 
+  }
+  
+  ## estimate propensity scores with time-invariant covariates
+  
+  # CBW
+  
+  covars.cbw.reduced <- covars.cbw[rownames(covars.cbw)%in%rownames(mask.cbw),]
+
+  logitMod.cbw <- cv.glmnet(x=covars.cbw.reduced,
+                            y=as.factor(mask.cbw[,"20084"]), # 1 if switch.treated.cbw
+                            family="binomial", nfolds= 10, parallel = TRUE)
+
+  covars.cbw.preds <- as.vector(predict(logitMod.cbw, covars.cbw.reduced, type="response", s ="lambda.min"))
+
+  names(covars.cbw.preds) <- names(as.factor(mask.cbw[,"20084"]))
+  
+  z.cbw.eastern <- round(c(seq(1, 0.7, length.out=which(colnames(mask.cbw)=="20111")),
+                     seq(0.712, 1, length.out=ncol(mask.cbw)-which(colnames(mask.cbw)=="20111"))),3) # elapsed time since treatment
+  
+  z.cbw.swiss <- round(c(seq(1, 0.7, length.out=which(colnames(mask.cbw)=="20091")),
+                           seq(0.719, 1, length.out=ncol(mask.cbw)-which(colnames(mask.cbw)=="20091"))),3)
+  
+  p.weights.cbw <- matrix(0, nrow = nrow(data.cbw ), 
+                                        ncol= ncol(data.cbw),
+                                        dimnames = list(rownames(data.cbw), colnames(data.cbw))) # (N x T)
+  
+  p.weights.cbw[rownames(p.weights.cbw) %in% eastern.cluster.cbw,] <- covars.cbw.preds[names(covars.cbw.preds) %in% eastern.cluster.cbw]%*%t(z.cbw.eastern) # inner product
+  p.weights.cbw[rownames(p.weights.cbw) %in% swiss.cluster.cbw,] <- covars.cbw.preds[names(covars.cbw.preds) %in% swiss.cluster.cbw]%*%t(z.cbw.swiss) # inner product
+  p.weights.cbw[rownames(p.weights.cbw) %in% always.treated.cbw,] <- covars.cbw.preds[names(covars.cbw.preds) %in% always.treated.cbw] # no time adjustment for controls
+  
+  # LM
+  
+  covars.lm.reduced <- covars.lm[rownames(covars.lm)%in%rownames(mask.lm),]
+  
+  logitMod.lm <- cv.glmnet(x=covars.lm.reduced,
+                            y=as.factor(mask.lm[,"20111"]), # 1 if switch.treated.lm
+                            family="binomial", nfolds= 10, parallel = TRUE)
+  
+  covars.lm.preds <- as.vector(predict(logitMod.lm, covars.lm.reduced, type="response", s ="lambda.min"))
+  
+  names(covars.lm.preds) <- names(as.factor(mask.lm[,"20111"]))
+  
+  z.lm.eastern <- round(c(seq(1, 0.7, length.out=which(colnames(mask.lm)=="20111")),
+                           seq(0.712, 1, length.out=ncol(mask.lm)-which(colnames(mask.lm)=="20111"))),3) # elapsed time since treatment
+  
+  z.lm.swiss <- round(c(seq(1, 0.7, length.out=which(colnames(mask.lm)=="20091")),
+                         seq(0.719, 1, length.out=ncol(mask.lm)-which(colnames(mask.lm)=="20091"))),3)
+  
+  p.weights.lm <- matrix(0, nrow = nrow(data.lm ), 
                           ncol= ncol(data.lm),
                           dimnames = list(rownames(data.lm), colnames(data.lm))) # (N x T)
   
-  for(i in switch.treated.cbw){
-    mask.cbw.eastern[,colnames(mask.cbw.eastern)%in%data$yearquarter[data$REGION==i & data$SCHENGEN_CBW==1 & data$treated_CBW=="2008: Schengen; 2011: FoM"]][rownames(mask.cbw.eastern)%in%c(i),] <- 1 # SCHENGEN_X=1 from 20081 and FoM_X=1 from 20111
-  }
-  
-  for(i in switch.treated.cbw){
-    mask.cbw.swiss[,colnames(mask.cbw.swiss)%in%data$yearquarter[data$REGION==i & data$FoM_CBW==1 & data$treated_CBW=="2007: FoM; 2009: Schengen"]][rownames(mask.cbw.swiss)%in%c(i),] <- 1 # FoM_X=1 from 2007Q2 and SCHENGEN_X=1 from 2009Q1
-  }
-  
-  for(i in switch.treated.lm){
-    mask.lm.eastern[,colnames(mask.lm.eastern)%in%data$yearquarter[data$REGION==i & data$SCHENGEN_LM==1 & data$treated_LM=="2008: Schengen; 2011: FoM"]][rownames(mask.lm.eastern)%in%c(i),] <- 1 # SCHENGEN_X=1 from 20081 and FoM_X=1 from 20111
-  }
-  
-  for(i in switch.treated.lm){
-    mask.lm.swiss[,colnames(mask.lm.swiss)%in%data$yearquarter[data$REGION==i & data$FoM_LM==1 & data$treated_LM=="2007: FoM; 2009: Schengen"]][rownames(mask.lm.swiss)%in%c(i),] <- 1 # FoM_X=1 from 2007Q2 and SCHENGEN_X=1 from 2009Q1
-  }
-
-  ## estimate propensity scores with time-invariant covariates
-  
-  # CBW eastern
-  
-  covars.cbw.eastern.reduced <- covars.cbw.eastern[rownames(covars.cbw.eastern)%in%rownames(mask.cbw.eastern),]
-
-  logitMod.cbw.eastern <- cv.glmnet(x=covars.cbw.eastern.reduced, y=as.factor((1-mask.cbw.eastern)[,"20081"]), family="binomial", nfolds= nrow(covars.cbw.eastern.reduced), parallel = TRUE, nlambda=400) # LOO
-
-  covars.cbw.eastern.preds <- as.vector(predict(logitMod.cbw.eastern, covars.cbw.eastern.reduced, type="response", s ="lambda.min"))
-
-  z.cbw.eastern <- round(c(seq(1, 0.5, length.out=which(colnames(mask.cbw.eastern)=="20081")),
-                     seq(0.51, 1, length.out=ncol(mask.cbw.eastern)-which(colnames(mask.cbw.eastern)=="20081"))),3) # elapsed time since treatment
-  
-  p.weights.cbw.eastern <- covars.cbw.eastern.preds%*%t(z.cbw.eastern)
-
-  rownames(p.weights.cbw.eastern) <-rownames(mask.cbw.eastern)
-  colnames(p.weights.cbw.eastern) <-colnames(mask.cbw.eastern)
-  
-  # CBW swiss
-  
-  covars.cbw.swiss.reduced <- covars.cbw.swiss[rownames(covars.cbw.swiss)%in%rownames(mask.cbw.swiss),]
-  
-  logitMod.cbw.swiss <- cv.glmnet(x=covars.cbw.swiss.reduced, y=as.factor((1-mask.cbw.swiss)[,"20072"]), family="binomial", nfolds= nrow(covars.cbw.swiss.reduced), parallel = TRUE, nlambda=400) # LOO
-  
-  covars.cbw.swiss.preds <- as.vector(predict(logitMod.cbw.swiss, covars.cbw.swiss.reduced, type="response", s ="lambda.min"))
-  
-  z.cbw.swiss <- round(c(seq(1, 0.5, length.out=which(colnames(mask.cbw.swiss)=="20072")),
-                           seq(0.51, 1, length.out=ncol(mask.cbw.swiss)-which(colnames(mask.cbw.swiss)=="20072"))),3) # elapsed time since treatment
-  
-  p.weights.cbw.swiss <- covars.cbw.swiss.preds%*%t(z.cbw.swiss)
-  
-  rownames(p.weights.cbw.swiss) <-rownames(mask.cbw.swiss)
-  colnames(p.weights.cbw.swiss) <-colnames(mask.cbw.swiss)
-  
-  # LM eastern
-  
-  covars.lm.eastern.reduced <- covars.lm.eastern[rownames(covars.lm.eastern)%in%rownames(mask.lm.eastern),]
-  
-  logitMod.lm.eastern <- cv.glmnet(x=covars.lm.eastern.reduced, y=as.factor((1-mask.lm.eastern)[,"20081"]), family="binomial", nfolds= nrow(covars.lm.eastern.reduced), parallel = TRUE, nlambda=400) # LOO
-  
-  covars.lm.eastern.preds <- as.vector(predict(logitMod.lm.eastern, covars.lm.eastern.reduced, type="response", s ="lambda.min"))
-  
-  z.lm.eastern <- round(c(seq(1, 0.5, length.out=which(colnames(mask.lm.eastern)=="20081")),
-                           seq(0.51, 1, length.out=ncol(mask.lm.eastern)-which(colnames(mask.lm.eastern)=="20081"))),3) # elapsed time since treatment
-  
-  p.weights.lm.eastern <- covars.lm.eastern.preds%*%t(z.lm.eastern)
-  
-  rownames(p.weights.lm.eastern) <-rownames(mask.lm.eastern)
-  colnames(p.weights.lm.eastern) <-colnames(mask.lm.eastern)
-  
-  # LM swiss
-  
-  covars.lm.swiss.reduced <- covars.lm.swiss[rownames(covars.lm.swiss)%in%rownames(mask.lm.swiss),]
-  
-  logitMod.lm.swiss <- cv.glmnet(x=covars.lm.swiss.reduced, y=as.factor((1-mask.lm.swiss)[,"20072"]), family="binomial", nfolds= nrow(covars.lm.swiss.reduced), parallel = TRUE, nlambda=400) # LOO
-  
-  covars.lm.swiss.preds <- as.vector(predict(logitMod.lm.swiss, covars.lm.swiss.reduced, type="response", s ="lambda.min"))
-  
-  z.lm.swiss <- round(c(seq(1, 0.5, length.out=which(colnames(mask.lm.swiss)=="20072")),
-                         seq(0.51, 1, length.out=ncol(mask.lm.swiss)-which(colnames(mask.lm.swiss)=="20072"))),3) # elapsed time since treatment
-  
-  p.weights.lm.swiss <- covars.lm.swiss.preds%*%t(z.lm.swiss)
-  
-  rownames(p.weights.lm.swiss) <-rownames(mask.lm.swiss)
-  colnames(p.weights.lm.swiss) <-colnames(mask.lm.swiss)
+  p.weights.lm[rownames(p.weights.lm) %in% eastern.cluster.lm,] <- covars.lm.preds[names(covars.lm.preds) %in% eastern.cluster.lm]%*%t(z.lm.eastern) # inner product
+  p.weights.lm[rownames(p.weights.lm) %in% swiss.cluster.lm,] <- covars.lm.preds[names(covars.lm.preds) %in% swiss.cluster.lm]%*%t(z.lm.swiss) # inner product
+  p.weights.lm[rownames(p.weights.lm) %in% never.treated.lm,] <- covars.lm.preds[names(covars.lm.preds) %in% never.treated.lm] # no time adjustment for controls
   
   # Save
   
-  outcomes.cbw.eastern <- list("M"=data.cbw, "mask"=mask.cbw.eastern, "W"= p.weights.cbw.eastern, "X"=covars.cbw.eastern.reduced, 
-                               "treated"=rownames(mask.cbw.eastern)[rownames(mask.cbw.eastern)%in%switch.treated.cbw],
-                               "control"=rownames(mask.cbw.eastern)[rownames(mask.cbw.eastern)%in%always.treated.cbw])
-  outcomes.lm.eastern <- list("M"=data.lm, "mask"=mask.lm.eastern, "W"= p.weights.lm.eastern, "X"=covars.lm.eastern.reduced, 
-                              "treated"=rownames(mask.lm.eastern)[rownames(mask.lm.eastern)%in%switch.treated.lm],
-                              "control"=rownames(mask.lm.eastern)[rownames(mask.lm.eastern)%in%never.treated.lm])
+  outcomes.cbw <- list("M"=data.cbw, "mask"=mask.cbw, "W"= p.weights.cbw, "X"=covars.cbw.reduced, 
+                               "treated"=rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],
+                               "control"=rownames(mask.cbw)[rownames(mask.cbw)%in%always.treated.cbw])
+  outcomes.lm <- list("M"=data.lm, "mask"=mask.lm, "W"= p.weights.lm, "X"=covars.lm.reduced, 
+                              "treated"=rownames(mask.lm)[rownames(mask.lm)%in%switch.treated.lm],
+                              "control"=rownames(mask.lm)[rownames(mask.lm)%in%never.treated.lm])
   
-  outcomes.cbw.swiss <- list("M"=data.cbw, "mask"=mask.cbw.swiss, "W"= p.weights.cbw.swiss, "X"=covars.cbw.swiss.reduced,
-                             "treated"=rownames(mask.cbw.swiss)[rownames(mask.cbw.swiss)%in%switch.treated.cbw],
-                             "control"=rownames(mask.cbw.swiss)[rownames(mask.cbw.swiss)%in%always.treated.cbw])
-  outcomes.lm.swiss <- list("M"=data.lm, "mask"=mask.lm.swiss, "W"= p.weights.lm.swiss, "X"=covars.lm.swiss.reduced, 
-                            "treated"=rownames(mask.lm.swiss)[rownames(mask.lm.swiss)%in%switch.treated.lm],
-                            "control"=rownames(mask.lm.swiss)[rownames(mask.lm.swiss)%in%never.treated.lm])
-  
-  saveRDS(outcomes.cbw.eastern, paste0("data/outcomes-cbw-eastern-",o,".rds"))
-  saveRDS(outcomes.lm.eastern, paste0("data/outcomes-lm-eastern-",o,".rds"))
-  
-  saveRDS(outcomes.cbw.swiss, paste0("data/outcomes-cbw-swiss-",o,".rds"))
-  saveRDS(outcomes.lm.swiss,paste0("data/outcomes-lm-swiss-",o,".rds"))
+  saveRDS(outcomes.cbw, paste0("data/outcomes-cbw-",o,".rds"))
+  saveRDS(outcomes.lm, paste0("data/outcomes-lm-",o,".rds"))
 }
