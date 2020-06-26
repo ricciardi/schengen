@@ -172,7 +172,7 @@ for(o in outcomes){
   
   p.weights.cbw[rownames(p.weights.cbw) %in% eastern.cluster.cbw,] <- covars.cbw.preds[names(covars.cbw.preds) %in% eastern.cluster.cbw]%*%t(z.cbw.eastern) # inner product
   p.weights.cbw[rownames(p.weights.cbw) %in% swiss.cluster.cbw,] <- covars.cbw.preds[names(covars.cbw.preds) %in% swiss.cluster.cbw]%*%t(z.cbw.swiss) # inner product
-  p.weights.cbw[rownames(p.weights.cbw) %in% always.treated.cbw,] <- covars.cbw.preds[names(covars.cbw.preds) %in% always.treated.cbw] # no time adjustment for controls
+  p.weights.cbw[rownames(p.weights.cbw) %in% always.treated.cbw,] <- covars.cbw.preds[names(covars.cbw.preds) %in% always.treated.cbw]%*%t(z.cbw.swiss)
   
   # LM
   
@@ -198,7 +198,7 @@ for(o in outcomes){
   
   p.weights.lm[rownames(p.weights.lm) %in% eastern.cluster.lm,] <- covars.lm.preds[names(covars.lm.preds) %in% eastern.cluster.lm]%*%t(z.lm.eastern) # inner product
   p.weights.lm[rownames(p.weights.lm) %in% swiss.cluster.lm,] <- covars.lm.preds[names(covars.lm.preds) %in% swiss.cluster.lm]%*%t(z.lm.swiss) # inner product
-  p.weights.lm[rownames(p.weights.lm) %in% never.treated.lm,] <- covars.lm.preds[names(covars.lm.preds) %in% never.treated.lm] # no time adjustment for controls
+  p.weights.lm[rownames(p.weights.lm) %in% never.treated.lm,] <- covars.lm.preds[names(covars.lm.preds) %in% never.treated.lm]%*%t(z.lm.eastern)
   
   # Save
   
