@@ -40,11 +40,12 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, treat_indices_order=NULL
     }else{
       est_model_MCPanel_w$impact <- (Y-est_model_MCPanel_w$Mhat)
       if(!is.null(t0)){
-        return()
+        return(as.matrix(colMeans(est_model_MCPanel_w$impact[,t0:ncol(est_model_MCPanel_w$impact)][rownames(est_model_MCPanel_w$impact) %in% treat_indices_order,]))) # get mean post-period impact on treated
       }else{
         return(est_model_MCPanel_w$impact)
+      }
     }
-  } else{
+  }else{
     ## ------
     ## MC-NNM
     ## ------
@@ -59,6 +60,21 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, treat_indices_order=NULL
       est_model_MCPanel$impact <- (Y-est_model_MCPanel$Mhat)
     }
     
-    return(est_model_MCPanel$impact)
+    if(rev){
+      est_model_MCPanel$impact <- (est_model_MCPanel$Mhat-Y)
+      
+      if(!is.null(t0)){
+        return(as.matrix(colMeans(est_model_MCPanel$impact[,1:(t0-1)][rownames(est_model_MCPanel$impact) %in% treat_indices_order,]))) # get mean pre-period impact on treated
+      }else{
+        return(est_model_MCPanel$impact)
+      }
+    }else{
+      est_model_MCPanel$impact <- (Y-est_model_MCPanel$Mhat)
+      if(!is.null(t0)){
+        return(as.matrix(colMeans(est_model_MCPanel$impact[,t0:ncol(est_model_MCPanel$impact)][rownames(est_model_MCPanel$impact) %in% treat_indices_order,]))) # get mean post-period impact on treated
+      }else{
+        return(est_model_MCPanel$impact)
+      }
+    }
   }
 }

@@ -214,9 +214,8 @@ for(o in outcomes){
   best.var.outcome.cbw.m <- as.matrix(covars.cbw[[gsub('.{5}$', '', best.var.outcome.cbw)]][rownames(covars.cbw[[1]])%in%rownames(mask.cbw),])
   outcomes.impute.cbw <- list("M"=best.var.outcome.cbw.m, # outcome is best covariate for outcome model
                                 "mask"=mask.cbw, 
-                              "W"= matrix(1-.Machine
-                                          $double.eps, nrow(mask.cbw),ncol(mask.cbw),
-                                          dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are virtually 1
+                              "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
+                                          dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are equal
   
   impute.best.var.outcome.cbw <- MCEst(outcomes.impute.cbw, rev=TRUE, covars=FALSE, nofes=TRUE) # run with no FEs
   best.var.outcome.cbw.hat <- best.var.outcome.cbw.m*(1-mask.cbw) + impute.best.var.outcome.cbw$Mhat*mask.cbw # only endogenous values imputed
@@ -229,9 +228,8 @@ for(o in outcomes){
   best.var.treatment.cbw.m <- as.matrix(covars.cbw[[gsub('.{5}$', '', best.var.treatment.cbw)]][rownames(covars.cbw[[1]])%in%rownames(mask.cbw),])
   treatment.impute.cbw <- list("M"=best.var.treatment.cbw.m, # outcome is best covariate for propensity model
                               "mask"=mask.cbw, 
-                              "W"= matrix(1-.Machine
-                                          $double.eps, nrow(mask.cbw),ncol(mask.cbw),
-                                          dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are virtually 1
+                              "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
+                                          dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are equal
   
   impute.best.var.treatment.cbw <- MCEst(treatment.impute.cbw, rev=TRUE, covars=FALSE, nofes=TRUE) # run with no FEs
   best.var.treatment.cbw.hat <- best.var.treatment.cbw.m*(1-mask.cbw) + impute.best.var.treatment.cbw$Mhat*mask.cbw # only endogenous values imputed
@@ -241,14 +239,15 @@ for(o in outcomes){
   
   ## Est propensity scores as a function of best propensity model variable
   
-  propensity.model.cbw <- mcnnm_wc_cv(M = mask.cbw, 
-                                      C = best.var.treatment.cbw.m, # best propensity model var with endogenous values
-                                      mask = matrix(1, nrow(mask.cbw),ncol(mask.cbw),
-                                             dimnames = list(rownames(mask.cbw), colnames(mask.cbw))), # no missing entries
-                                      W = matrix(1,nrow(mask.cbw),ncol(mask.cbw)),
-                                      to_normalize = 1, 
-                                      to_estimate_u = 0, to_estimate_v = 0, # no covariates
-                                      num_lam_L = 5, num_lam_B = 5, niter = 1000, rel_tol = 1e-03, cv_ratio = 0.8, num_folds = 2, is_quiet = 1)
+  propensity.model.cbw.data <- list("M"=mask.cbw, 
+                                   "X" = best.var.treatment.cbw.m, # var with endogenous values
+                                   "X.hat"= best.var.treatment.cbw.hat, # var with imputed endogenous values
+                                   "mask" = matrix(0, nrow(mask.cbw),ncol(mask.cbw),
+                                                   dimnames = list(rownames(mask.cbw), colnames(mask.cbw))), # no missing entries
+                                   "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
+                                               dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are virtually 1
+  
+  propensity.model.cbw <- MCEst(propensity.model.cbw.data, rev=FALSE, covars=TRUE, nofes=TRUE) # run with no FEs
   
   propensity.model.cbw$E <-propensity.model.cbw$L +  replicate(ncol(mask.cbw), as.vector(best.var.treatment.cbw.hat%*%propensity.model.cbw$B)) # reconstruct with imputed endogenous values
   
@@ -327,9 +326,8 @@ for(o in outcomes){
   best.var.outcome.lm.m <- as.matrix(covars.lm[[gsub('.{5}$', '', best.var.outcome.lm)]][rownames(covars.lm[[1]])%in%rownames(mask.lm),])
   outcomes.impute.lm <- list("M"=best.var.outcome.lm.m, # outcome is best covariate
                               "mask"=mask.lm, 
-                              "W"= matrix(1-.Machine
-                                          $double.eps, nrow(mask.lm),ncol(mask.lm),
-                                          dimnames = list(rownames(mask.lm), colnames(mask.lm))))# weights are virtually 1
+                              "W"= matrix(0.5, nrow(mask.lm),ncol(mask.lm),
+                                          dimnames = list(rownames(mask.lm), colnames(mask.lm)))) # equal weights
   
   impute.best.var.outcome.lm <- MCEst(outcomes.impute.lm, rev=FALSE, covars=FALSE, nofes=TRUE) # run with no FEs
   best.var.outcome.lm.hat <- best.var.outcome.lm.m*(1-mask.lm) + impute.best.var.outcome.lm$Mhat*mask.lm # only endogenous values imputed
@@ -342,9 +340,8 @@ for(o in outcomes){
   best.var.treatment.lm.m <- as.matrix(covars.lm[[gsub('.{5}$', '', best.var.treatment.lm)]][rownames(covars.lm[[1]])%in%rownames(mask.lm),])
   treatment.impute.lm <- list("M"=best.var.treatment.lm.m, # outcome is best covariate
                                "mask"=mask.lm, 
-                               "W"= matrix(1-.Machine
-                                           $double.eps, nrow(mask.lm),ncol(mask.lm),
-                                           dimnames = list(rownames(mask.lm), colnames(mask.lm))))# weights are virtually 1
+                               "W"= matrix(0.5, nrow(mask.lm),ncol(mask.lm),
+                                           dimnames = list(rownames(mask.lm), colnames(mask.lm)))) # equal weights
   
   impute.best.var.treatment.lm <- MCEst(treatment.impute.lm, rev=FALSE, covars=FALSE, nofes=TRUE) # run with no FEs
   best.var.treatment.lm.hat <- best.var.treatment.lm.m*(1-mask.lm) + impute.best.var.treatment.lm$Mhat*mask.lm # only endogenous values imputed
@@ -354,14 +351,15 @@ for(o in outcomes){
   
   ## Est propensity scores as a function of best propensity model variable (with endogenous values)
   
-  propensity.model.lm <- mcnnm_wc_cv(M = mask.lm, 
-                                      C = best.var.treatment.lm.m, # var with endogenous values
-                                      mask = matrix(1, nrow(mask.lm),ncol(mask.lm),
-                                                    dimnames = list(rownames(mask.lm), colnames(mask.lm))), # no missing entries
-                                      W = matrix(1,nrow(mask.lm),ncol(mask.lm)),
-                                      to_normalize = 1, 
-                                      to_estimate_u = 0, to_estimate_v = 0, 
-                                      num_lam_L = 5, num_lam_B = 5, niter = 1000, rel_tol = 1e-03, cv_ratio = 0.8, num_folds = 2, is_quiet = 1)
+  propensity.model.lm.data <- list("M"=mask.lm, 
+                              "X" = best.var.treatment.lm.m, # var with endogenous values
+                              "X.hat"= best.var.treatment.lm.hat, # var with imputed endogenous values
+                              "mask" = matrix(0, nrow(mask.lm),ncol(mask.lm),
+                                            dimnames = list(rownames(mask.lm), colnames(mask.lm))), # no missing entries
+                              "W"= matrix(0.5, nrow(mask.lm),ncol(mask.lm),
+                                          dimnames = list(rownames(mask.lm), colnames(mask.lm))))# weights are virtually 1
+  
+  propensity.model.lm <- MCEst(outcomes=propensity.model.lm.data, rev=FALSE, covars=TRUE, nofes=TRUE) # run with no FEs
   
   propensity.model.lm$E <-propensity.model.lm$L +  replicate(ncol(mask.lm), as.vector(best.var.treatment.lm.hat%*%propensity.model.lm$B)) # reconstruct with imputed endogenous values
   

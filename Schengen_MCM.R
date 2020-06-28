@@ -22,8 +22,7 @@ RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 
 for(o in outcome.vars){
-  print(o)
-  
+
   ## Analysis 1: ST vs AT (retrospective, X=CBW) 
   
   print(paste0("Estimates for Analysis 1, outcome:",o))
@@ -50,8 +49,10 @@ for(o in outcome.vars){
   t0 <- which(colnames(outcomes.cbw$M)=="20091")
   treat_indices_order <- outcomes.lm$treated
   
-  boot.trajectory <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X, X.hat=outcomes.cbw$X.hat, treat_indices_order=treat_indices_order, covars=FALSE, rev=TRUE, t0 =t0, R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
-  saveRDS(boot, paste0("results/boot-trajectory-cbw-",o,".rds")) # bootstrap for ATT trajectory
+  boot.trajectory <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X, X.hat=outcomes.cbw$X.hat, treat_indices_order=treat_indices_order, covars=FALSE, rev=TRUE, t0=t0, R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
+  saveRDS(boot.trajectory, paste0("results/boot-trajectory-cbw-",o,".rds")) # bootstrap for ATT trajectory
+  
+  print(paste0("Analysis 1, outcome",o, "ATT:",boot.trajectory$t0,"CI:",boot.ci(boot.trajectory)))
   
   ## Analysis 2: ST vs NT (forward, X=LM)
   
