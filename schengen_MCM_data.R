@@ -178,10 +178,10 @@ for(o in outcomes){
   tmp_coeffs <- coef(cvfit.outcome.cbw, s = "lambda.min")[[1]] # same nonzero variables for time series
   tmp_coeffs <- data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)[-1,] # rm intercept
   op <- options(warn=2)
-  best.var.outcome.cbw <- try(as.character(tmp_coeffs$name[which(tmp_coeffs$coefficient == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
+  best.var.outcome.cbw <- try(as.character(tmp_coeffs$name[which(abs(tmp_coeffs$coefficient) == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
   warn.var.outcome.cbw <- FALSE
   
-  if(is(best.var.outcome.cbw ,"try-error")){ # if all nonzero randomly select covar
+  if(is(best.var.outcome.cbw ,"try-error") || is.null(best.var.outcome.cbw)){ # if all nonzero randomly select covar
     warn.var.outcome.cbw <- TRUE
     best.var.outcome.cbw <- sample(colnames(covars.cbw.combined),1)
   }
@@ -197,10 +197,10 @@ for(o in outcomes){
   tmp_coeffs <- coef(cvfit.treatment.cbw, s = "lambda.min")
   tmp_coeffs <- data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)[-1,] # rm intercept
   op <- options(warn=2)
-  best.var.treatment.cbw <- try(as.character(tmp_coeffs$name[which(tmp_coeffs$coefficient == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
+  best.var.treatment.cbw <- try(as.character(tmp_coeffs$name[which(abs(tmp_coeffs$coefficient) == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
   warn.var.treatment.cbw <- FALSE
   
-  if(is(best.var.treatment.cbw ,"try-error")){ # if all nonzero randomly select covar
+  if(is(best.var.treatment.cbw ,"try-error") || is.null(best.var.treatment.cbw)){ # if all nonzero randomly select covar
     warn.var.treatment.cbw <- TRUE
     best.var.treatment.cbw <- sample(colnames(covars.cbw.combined),1)
   }
@@ -218,7 +218,7 @@ for(o in outcomes){
                                           $double.eps, nrow(mask.cbw),ncol(mask.cbw),
                                           dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are virtually 1
   
-  impute.best.var.outcome.cbw <- MCEst(outcomes.impute.cbw, covars=FALSE, nofes=TRUE) # run with no FEs
+  impute.best.var.outcome.cbw <- MCEst(outcomes.impute.cbw, rev=TRUE, covars=FALSE, nofes=TRUE) # run with no FEs
   best.var.outcome.cbw.hat <- best.var.outcome.cbw.m*(1-mask.cbw) + impute.best.var.outcome.cbw$Mhat*mask.cbw # only endogenous values imputed
 
   colnames(best.var.outcome.cbw.hat) <- colnames(mask.cbw)
@@ -233,7 +233,7 @@ for(o in outcomes){
                                           $double.eps, nrow(mask.cbw),ncol(mask.cbw),
                                           dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are virtually 1
   
-  impute.best.var.treatment.cbw <- MCEst(treatment.impute.cbw, covars=FALSE, nofes=TRUE) # run with no FEs
+  impute.best.var.treatment.cbw <- MCEst(treatment.impute.cbw, rev=TRUE, covars=FALSE, nofes=TRUE) # run with no FEs
   best.var.treatment.cbw.hat <- best.var.treatment.cbw.m*(1-mask.cbw) + impute.best.var.treatment.cbw$Mhat*mask.cbw # only endogenous values imputed
   
   colnames(best.var.treatment.cbw.hat) <- colnames(mask.cbw)
@@ -294,10 +294,10 @@ for(o in outcomes){
   tmp_coeffs <- coef(cvfit.outcome.lm, s = "lambda.min")[[1]] # same nonzero variables for time series
   tmp_coeffs <- data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)[-1,] # rm intercept
   op <- options(warn=2)
-  best.var.outcome.lm <- try(as.character(tmp_coeffs$name[which(tmp_coeffs$coefficient == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
+  best.var.outcome.lm <- try(as.character(tmp_coeffs$name[which(abs(tmp_coeffs$coefficient) == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
   warn.var.outcome.lm <- FALSE
   
-  if(is(best.var.outcome.lm ,"try-error")){ # if all nonzero randomly select covar
+  if(is(best.var.outcome.lm ,"try-error") || is.null(best.var.outcome.lm)){ # if all nonzero randomly select covar
     warn.var.outcome.lm <- TRUE
     best.var.outcome.lm <- sample(colnames(covars.lm.combined),1)
   }
@@ -313,9 +313,9 @@ for(o in outcomes){
   tmp_coeffs <- coef(cvfit.treatment.lm, s = "lambda.min")
   tmp_coeffs <- data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)[-1,] # rm intercept
   op <- options(warn=2)
-  best.var.treatment.lm <- try(as.character(tmp_coeffs$name[which(tmp_coeffs$coefficient == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
+  best.var.treatment.lm <- try(as.character(tmp_coeffs$name[which(abs(tmp_coeffs$coefficient) == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
   warn.var.treatment.lm <- FALSE
-  if(is(best.var.treatment.lm ,"try-error")){ # if all nonzero
+  if(is(best.var.treatment.lm ,"try-error") || is.null(best.var.treatment.lm)){ # if all nonzero
     warn.var.treatment.lm <- TRUE
     best.var.treatment.lm <- sample(colnames(covars.lm.combined),1)
   }
@@ -324,7 +324,6 @@ for(o in outcomes){
   ## Impute endogenous values of best covars
   
   # Outcome model variable
-  source('MCEst.R')
   best.var.outcome.lm.m <- as.matrix(covars.lm[[gsub('.{5}$', '', best.var.outcome.lm)]][rownames(covars.lm[[1]])%in%rownames(mask.lm),])
   outcomes.impute.lm <- list("M"=best.var.outcome.lm.m, # outcome is best covariate
                               "mask"=mask.lm, 
@@ -332,7 +331,7 @@ for(o in outcomes){
                                           $double.eps, nrow(mask.lm),ncol(mask.lm),
                                           dimnames = list(rownames(mask.lm), colnames(mask.lm))))# weights are virtually 1
   
-  impute.best.var.outcome.lm <- MCEst(outcomes.impute.lm, covars=FALSE, nofes=TRUE) # run with no FEs
+  impute.best.var.outcome.lm <- MCEst(outcomes.impute.lm, rev=FALSE, covars=FALSE, nofes=TRUE) # run with no FEs
   best.var.outcome.lm.hat <- best.var.outcome.lm.m*(1-mask.lm) + impute.best.var.outcome.lm$Mhat*mask.lm # only endogenous values imputed
   
   colnames(best.var.outcome.lm.hat) <- colnames(mask.lm)
@@ -347,7 +346,7 @@ for(o in outcomes){
                                            $double.eps, nrow(mask.lm),ncol(mask.lm),
                                            dimnames = list(rownames(mask.lm), colnames(mask.lm))))# weights are virtually 1
   
-  impute.best.var.treatment.lm <- MCEst(treatment.impute.lm, covars=FALSE, nofes=TRUE) # run with no FEs
+  impute.best.var.treatment.lm <- MCEst(treatment.impute.lm, rev=FALSE, covars=FALSE, nofes=TRUE) # run with no FEs
   best.var.treatment.lm.hat <- best.var.treatment.lm.m*(1-mask.lm) + impute.best.var.treatment.lm$Mhat*mask.lm # only endogenous values imputed
   
   colnames(best.var.treatment.lm.hat) <- colnames(mask.lm)

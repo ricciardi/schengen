@@ -1,4 +1,4 @@
-MCEst <- function(outcomes,covars=TRUE,nofes=FALSE) {
+MCEst <- function(outcomes,rev=TRUE,covars=TRUE,nofes=FALSE) {
   
   Y <- outcomes$M # NxT 
   
@@ -27,10 +27,14 @@ MCEst <- function(outcomes,covars=TRUE,nofes=FALSE) {
     
     est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 5, num_lam_B = 5, niter = 1000, rel_tol = 1e-03, cv_ratio = 0.8, num_folds = 2, is_quiet = 1) 
     
-    est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v))
+    est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v)) # use X with imputed endogenous values
     
-    est_model_MCPanel_w$impact <- (Y-est_model_MCPanel_w$Mhat)
-  
+    if(rev){
+      est_model_MCPanel_w$impact <- (est_model_MCPanel_w$Mhat-Y)
+    }else{
+      est_model_MCPanel_w$impact <- (Y-est_model_MCPanel_w$Mhat)
+    }
+    
     return(est_model_MCPanel_w)
   } else{
     ## ------
@@ -45,7 +49,11 @@ MCEst <- function(outcomes,covars=TRUE,nofes=FALSE) {
       est_model_MCPanel$Mhat <- est_model_MCPanel$L + replicate(T,est_model_MCPanel$u) + t(replicate(N,est_model_MCPanel$v))
     }
 
-    est_model_MCPanel$impact <- (Y-est_model_MCPanel$Mhat)
+    if(rev){
+      est_model_MCPanel$impact <- (est_model_MCPanel$Mhat-Y)
+    }else{
+      est_model_MCPanel$impact <- (Y-est_model_MCPanel$Mhat)
+    }
     
     return(est_model_MCPanel)
   }

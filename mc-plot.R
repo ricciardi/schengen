@@ -13,16 +13,12 @@ library(wesanderson)
 
 source("TsPlot.R")
 
-PlotMCCapacity <- function(observed,main,y.title,mc_est,boot_result,treated,control,eastern,swiss,vline,vline2,breaks,labels,att.label,rev){
+PlotMCCapacity <- function(observed,main,y.title,mc_est,boot_result,treated,control,eastern,swiss,vline,vline2,breaks,labels,att.label){
   ## Create time series data
   
   predicted <- mc_est$Mhat
   
-  if(rev){
-    pointwise <- predicted-observed
-  }else{
-    pointwise <- mc_est$impact # est_model_MCPanel_w$impact <- (Y-est_model_MCPanel_w$Mhat)
-  }
+  pointwise <- mc_est$impact # = boot_result$t0
   
   pointwise.se <- matrix(apply(boot_result$t, 2, sd), nrow=dim(pointwise)[1], ncol=dim(pointwise)[2], byrow=FALSE)
   
@@ -65,7 +61,7 @@ PlotMCCapacity <- function(observed,main,y.title,mc_est,boot_result,treated,cont
   
   ts.means.m$series<- factor(ts.means.m$series, levels=c("Observed/predicted", att.label)) # reverse order
   
-  ts.plot <- TsPlot(df=ts.means.m,main=main, y.title=y.title,vline,vline2,breaks,labels,rev)
+  ts.plot <- TsPlot(df=ts.means.m,main=main, y.title=y.title,vline,vline2,breaks,labels)
   
   return(ts.plot)
 }
@@ -106,8 +102,7 @@ for(o in outcome.vars){
                               vline=20091,vline2=20111,
                               breaks=c(20051,20072,20091,20111,20184),
                               labels=c("20051","20072","20091","20111","20184"),
-                              att.label = TeX("$\\hat{\\bar{\\tau}}_t$"),
-                              rev=TRUE)
+                              att.label = TeX("$\\hat{\\bar{\\tau}}_t$"))
     
     ggsave(paste0("plots/mc-estimates-cbw-",o,c,".png"), mc.plot, width=8.5, height=11)
     
@@ -131,8 +126,7 @@ for(o in outcome.vars){
                               vline=20072,vline2=20091,
                               breaks=c(20051,20072,20091,20111,20184),
                               labels=c("20051","20072","20091","20111","20184"),
-                              att.label = TeX("$\\hat{\\bar{\\tau}}_t$"),
-                              rev=FALSE)
+                              att.label = TeX("$\\hat{\\bar{\\tau}}_t$"))
     
     ggsave(paste0("plots/mc-estimates-lm-",o,c,".png"), mc.plot, width=8.5, height=11)
     
