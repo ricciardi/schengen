@@ -1,4 +1,4 @@
-MCEst <- function(outcomes,covars=TRUE) {
+MCEst <- function(outcomes,covars=TRUE,nofes=FALSE) {
   
   Y <- outcomes$M # NxT 
   
@@ -13,20 +13,21 @@ MCEst <- function(outcomes,covars=TRUE) {
   
   weights <- outcomes$W
   weights <- weights[rownames(weights) %in% row.names(Y),]
-  weights <- weights[row.names(Y),]  # reorder
+  weights <- weights[row.names(Y),]  # ensure correct order
   
-  weights[rownames(weights) %in% outcomes$control,] <- (weights[rownames(weights) %in% outcomes$control,])/(1-weights[rownames(weights) %in% outcomes$control,]) # control
-  weights[rownames(weights) %in% outcomes$treated,] <- 1/weights[rownames(weights) %in% outcomes$treated,] # treated
-  
+  weights <- (weights)/(1-weights) 
+
   if(covars){
     
     ## ------
     ## MC-NNM-W
     ## ------
+    X <- outcomes$X # NxT
+    X.hat <- outcomes$X.hat # imputed endogenous values
     
-    est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = weights, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 3, num_lam_B = 3, niter = 1000, rel_tol = 1e-03, cv_ratio = 0.8, num_folds = 2, is_quiet = 1) 
+    est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 5, num_lam_B = 5, niter = 1000, rel_tol = 1e-03, cv_ratio = 0.8, num_folds = 2, is_quiet = 1) 
     
-    est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + weights*est_model_MCPanel_w$B + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v))
+    est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v))
     
     est_model_MCPanel_w$impact <- (Y-est_model_MCPanel_w$Mhat)
   
@@ -35,10 +36,14 @@ MCEst <- function(outcomes,covars=TRUE) {
     ## ------
     ## MC-NNM
     ## ------
-
-    est_model_MCPanel <- mcnnm_cv(M = Y_obs, mask = treat_mat, W = weights, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 10, niter = 1000, rel_tol = 1e-03, cv_ratio = 0.8, num_folds = 2, is_quiet = 1)
     
-    est_model_MCPanel$Mhat <- est_model_MCPanel$L + replicate(T,est_model_MCPanel$u) + t(replicate(N,est_model_MCPanel$v))
+    if(nofes){
+      est_model_MCPanel <- mcnnm_cv(M = Y_obs, mask = treat_mat, W = weights, to_estimate_u = 0, to_estimate_v = 0, num_lam_L = 10, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 2, is_quiet = 1)
+      est_model_MCPanel$Mhat <- est_model_MCPanel$L 
+    }else{
+      est_model_MCPanel <- mcnnm_cv(M = Y_obs, mask = treat_mat, W = weights, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 10, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 2, is_quiet = 1)
+      est_model_MCPanel$Mhat <- est_model_MCPanel$L + replicate(T,est_model_MCPanel$u) + t(replicate(N,est_model_MCPanel$v))
+    }
 
     est_model_MCPanel$impact <- (Y-est_model_MCPanel$Mhat)
     

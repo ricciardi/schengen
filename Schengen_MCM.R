@@ -44,7 +44,7 @@ for(o in outcome.vars){
   # Block resampling with fixed block lengths of length l)
   source("MCEstBoot.R")
   
-  boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, treated=outcomes.cbw$treated, control=outcomes.cbw$control, covars=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
+  boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X,X.hat=outcomes.cbw$X.hat, treated=outcomes.cbw$treated, control=outcomes.cbw$control, covars=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
   saveRDS(boot, paste0("results/boot-cbw-",o,".rds"))
   
   # Get p-values
@@ -65,6 +65,8 @@ for(o in outcome.vars){
 
   ## Analysis 2: ST vs NT (forward, X=LM)
   
+  if(o %in% c("CBWbord","CBWbordEMPL")) next
+  
   print(paste0("Estimates for Analysis 2, outcome:",o))
   
   outcomes.lm <- readRDS(paste0("data/outcomes-lm-",o,".rds"))
@@ -80,7 +82,7 @@ for(o in outcome.vars){
   
   # Block resampling with fixed block lengths of length l)
   
-  boot <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, treated=outcomes.lm$treated, control=outcomes.lm$control, covars=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
+  boot <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, X=outcomes.lm$X,X.hat=outcomes.lm$X.hat, treated=outcomes.lm$treated, control=outcomes.lm$control, covars=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
   saveRDS(boot, paste0("results/boot-lm-",o,".rds"))
   
   # Get p-values
