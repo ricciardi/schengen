@@ -92,7 +92,7 @@ for(o in outcome.vars){
   
   # Block resampling with fixed block lengths of length l)
   
-  boot.lm <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, rev=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "geom") 
+  boot.lm <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, covars=FALSE, rev=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "geom") 
 
   saveRDS(boot.lm, paste0("results/boot-lm-",o,".rds"))
   
