@@ -172,6 +172,7 @@ for(o in outcomes){
                              y=data.cbw[,1:which(colnames(data.cbw)=='20091')], # pre treatment series 
                              family="mgaussian",
                              standardize.response = TRUE,
+                             nlambda=200,
                              parallel = TRUE)
   
   # variables with non-zero estimated coefficients: 
@@ -192,7 +193,7 @@ for(o in outcomes){
 
   cvfit.treatment.cbw  <- cv.glmnet(x=covars.cbw.combined,# post-treatment series
                             y=as.factor(mask.cbw[,"20084"]), # 1 if switch.treated.cbw
-                            family="binomial", parallel = TRUE)
+                            family="binomial", nlambda=200, parallel = TRUE)
   
   # variables with non-zero estimated coefficients: 
   tmp_coeffs <- coef(cvfit.treatment.cbw, s = "lambda.min")
@@ -203,7 +204,7 @@ for(o in outcomes){
   
   treatment.cbw  <- cv.glmnet(x=covars.cbw.combined[,c(best.vars.outcome.cbw,best.vars.treatment.cbw)],
                               y=as.factor(mask.cbw[,"20084"]), # 1 if switch.treated.cbw
-                              family="binomial", parallel = TRUE)
+                              family="binomial", nlambda=200, parallel = TRUE)
   
   preds.cbw.treatment <- as.vector(predict(treatment.cbw, covars.cbw.combined[,c(best.vars.outcome.cbw,best.vars.treatment.cbw)], type="response", s = "lambda.min"))
   
@@ -256,6 +257,7 @@ for(o in outcomes){
                                  y=data.lm[,which(colnames(data.lm)=='20111'):ncol(data.lm)], # post-treatment series 
                                  family="mgaussian",
                                  standardize.response = TRUE,
+                                 nlambda=200,
                                  parallel = TRUE)
   
   # variables with non-zero estimated coefficients: 
@@ -276,7 +278,7 @@ for(o in outcomes){
   
   cvfit.treatment.lm  <- cv.glmnet(x=covars.lm.combined, # pre-treatment series
                                     y=as.factor(mask.lm[,"20111"]), # 1 if switch.treated.lm
-                                    family="binomial", parallel = TRUE)
+                                    family="binomial", nlambda=200,parallel = TRUE)
   
   # variables with non-zero estimated coefficients: 
   tmp_coeffs <- coef(cvfit.treatment.lm, s = "lambda.min")
@@ -287,7 +289,7 @@ for(o in outcomes){
   
   treatment.lm  <- cv.glmnet(x=covars.lm.combined[,c(best.vars.outcome.lm,best.vars.treatment.lm)],
                               y=as.factor(mask.lm[,"20111"]), # 1 if switch.treated.lm
-                              family="binomial", parallel = TRUE)
+                              family="binomial", nlambda=200, parallel = TRUE)
   
   preds.lm.treatment <- as.vector(predict(treatment.lm, covars.lm.combined[,c(best.vars.outcome.lm,best.vars.treatment.lm)], type="response", s = "lambda.min"))
   
