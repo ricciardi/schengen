@@ -29,7 +29,7 @@ data <- read.dta13("FINAL.dta", generate.factors=T) # includes variables for 2 a
 ## inactivity rate (inact)
 ## % of unemployed with unemployment duration less than 1 month (seekdur_0), 1-2 months (seekdur_1_2), 3 months or more (seekdur_3more).
 
-outcomes <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcomes <- c("N_CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 
 ## Covariates:
 
@@ -37,7 +37,8 @@ covariates <- c("AV_age_22","AV_age_27","AV_age_32","AV_age_37","AV_age_42","AV_
                 "AV_women",
                 "AV_lowEDU","AV_mediumEDU","AV_highEDU",
                 "AV_migr",
-                "HHincome_COUNTRY")
+                "HHincome_COUNTRY",
+                "pop")
 covariates.cbw <- c("GDPcapitaR","R_GDPcapitaR","density", "R_HHincome_COUNTRY2","R_HHincome_COUNTRY","XCGvsEURO_05") # analysis specific covars
 covariates.lm <- c("AV_HHsize","AV_HHsizeCHILD","AV_HHsizeOLD","AV_single","AV_oneadultNOCHILD","AV_oneadultCHILD",   # drop Lang b.c it is time invariant
                 "AV_coupleNOCHILD","AV_coupleCHILD","AV_pcWORK")
@@ -177,10 +178,15 @@ for(o in outcomes){
   tmp_coeffs <- coef(cvfit.outcome.cbw, s = "lambda.min")[[1]] # same nonzero variables for time series
   tmp_coeffs <- data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)[-1,] # rm intercept
   op <- options(warn=2)
-  best.vars.outcome.cbw <- try(as.character(tmp_coeffs$name)) 
-  best.var.outcome.cbw <- try(as.character(tmp_coeffs$name[which(abs(tmp_coeffs$coefficient) == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
   warn.var.outcome.cbw <- FALSE
+  if(o=="N_CBWbord"){
+    best.var.outcome.cbw <- "pop" # control for pop for this outcome
+  }else{
+    best.var.outcome.cbw <- try(as.character(tmp_coeffs$name[which(abs(tmp_coeffs$coefficient) == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
+  }
   
+  best.vars.outcome.cbw <- try(as.character(tmp_coeffs$name)) 
+
   if(is(best.var.outcome.cbw ,"try-error") || is(best.vars.outcome.cbw,"try-error") || best.var.outcome.cbw=="0"){ # if all nonzero randomly select covar
     warn.var.outcome.cbw <- TRUE
     best.var.outcome.cbw <- best.vars.outcome.cbw <-sample(colnames(covars.cbw.combined),1)
