@@ -201,7 +201,7 @@ for(o in outcomes){
   best.vars.treatment.cbw <- as.character(tmp_coeffs$name)
   warn.var.treatment.cbw <-FALSE
   
-  if(best.vars.treatment.cbw=="0"){ # if all nonzero randomly select covar
+  if(identical(best.vars.treatment.cbw, character(0))){ # if all nonzero randomly select covar
     warn.var.treatment.cbw <-TRUE
     best.vars.treatment.cbw <- sample(colnames(covars.cbw.combined),1)
   }
@@ -299,7 +299,7 @@ for(o in outcomes){
   best.vars.treatment.lm <- as.character(tmp_coeffs$name)
   warn.var.treatment.lm <- FALSE
   
-  if(best.vars.treatment.lm=="0"){ # if all nonzero randomly select covar
+  if(identical(best.vars.treatment.lm, character(0))){ # if all nonzero randomly select covar
     warn.var.treatment.lm <- TRUE
     best.vars.treatment.lm <- sample(colnames(covars.lm.combined),1)
   }
