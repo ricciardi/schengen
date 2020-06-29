@@ -281,13 +281,18 @@ for(o in outcomes){
   tmp_coeffs <- coef(cvfit.outcome.lm, s = "lambda.min")[[1]] # same nonzero variables for time series
   tmp_coeffs <- data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)[-1,] # rm intercept
   op <- options(warn=2)
-  best.vars.outcome.lm <-try(as.character(tmp_coeffs$name))
-  best.var.outcome.lm <- try(as.character(tmp_coeffs$name[which(abs(tmp_coeffs$coefficient) == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
   warn.var.outcome.lm <- FALSE
+  if(o=="N_lmbord"){
+    best.var.outcome.lm <- "pop" # control for pop for this outcome
+  }else{
+    best.var.outcome.lm <- try(as.character(tmp_coeffs$name[which(abs(tmp_coeffs$coefficient) == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
+  }
   
-  if(is(best.var.outcome.lm ,"try-error") || is(best.vars.outcome.lm ,"try-error") || best.var.outcome.lm=="0"){ # if all nonzero randomly select covar
+  best.vars.outcome.lm <- try(as.character(tmp_coeffs$name)) 
+  
+  if(is(best.var.outcome.lm ,"try-error") || is(best.vars.outcome.lm,"try-error") || best.var.outcome.lm=="0"){ # if all nonzero randomly select covar
     warn.var.outcome.lm <- TRUE
-    best.var.outcome.lm <-best.vars.outcome.lm <- sample(colnames(covars.lm.combined),1)
+    best.var.outcome.lm <- best.vars.outcome.lm <-sample(colnames(covars.lm.combined),1)
   }
   options(op)
   
