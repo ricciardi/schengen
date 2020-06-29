@@ -21,6 +21,7 @@ RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 data <- read.dta13("FINAL.dta", generate.factors=T) # includes variables for 2 analyses + covariates 
 
 ## Outcomes:
+## N_CBWbord: number of cross-border workers in the region
 ## CBWbord: share of residents working in another country, which shares the border with the region of residence, unconditional on employment
 ## CBWbordEMPL: share of residents working in another country, which shares the border with the region of residence, conditional on employment
 ## regional employment rate (empl),
@@ -29,7 +30,7 @@ data <- read.dta13("FINAL.dta", generate.factors=T) # includes variables for 2 a
 ## inactivity rate (inact)
 ## % of unemployed with unemployment duration less than 1 month (seekdur_0), 1-2 months (seekdur_1_2), 3 months or more (seekdur_3more).
 
-outcomes <- c("N_CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcomes <- c("N_CBWbord","CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 
 ## Covariates:
 
