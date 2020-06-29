@@ -183,7 +183,7 @@ for(o in outcomes){
   best.var.outcome.cbw <- try(as.character(tmp_coeffs$name[which(abs(tmp_coeffs$coefficient) == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
   warn.var.outcome.cbw <- FALSE
   
-  if(is(best.var.outcome.cbw ,"try-error") || is(best.vars.outcome.cbw,"try-error") || is.null(best.var.outcome.cbw)){ # if all nonzero randomly select covar
+  if(is(best.var.outcome.cbw ,"try-error") || is(best.vars.outcome.cbw,"try-error") || best.var.outcome.cbw=="0"){ # if all nonzero randomly select covar
     warn.var.outcome.cbw <- TRUE
     best.var.outcome.cbw <- best.vars.outcome.cbw <-sample(colnames(covars.cbw.combined),1)
   }
@@ -199,6 +199,12 @@ for(o in outcomes){
   tmp_coeffs <- coef(cvfit.treatment.cbw, s = "lambda.min")
   tmp_coeffs <- data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)[-1,] # rm intercept
   best.vars.treatment.cbw <- as.character(tmp_coeffs$name)
+  warn.var.treatment.cbw <-FALSE
+  
+  if(best.vars.treatment.cbw=="0"){ # if all nonzero randomly select covar
+    warn.var.treatment.cbw <-TRUE
+    best.vars.treatment.cbw <- sample(colnames(covars.cbw.combined),1)
+  }
 
   # Step 3: Fit lasso logistic regression predicting treatment, using covariates from steps 1 and 2
   
@@ -210,15 +216,22 @@ for(o in outcomes){
   
   names(preds.cbw.treatment) <- names(as.factor(mask.cbw[,"20084"]))
   
-  ## Elapsed time Weights
+  ## Elapsed time Weights (future and past)
   
-  z.cbw <- round(c(seq(1, 0.7, length.out=which(colnames(mask.cbw)=="20091")),
-                   seq(0.719, 1, length.out=ncol(mask.cbw)-which(colnames(mask.cbw)=="20091"))),3) # earliest combined treatment
+  z.cbw.eastern <- round(c(seq(1, 0.7, length.out=which(colnames(mask.cbw)=="20111")),
+                           seq(0.712, 1, length.out=ncol(mask.cbw)-which(colnames(mask.cbw)=="20111"))),3) # earliest combined treatment
   
-  p.weights.cbw <- matrix(preds.cbw.treatment%*%t(z.cbw), nrow = nrow(data.cbw ), 
+  z.cbw.swiss <- round(c(seq(1, 0.7, length.out=which(colnames(mask.cbw)=="20091")),
+                         seq(0.719, 1, length.out=ncol(mask.cbw)-which(colnames(mask.cbw)=="20091"))),3)
+  
+  p.weights.cbw <- matrix(0, nrow = nrow(data.cbw ), 
                           ncol= ncol(data.cbw),
                           dimnames = list(rownames(data.cbw), colnames(data.cbw))) # (N x T)
-                            
+  
+  p.weights.cbw[rownames(p.weights.cbw) %in% eastern.cluster.cbw,] <- preds.cbw.treatment[names(preds.cbw.treatment) %in% eastern.cluster.cbw]%*%t(z.cbw.eastern) # inner product
+  p.weights.cbw[rownames(p.weights.cbw) %in% swiss.cluster.cbw,] <- preds.cbw.treatment[names(preds.cbw.treatment) %in% swiss.cluster.cbw]%*%t(z.cbw.swiss) # inner product
+  p.weights.cbw[rownames(p.weights.cbw) %in% always.treated.cbw,] <- preds.cbw.treatment[names(preds.cbw.treatment) %in% always.treated.cbw]%*%t(z.cbw.eastern)
+  
   ## Impute endogenous values of best outcome variable
   
   source('MCEst.R')
@@ -268,7 +281,7 @@ for(o in outcomes){
   best.var.outcome.lm <- try(as.character(tmp_coeffs$name[which(abs(tmp_coeffs$coefficient) == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
   warn.var.outcome.lm <- FALSE
   
-  if(is(best.var.outcome.lm ,"try-error") || is(best.vars.outcome.lm ,"try-error") || is.null(best.var.outcome.lm)){ # if all nonzero randomly select covar
+  if(is(best.var.outcome.lm ,"try-error") || is(best.vars.outcome.lm ,"try-error") || best.var.outcome.lm=="0"){ # if all nonzero randomly select covar
     warn.var.outcome.lm <- TRUE
     best.var.outcome.lm <-best.vars.outcome.lm <- sample(colnames(covars.lm.combined),1)
   }
@@ -283,7 +296,12 @@ for(o in outcomes){
   # variables with non-zero estimated coefficients: 
   tmp_coeffs <- coef(cvfit.treatment.lm, s = "lambda.min")
   tmp_coeffs <- data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)[-1,] # rm intercept
-  best.vars.treatment.lm <- try(as.character(tmp_coeffs$name))
+  warn.var.treatment.lm <- FALSE
+  
+  if(best.vars.treatment.lm=="0"){ # if all nonzero randomly select covar
+    warn.var.treatment.lm <- TRUE
+    best.vars.treatment.lm <- sample(colnames(covars.lm.combined),1)
+  }
 
   # Step 3: Fit lasso logistic regression predicting treatment, using covariates from steps 1 and 2
   
@@ -295,9 +313,21 @@ for(o in outcomes){
   
   names(preds.lm.treatment) <- names(as.factor(mask.lm[,"20084"]))
   
-  p.weights.lm <- matrix(replicate(ncol(data.lm),preds.lm.treatment), nrow = nrow(data.lm ),  # no elapsed time weights for LM
-                         ncol= ncol(data.lm),
-                         dimnames = list(rownames(data.lm), colnames(data.lm))) # (N x T)
+  # Elapsed time weights (future)
+
+  z.lm.eastern <- round(c(rep(0.7, length.out=which(colnames(mask.lm)=="20111")),
+                          seq(0.712, 1, length.out=ncol(mask.lm)-which(colnames(mask.lm)=="20111"))),3) # earliest combined treatment
+  
+  z.lm.swiss <- round(c(rep(0.7, length.out=which(colnames(mask.lm)=="20091")),
+                        seq(0.719, 1, length.out=ncol(mask.lm)-which(colnames(mask.lm)=="20091"))),3)
+  
+  p.weights.lm <- matrix(0, nrow = nrow(data.lm ), 
+                          ncol= ncol(data.lm),
+                          dimnames = list(rownames(data.lm), colnames(data.lm))) # (N x T)
+  
+  p.weights.lm[rownames(p.weights.lm) %in% eastern.cluster.lm,] <- preds.lm.treatment[names(preds.lm.treatment) %in% eastern.cluster.lm]%*%t(z.lm.eastern) # inner product
+  p.weights.lm[rownames(p.weights.lm) %in% swiss.cluster.lm,] <- preds.lm.treatment[names(preds.lm.treatment) %in% swiss.cluster.lm]%*%t(z.lm.swiss) # inner product
+  p.weights.lm[rownames(p.weights.lm) %in% never.treated.lm,] <- preds.lm.treatment[names(preds.lm.treatment) %in% never.treated.lm]%*%t(z.lm.swiss)
   
   ## Impute endogenous values of best outcome covar
   
@@ -318,18 +348,18 @@ for(o in outcomes){
   
   outcomes.cbw <- list("M"=data.cbw, "mask"=mask.cbw, "W"= p.weights.cbw, "X"=best.var.outcome.cbw.m, "X.hat"=best.var.outcome.cbw.hat,
                        "outcome.X" = best.vars.outcome.cbw, "propensity.X" = best.vars.treatment.cbw,
-                       "outcome.X.warn"=warn.var.outcome.cbw,
-                       "mc.outcome"=impute.best.var.outcome.cbw, "mc.propensity"=propensity.model.cbw, 
-                       "z"=z.cbw, "lasso.outcome"=cvfit.outcome.cbw, "lasso.propensity"=cvfit.treatment.cbw,"lasso.propensity.final"=treatment.cbw,
+                       "outcome.X.warn"=warn.var.outcome.cbw, "treatment.X.warn"=warn.var.treatment.cbw,
+                       "mc.outcome"=impute.best.var.outcome.cbw, 
+                       "lasso.outcome"=cvfit.outcome.cbw, "lasso.propensity"=cvfit.treatment.cbw,"lasso.propensity.final"=treatment.cbw,
                                "treated"=rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],
                                "control"=rownames(mask.cbw)[rownames(mask.cbw)%in%always.treated.cbw],
                                "eastern"=eastern.cluster.cbw, "swiss"=swiss.cluster.cbw)
   outcomes.lm <- list("M"=data.lm, "mask"=mask.lm, "W"= p.weights.lm, "X"=best.var.outcome.lm.m, "X.hat"=best.var.outcome.lm.hat,
                       "outcome.X" = best.vars.outcome.lm, "propensity.X" = best.vars.treatment.lm,
-                      "outcome.X.warn"=warn.var.outcome.lm,
-                      "mc.outcome"=impute.best.var.outcome.lm, "mc.propensity"=propensity.model.lm, 
+                      "outcome.X.warn"=warn.var.outcome.lm, "treatment.X.warn"=warn.var.treatment.lm,
+                      "mc.outcome"=impute.best.var.outcome.lm,
                       "lasso.outcome"=cvfit.outcome.lm, "lasso.propensity"=cvfit.treatment.lm,"lasso.propensity.final"=treatment.lm,
-                              "treated"=rownames(mask.lm)[rownames(mask.lm)%in%switch.treated.lm],
+                      "treated"=rownames(mask.lm)[rownames(mask.lm)%in%switch.treated.lm],
                               "control"=rownames(mask.lm)[rownames(mask.lm)%in%never.treated.lm],
                               "eastern"=eastern.cluster.lm, "swiss"=swiss.cluster.lm)
   
