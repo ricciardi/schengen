@@ -137,15 +137,13 @@ for(o in outcomes){
                             ncol= ncol(data.lm),
                             dimnames = list(rownames(data.lm), colnames(data.lm))) # (N x T)
   
-  # for the eastern group, the treatment period is 20111-20181 (both FoM and Schengen in place)
-  # for the Swiss group, we have 20091-20181 as treatment period (both FoM and Schengen in place)
   for(i in switch.treated.cbw){
     mask.cbw[,colnames(mask.cbw)%in%data$yearquarter[data$REGION==i & data$SCHENGEN_CBW==1 & data$FoM_CBW==1]][rownames(mask.cbw)%in%c(i),] <- 1 # retrospective analysis: estimate Y(1)_LT,pre
   }
    mask.cbw[rownames(mask.cbw)%in%rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],] <- abs(mask.cbw[rownames(mask.cbw)%in%rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],]-1) # retrospective analysis: estimate Y(1)_LT,pre
 
   for(i in switch.treated.lm){
-    mask.lm[,colnames(mask.lm)%in%data$yearquarter[data$REGION==i & data$SCHENGEN_LM==1 & data$FoM_LM==1]][rownames(mask.lm)%in%c(i),] <- 1 
+    mask.lm[,colnames(mask.lm)%in%data$yearquarter[data$REGION==i & (data$SCHENGEN_LM==1 | data$FoM_LM==1)]][rownames(mask.lm)%in%c(i),] <- 1 # prospective analysis
   }
   
   ## “double-lasso” covariate selection procedure (Belloni, et al., 2014)
@@ -168,8 +166,8 @@ for(o in outcomes){
 
   # Step 1: Fit a lasso regression predicting the dependent variable
    
-  cvfit.outcome.cbw <- cv.glmnet(x=covars.cbw.combined, # post-treatment series
-                             y=data.cbw[,1:which(colnames(data.cbw)=='20091')], # pre treatment series 
+  cvfit.outcome.cbw <- cv.glmnet(x=covars.cbw.combined, 
+                             y=data.cbw[,1:which(colnames(data.cbw)=='20091')], # (earliest) post-treatment series
                              family="mgaussian",
                              standardize.response = TRUE,
                              nlambda=200,
@@ -267,7 +265,7 @@ for(o in outcomes){
   # Step 1: Fit a lasso regression predicting the dependent variable
   
   cvfit.outcome.lm <- cv.glmnet(x=covars.lm.combined, # pre-treatment series
-                                 y=data.lm[,which(colnames(data.lm)=='20111'):ncol(data.lm)], # post-treatment series 
+                                 y=data.lm[,which(colnames(data.lm)=='20081'):ncol(data.lm)], # (latest) post-treatment series 
                                  family="mgaussian",
                                  standardize.response = TRUE,
                                  nlambda=200,
@@ -290,7 +288,7 @@ for(o in outcomes){
   # Step 2: Fit a lasso logistic regression predicting treatment
   
   cvfit.treatment.lm  <- cv.glmnet(x=covars.lm.combined, # pre-treatment series
-                                    y=as.factor(mask.lm[,"20111"]), # 1 if switch.treated.lm
+                                    y=as.factor(mask.lm[,"20081"]), # 1 if switch.treated.lm
                                     family="binomial", nlambda=200,parallel = TRUE)
   
   # variables with non-zero estimated coefficients: 
@@ -307,20 +305,20 @@ for(o in outcomes){
   # Step 3: Fit lasso logistic regression predicting treatment, using covariates from steps 1 and 2
   
   treatment.lm  <- cv.glmnet(x=covars.lm.combined[,c(best.vars.outcome.lm,best.vars.treatment.lm)],
-                              y=as.factor(mask.lm[,"20111"]), # 1 if switch.treated.lm
+                              y=as.factor(mask.lm[,"20081"]), # 1 if switch.treated.lm
                               family="binomial", nlambda=200, parallel = TRUE)
   
   preds.lm.treatment <- as.vector(predict(treatment.lm, covars.lm.combined[,c(best.vars.outcome.lm,best.vars.treatment.lm)], type="response", s = "lambda.min"))
   
-  names(preds.lm.treatment) <- names(as.factor(mask.lm[,"20084"]))
+  names(preds.lm.treatment) <- names(as.factor(mask.lm[,"20081"]))
   
   # Elapsed time weights (future)
 
-  z.lm.eastern <- round(c(rep(0.7, length.out=which(colnames(mask.lm)=="20111")),
-                          seq(0.712, 1, length.out=ncol(mask.lm)-which(colnames(mask.lm)=="20111"))),3) # earliest combined treatment
+  z.lm.eastern <- round(c(rep(0.7, length.out=which(colnames(mask.lm)=="20081")),
+                          seq(0.712, 1, length.out=ncol(mask.lm)-which(colnames(mask.lm)=="20081"))),3) # earliest combined treatment
   
-  z.lm.swiss <- round(c(rep(0.7, length.out=which(colnames(mask.lm)=="20091")),
-                        seq(0.719, 1, length.out=ncol(mask.lm)-which(colnames(mask.lm)=="20091"))),3)
+  z.lm.swiss <- round(c(rep(0.7, length.out=which(colnames(mask.lm)=="20071")),
+                        seq(0.719, 1, length.out=ncol(mask.lm)-which(colnames(mask.lm)=="20071"))),3)
   
   p.weights.lm <- matrix(0, nrow = nrow(data.lm ), 
                           ncol= ncol(data.lm),
