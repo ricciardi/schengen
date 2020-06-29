@@ -43,7 +43,7 @@ for(o in outcome.vars){
   # Block resampling with fixed block lengths of length l)
   source("MCEstBoot.R")
   
-  boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X, X.hat=outcomes.cbw$X.hat, covars=FALSE, rev=TRUE, R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
+  boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X, X.hat=outcomes.cbw$X.hat, covars=FALSE, rev=TRUE, R=10, parallel = "multicore", l=bopt, sim = "fixed") 
   saveRDS(boot, paste0("results/boot-cbw-",o,".rds"))
   
   t0 <- which(colnames(outcomes.cbw$M)=="20091")
@@ -73,7 +73,7 @@ for(o in outcome.vars){
   
   # Block resampling with fixed block lengths of length l)
   
-  boot <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, X=outcomes.lm$X,X.hat=outcomes.lm$X.hat, treated=outcomes.lm$treated, control=outcomes.lm$control, covars=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
+  boot <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, X=outcomes.lm$X,X.hat=outcomes.lm$X.hat,covars=FALSE,rev=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
   saveRDS(boot, paste0("results/boot-lm-",o,".rds"))
   
   # Get p-values
@@ -82,12 +82,8 @@ for(o in outcome.vars){
   
   treat_indices_order <- outcomes.lm$treated
   
-  iid.block <- ChernoTest(outcomes=outcomes.lm[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid.block",t0=t0,covars=FALSE)
-  saveRDS(iid.block,paste0("results/iid-block-lm-",o,".rds"))
+  boot.trajectory <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, X=outcomes.lm$X, X.hat=outcomes.lm$X.hat, treat_indices_order=treat_indices_order, covars=FALSE, rev=FALSE, t0=t0, R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
+  saveRDS(boot.trajectory, paste0("results/boot-trajectory-lm-",o,".rds")) # bootstrap for ATT trajectory
   
-  moving.block <- ChernoTest(outcomes=outcomes.lm[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="moving.block",t0=t0,covars=FALSE)
-  saveRDS(moving.block,paste0("results/moving-block-lm-",o,".rds"))
-  
-  iid <- ChernoTest(outcomes=outcomes.lm[c("M","mask","W")], ns=1000, treat_indices_order=treat_indices_order, permtype="iid",t0=t0,covars=FALSE)
-  saveRDS(iid,paste0("results/iid-lm-",o,".rds"))
+  print(paste0("Analysis 1, outcome",o, "ATT:",boot.trajectory$t0,"CI:",boot.ci(boot.trajectory)))
 }

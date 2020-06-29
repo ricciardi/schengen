@@ -178,12 +178,13 @@ for(o in outcomes){
   tmp_coeffs <- coef(cvfit.outcome.cbw, s = "lambda.min")[[1]] # same nonzero variables for time series
   tmp_coeffs <- data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)[-1,] # rm intercept
   op <- options(warn=2)
+  best.vars.outcome.cbw <- try(as.character(tmp_coeffs$name)) 
   best.var.outcome.cbw <- try(as.character(tmp_coeffs$name[which(abs(tmp_coeffs$coefficient) == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
   warn.var.outcome.cbw <- FALSE
   
-  if(is(best.var.outcome.cbw ,"try-error") || is.null(best.var.outcome.cbw)){ # if all nonzero randomly select covar
+  if(is(best.var.outcome.cbw ,"try-error") || is(best.vars.outcome.cbw,"try-error") || is.null(best.var.outcome.cbw)){ # if all nonzero randomly select covar
     warn.var.outcome.cbw <- TRUE
-    best.var.outcome.cbw <- sample(colnames(covars.cbw.combined),1)
+    best.var.outcome.cbw <- best.vars.outcome.cbw <-sample(colnames(covars.cbw.combined),1)
   }
   options(op)
   
@@ -196,25 +197,35 @@ for(o in outcomes){
   # variables with non-zero estimated coefficients: 
   tmp_coeffs <- coef(cvfit.treatment.cbw, s = "lambda.min")
   tmp_coeffs <- data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)[-1,] # rm intercept
-  op <- options(warn=2)
-  best.var.treatment.cbw <- try(as.character(tmp_coeffs$name[which(abs(tmp_coeffs$coefficient) == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
-  warn.var.treatment.cbw <- FALSE
+  best.vars.treatment.cbw <- as.character(tmp_coeffs$name)
+
+  # Step 3: Fit lasso logistic regression predicting treatment, using covariates from steps 1 and 2
   
-  if(is(best.var.treatment.cbw ,"try-error") || is.null(best.var.treatment.cbw)){ # if all nonzero randomly select covar
-    warn.var.treatment.cbw <- TRUE
-    best.var.treatment.cbw <- sample(colnames(covars.cbw.combined),1)
-  }
-  options(op)
+  treatment.cbw  <- cv.glmnet(x=covars.cbw.combined[,c(best.vars.outcome.cbw,best.vars.treatment.cbw)],
+                              y=as.factor(mask.cbw[,"20084"]), # 1 if switch.treated.cbw
+                              family="binomial", parallel = TRUE)
   
-  ## Impute endogenous values of best covars
+  preds.cbw.treatment <- as.vector(predict(treatment.cbw, covars.cbw.combined[,c(best.vars.outcome.cbw,best.vars.treatment.cbw)], type="response", s = "lambda.min"))
   
-  # Outcome model variable
+  names(preds.cbw.treatment) <- names(as.factor(mask.cbw[,"20084"]))
+  
+  ## Elapsed time Weights
+  
+  z.cbw <- round(c(seq(1, 0.7, length.out=which(colnames(mask.cbw)=="20091")),
+                   seq(0.719, 1, length.out=ncol(mask.cbw)-which(colnames(mask.cbw)=="20091"))),3) # earliest combined treatment
+  
+  p.weights.cbw <- matrix(preds.cbw.treatment%*%t(z.cbw), nrow = nrow(data.cbw ), 
+                          ncol= ncol(data.cbw),
+                          dimnames = list(rownames(data.cbw), colnames(data.cbw))) # (N x T)
+                            
+  ## Impute endogenous values of best outcome variable
+  
   source('MCEst.R')
   
   best.var.outcome.cbw.m <- as.matrix(covars.cbw[[gsub('.{5}$', '', best.var.outcome.cbw)]][rownames(covars.cbw[[1]])%in%rownames(mask.cbw),])
   outcomes.impute.cbw <- list("M"=best.var.outcome.cbw.m, # outcome is best covariate for outcome model
                                 "mask"=mask.cbw, 
-                              "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
+                              "W"= matrix(1, nrow(mask.cbw),ncol(mask.cbw),
                                           dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are equal
   
   impute.best.var.outcome.cbw <- MCEst(outcomes.impute.cbw, rev=TRUE, covars=FALSE, nofes=TRUE) # run with no FEs
@@ -222,49 +233,7 @@ for(o in outcomes){
 
   colnames(best.var.outcome.cbw.hat) <- colnames(mask.cbw)
   rownames(best.var.outcome.cbw.hat) <- rownames(mask.cbw)
-  
-  # Propensity model variable
-  
-  best.var.treatment.cbw.m <- as.matrix(covars.cbw[[gsub('.{5}$', '', best.var.treatment.cbw)]][rownames(covars.cbw[[1]])%in%rownames(mask.cbw),])
-  treatment.impute.cbw <- list("M"=best.var.treatment.cbw.m, # outcome is best covariate for propensity model
-                              "mask"=mask.cbw, 
-                              "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
-                                          dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are equal
-  
-  impute.best.var.treatment.cbw <- MCEst(treatment.impute.cbw, rev=TRUE, covars=FALSE, nofes=TRUE) # run with no FEs
-  best.var.treatment.cbw.hat <- best.var.treatment.cbw.m*(1-mask.cbw) + impute.best.var.treatment.cbw$Mhat*mask.cbw # only endogenous values imputed
-  
-  colnames(best.var.treatment.cbw.hat) <- colnames(mask.cbw)
-  rownames(best.var.treatment.cbw.hat) <- rownames(mask.cbw)
-  
-  ## Est propensity scores
-  
-  propensity.model.cbw.data <- list("M"=mask.cbw, 
-                                   # "X" = best.var.treatment.cbw.m, # var with endogenous values
-                                   # "X.hat"= best.var.treatment.cbw.hat, # var with imputed endogenous values
-                                   "mask" = matrix(0, nrow(mask.cbw),ncol(mask.cbw),
-                                                   dimnames = list(rownames(mask.cbw), colnames(mask.cbw))), # no missing entries
-                                   "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
-                                               dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are virtually 1
-  
-  propensity.model.cbw <- MCEst(propensity.model.cbw.data, rev=TRUE, covars=FALSE, nofes=TRUE) # run with no FEs
-  
-  propensity.model.cbw$E <-propensity.model.cbw$L +  replicate(ncol(mask.cbw), as.vector(best.var.treatment.cbw.hat%*%propensity.model.cbw$B)) # reconstruct with imputed endogenous values
-  
-  colnames(propensity.model.cbw$E) <- colnames(mask.cbw)
-  rownames(propensity.model.cbw$E) <- rownames(mask.cbw)
-  
-  ## Elapsed time Weights
-  
-  z.cbw <- round(c(seq(1, 0.7, length.out=which(colnames(mask.cbw)=="20091")),
-                           seq(0.719, 1, length.out=ncol(mask.cbw)-which(colnames(mask.cbw)=="20091"))),3) # earliest combined treatment
-  
-  p.weights.cbw <- matrix(0, nrow = nrow(data.cbw ), 
-                                        ncol= ncol(data.cbw),
-                                        dimnames = list(rownames(data.cbw), colnames(data.cbw))) # (N x T)
-  
-  p.weights.cbw <- propensity.model.cbw$E%*%diag(z.cbw)
-
+ 
   # LM
   
   covars.lm.reduced <- lapply(1:length(covars.lm), function(i){ # make sure same dimension as mask
@@ -293,12 +262,13 @@ for(o in outcomes){
   tmp_coeffs <- coef(cvfit.outcome.lm, s = "lambda.min")[[1]] # same nonzero variables for time series
   tmp_coeffs <- data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)[-1,] # rm intercept
   op <- options(warn=2)
+  best.vars.outcome.lm <-try(as.character(tmp_coeffs$name))
   best.var.outcome.lm <- try(as.character(tmp_coeffs$name[which(abs(tmp_coeffs$coefficient) == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
   warn.var.outcome.lm <- FALSE
   
-  if(is(best.var.outcome.lm ,"try-error") || is.null(best.var.outcome.lm)){ # if all nonzero randomly select covar
+  if(is(best.var.outcome.lm ,"try-error") || is(best.vars.outcome.lm ,"try-error") || is.null(best.var.outcome.lm)){ # if all nonzero randomly select covar
     warn.var.outcome.lm <- TRUE
-    best.var.outcome.lm <- sample(colnames(covars.lm.combined),1)
+    best.var.outcome.lm <-best.vars.outcome.lm <- sample(colnames(covars.lm.combined),1)
   }
   options(op)
   
@@ -311,22 +281,29 @@ for(o in outcomes){
   # variables with non-zero estimated coefficients: 
   tmp_coeffs <- coef(cvfit.treatment.lm, s = "lambda.min")
   tmp_coeffs <- data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)[-1,] # rm intercept
-  op <- options(warn=2)
-  best.var.treatment.lm <- try(as.character(tmp_coeffs$name[which(abs(tmp_coeffs$coefficient) == max(abs(tmp_coeffs$coefficient)))])) # select highest nonzero var
-  warn.var.treatment.lm <- FALSE
-  if(is(best.var.treatment.lm ,"try-error") || is.null(best.var.treatment.lm)){ # if all nonzero
-    warn.var.treatment.lm <- TRUE
-    best.var.treatment.lm <- sample(colnames(covars.lm.combined),1)
-  }
-  options(op)
+  best.vars.treatment.lm <- try(as.character(tmp_coeffs$name))
+
+  # Step 3: Fit lasso logistic regression predicting treatment, using covariates from steps 1 and 2
   
-  ## Impute endogenous values of best covars
+  treatment.lm  <- cv.glmnet(x=covars.lm.combined[,c(best.vars.outcome.lm,best.vars.treatment.lm)],
+                              y=as.factor(mask.lm[,"20111"]), # 1 if switch.treated.lm
+                              family="binomial", parallel = TRUE)
+  
+  preds.lm.treatment <- as.vector(predict(treatment.lm, covars.lm.combined[,c(best.vars.outcome.lm,best.vars.treatment.lm)], type="response", s = "lambda.min"))
+  
+  names(preds.lm.treatment) <- names(as.factor(mask.lm[,"20084"]))
+  
+  p.weights.lm <- matrix(replicate(ncol(data.lm),preds.lm.treatment), nrow = nrow(data.lm ),  # no elapsed time weights for LM
+                         ncol= ncol(data.lm),
+                         dimnames = list(rownames(data.lm), colnames(data.lm))) # (N x T)
+  
+  ## Impute endogenous values of best outcome covar
   
   # Outcome model variable
   best.var.outcome.lm.m <- as.matrix(covars.lm[[gsub('.{5}$', '', best.var.outcome.lm)]][rownames(covars.lm[[1]])%in%rownames(mask.lm),])
   outcomes.impute.lm <- list("M"=best.var.outcome.lm.m, # outcome is best covariate
                               "mask"=mask.lm, 
-                              "W"= matrix(0.5, nrow(mask.lm),ncol(mask.lm),
+                              "W"= matrix(1, nrow(mask.lm),ncol(mask.lm),
                                           dimnames = list(rownames(mask.lm), colnames(mask.lm)))) # equal weights
   
   impute.best.var.outcome.lm <- MCEst(outcomes.impute.lm, rev=FALSE, covars=FALSE, nofes=TRUE) # run with no FEs
@@ -335,64 +312,21 @@ for(o in outcomes){
   colnames(best.var.outcome.lm.hat) <- colnames(mask.lm)
   rownames(best.var.outcome.lm.hat) <- rownames(mask.lm)
   
-  # Propensity model variable
-  
-  best.var.treatment.lm.m <- as.matrix(covars.lm[[gsub('.{5}$', '', best.var.treatment.lm)]][rownames(covars.lm[[1]])%in%rownames(mask.lm),])
-  treatment.impute.lm <- list("M"=best.var.treatment.lm.m, # outcome is best covariate
-                               "mask"=mask.lm, 
-                               "W"= matrix(0.5, nrow(mask.lm),ncol(mask.lm),
-                                           dimnames = list(rownames(mask.lm), colnames(mask.lm)))) # equal weights
-  
-  impute.best.var.treatment.lm <- MCEst(treatment.impute.lm, rev=FALSE, covars=FALSE, nofes=TRUE) # run with no FEs
-  best.var.treatment.lm.hat <- best.var.treatment.lm.m*(1-mask.lm) + impute.best.var.treatment.lm$Mhat*mask.lm # only endogenous values imputed
-  
-  colnames(best.var.treatment.lm.hat) <- colnames(mask.lm)
-  rownames(best.var.treatment.lm.hat) <- rownames(mask.lm)
-  
-  ## Est propensity scores
-  
-  propensity.model.lm.data <- list("M"=mask.lm, 
-                              # "X" = best.var.treatment.lm.m, # var with endogenous values
-                              # "X.hat"= best.var.treatment.lm.hat, # var with imputed endogenous values
-                              "mask" = matrix(0, nrow(mask.lm),ncol(mask.lm),
-                                            dimnames = list(rownames(mask.lm), colnames(mask.lm))), # no missing entries
-                              "W"= matrix(0.5, nrow(mask.lm),ncol(mask.lm),
-                                          dimnames = list(rownames(mask.lm), colnames(mask.lm))))# weights are virtually 1
-  
-  propensity.model.lm <- MCEst(outcomes=propensity.model.lm.data, rev=FALSE, covars=FALSE, nofes=TRUE) # run with no FEs
-  
-  propensity.model.lm$E <-propensity.model.lm$L +  replicate(ncol(mask.lm), as.vector(best.var.treatment.lm.hat%*%propensity.model.lm$B)) # reconstruct with imputed endogenous values
-  
-  colnames(propensity.model.lm$E) <- colnames(mask.lm)
-  rownames(propensity.model.lm$E) <- rownames(mask.lm)
-  
-  ## Elapsed time Weights
-  
-  z.lm <- round(c(seq(1, 0.7, length.out=which(colnames(mask.lm)=="20111")),
-                   seq(0.719, 1, length.out=ncol(mask.lm)-which(colnames(mask.lm)=="20111"))),3) # latest combined treatment
-  
-  p.weights.lm <- matrix(0, nrow = nrow(data.lm ), 
-                          ncol= ncol(data.lm),
-                          dimnames = list(rownames(data.lm), colnames(data.lm))) # (N x T)
-  
-  p.weights.lm <- propensity.model.lm$E%*%diag(z.lm)
-  
- 
   # Save
   
   outcomes.cbw <- list("M"=data.cbw, "mask"=mask.cbw, "W"= p.weights.cbw, "X"=best.var.outcome.cbw.m, "X.hat"=best.var.outcome.cbw.hat,
-                       "outcome.X" = best.var.outcome.cbw, "propensity.X" = best.var.treatment.cbw,
-                       "outcome.X.warn"=warn.var.outcome.cbw, "propensity.X.warn"=warn.var.treatment.cbw, 
+                       "outcome.X" = best.vars.outcome.cbw, "propensity.X" = best.vars.treatment.cbw,
+                       "outcome.X.warn"=warn.var.outcome.cbw,
                        "mc.outcome"=impute.best.var.outcome.cbw, "mc.propensity"=propensity.model.cbw, 
-                       "z"=z.cbw, "lasso.outcome"=cvfit.outcome.cbw, "lasso.propensity"=cvfit.treatment.cbw,
+                       "z"=z.cbw, "lasso.outcome"=cvfit.outcome.cbw, "lasso.propensity"=cvfit.treatment.cbw,"lasso.propensity.final"=treatment.cbw,
                                "treated"=rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],
                                "control"=rownames(mask.cbw)[rownames(mask.cbw)%in%always.treated.cbw],
                                "eastern"=eastern.cluster.cbw, "swiss"=swiss.cluster.cbw)
   outcomes.lm <- list("M"=data.lm, "mask"=mask.lm, "W"= p.weights.lm, "X"=best.var.outcome.lm.m, "X.hat"=best.var.outcome.lm.hat,
-                      "outcome.X" = best.var.outcome.lm, "propensity.X" = best.var.treatment.lm,
-                      "outcome.X.warn"=warn.var.outcome.lm, "propensity.X.warn"=warn.var.treatment.lm, 
+                      "outcome.X" = best.vars.outcome.lm, "propensity.X" = best.vars.treatment.lm,
+                      "outcome.X.warn"=warn.var.outcome.lm,
                       "mc.outcome"=impute.best.var.outcome.lm, "mc.propensity"=propensity.model.lm, 
-                      "z"=z.lm, "lasso.outcome"=cvfit.outcome.lm, "lasso.propensity"=cvfit.treatment.lm,
+                      "lasso.outcome"=cvfit.outcome.lm, "lasso.propensity"=cvfit.treatment.lm,"lasso.propensity.final"=treatment.lm,
                               "treated"=rownames(mask.lm)[rownames(mask.lm)%in%switch.treated.lm],
                               "control"=rownames(mask.lm)[rownames(mask.lm)%in%never.treated.lm],
                               "eastern"=eastern.cluster.lm, "swiss"=swiss.cluster.lm)
