@@ -296,6 +296,7 @@ for(o in outcomes){
   # variables with non-zero estimated coefficients: 
   tmp_coeffs <- coef(cvfit.treatment.lm, s = "lambda.min")
   tmp_coeffs <- data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)[-1,] # rm intercept
+  best.vars.treatment.lm <- as.character(tmp_coeffs$name)
   warn.var.treatment.lm <- FALSE
   
   if(best.vars.treatment.lm=="0"){ # if all nonzero randomly select covar
