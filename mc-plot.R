@@ -123,7 +123,7 @@ for(o in outcome.vars){
                               control=outcomes.lm$control, 
                               eastern =outcomes.lm$eastern,
                               swiss= outcomes.lm$swiss,
-                              vline=20072,vline2=20091,
+                              vline=20072,vline2=20081,
                               breaks=c(20051,20072,20091,20111,20184),
                               labels=c("20051","20072","20091","20111","20184"),
                               att.label = TeX("$\\hat{\\bar{\\tau}}_t$"))

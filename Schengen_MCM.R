@@ -19,7 +19,7 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcome.vars <- c("N_CBWbord","CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")[-1] # N_CBWbord needs pop. control var
 
 for(o in outcome.vars){
 
@@ -43,20 +43,39 @@ for(o in outcome.vars){
   # Block resampling with fixed block lengths of length l)
   source("MCEstBoot.R")
   
-  boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X, X.hat=outcomes.cbw$X.hat, covars=FALSE, rev=TRUE, R=10, parallel = "multicore", l=bopt, sim = "fixed") 
-  saveRDS(boot, paste0("results/boot-cbw-",o,".rds"))
+  boot.cbw <- tsboot(tseries=t(outcomes.cbw$M), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, covars=FALSE, rev=TRUE, R=1000, parallel = "multicore", l=bopt, sim = "geom") 
+  saveRDS(boot.cbw, paste0("results/boot-cbw-",o,".rds"))
   
-  t0 <- which(colnames(outcomes.cbw$M)=="20091")
-  treat_indices_order <- outcomes.lm$treated
+  # Bootstrap for ATT trajectory 
   
-  boot.trajectory <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X, X.hat=outcomes.cbw$X.hat, treat_indices_order=treat_indices_order, covars=FALSE, rev=TRUE, t0=t0, R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
-  saveRDS(boot.trajectory, paste0("results/boot-trajectory-cbw-",o,".rds")) # bootstrap for ATT trajectory
+  t0_eastern.cbw <- which(colnames(outcomes.cbw$M)=="20111") # earliest combined treatment
+  t0_swiss.cbw <- which(colnames(outcomes.cbw$M)=="20091") # earliest combined treatment
+  t0_control.cbw <- which(colnames(outcomes.cbw$M)=="20091") # earliest combined treatment
+
+  boot.trajectory.eastern <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, eastern=outcomes.cbw$eastern, covars=FALSE, rev=TRUE, t0=t0_eastern.cbw, R=1000, parallel = "multicore", l=bopt, sim = "geom") 
+  saveRDS(boot.trajectory.eastern, paste0("results/boot-trajectory-eastern-cbw-",o,".rds")) 
   
-  print(paste0("Analysis 1, outcome",o, "ATT:",boot.trajectory$t0,"CI:",boot.ci(boot.trajectory)))
+  print(paste0("Analysis 1, Eastern cluster, Outcome",o))
+  print(mean(boot.trajectory.eastern$t0)) # test statistic S
+  print(boot.ci(boot.trajectory.eastern, type=c("basic","norm")))
+  
+  boot.trajectory.swiss <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, swiss=outcomes.cbw$swiss, covars=FALSE, rev=TRUE, t0=t0_eastern.swiss, R=1000, parallel = "multicore", l=bopt, sim = "geom") 
+  saveRDS(boot.trajectory.swiss, paste0("results/boot-trajectory-swiss-cbw-",o,".rds")) 
+  
+  print(paste0("Analysis 1, swiss cluster, Outcome",o))
+  print(mean(boot.trajectory.swiss$t0)) # post-period att
+  print(boot.ci(boot.trajectory.swiss, type=c("basic","norm")))
+  
+  boot.trajectory.control <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, control=outcomes.cbw$control, covars=FALSE, rev=TRUE, t0=t0_control.cbw, R=1000, parallel = "multicore", l=bopt, sim = "geom") 
+  saveRDS(boot.trajectory.control, paste0("results/boot-trajectory-control-cbw-",o,".rds")) 
+  
+  print(paste0("Analysis 1, control cluster, Outcome",o))
+  print(mean(boot.trajectory.control$t0)) # post-period att
+  print(boot.ci(boot.trajectory.control, type=c("basic","norm")))
   
   ## Analysis 2: ST vs NT (forward, X=LM)
   
-  if(o %in% c("CBWbord","CBWbordEMPL")) next
+  if(o %in% c("CBWbord", "CBWbordEMPL")) next
   
   print(paste0("Estimates for Analysis 2, outcome:",o))
   
@@ -73,17 +92,34 @@ for(o in outcome.vars){
   
   # Block resampling with fixed block lengths of length l)
   
-  boot <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, X=outcomes.lm$X,X.hat=outcomes.lm$X.hat,covars=FALSE,rev=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
-  saveRDS(boot, paste0("results/boot-lm-",o,".rds"))
-  
-  # Get p-values
+  boot.lm <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, rev=FALSE,R=1000, parallel = "multicore", l=bopt, sim = "geom") 
 
-  t0 <- which(colnames(outcomes.lm$M)=="20091")
+  saveRDS(boot.lm, paste0("results/boot-lm-",o,".rds"))
   
-  treat_indices_order <- outcomes.lm$treated
+  # Get CIs for trajectory
+
+  t0_eastern.lm <- which(colnames(outcomes.cbw$M)=="20081") # schengen start
+  t0_swiss.lm <- which(colnames(outcomes.cbw$M)=="20072") # FoM start
+  t0_control.lm <- which(colnames(outcomes.cbw$M)=="20072") # control
   
-  boot.trajectory <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, X=outcomes.lm$X, X.hat=outcomes.lm$X.hat, treat_indices_order=treat_indices_order, covars=FALSE, rev=FALSE, t0=t0, R=1000, parallel = "multicore", l=bopt, sim = "fixed") 
-  saveRDS(boot.trajectory, paste0("results/boot-trajectory-lm-",o,".rds")) # bootstrap for ATT trajectory
+  boot.trajectory.eastern <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, eastern=outcomes.lm$eastern, covars=FALSE, rev=FALSE, t0=t0_eastern.lm, R=1000, parallel = "multicore", l=bopt, sim = "geom") 
+  saveRDS(boot.trajectory.eastern, paste0("results/boot-trajectory-eastern-lm-",o,".rds")) 
   
-  print(paste0("Analysis 1, outcome",o, "ATT:",boot.trajectory$t0,"CI:",boot.ci(boot.trajectory)))
+  print(paste0("Analysis 1, Eastern cluster, Outcome",o))
+  print(mean(boot.trajectory.eastern$t0)) # test statistic S
+  print(boot.ci(boot.trajectory.eastern, type=c("basic","norm")))
+  
+  boot.trajectory.swiss <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, swiss=outcomes.lm$swiss, covars=FALSE, rev=FALSE, t0=t0_eastern.swiss, R=1000, parallel = "multicore", l=bopt, sim = "geom") 
+  saveRDS(boot.trajectory.swiss, paste0("results/boot-trajectory-swiss-lm-",o,".rds")) 
+  
+  print(paste0("Analysis 1, swiss cluster, Outcome",o))
+  print(mean(boot.trajectory.swiss$t0)) # post-period att
+  print(boot.ci(boot.trajectory.swiss, type=c("basic","norm")))
+  
+  boot.trajectory.control <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, control=outcomes.lm$control, covars=FALSE, rev=FALSE, t0=t0_control.lm, R=1000, parallel = "multicore", l=bopt, sim = "geom") 
+  saveRDS(boot.trajectory.control, paste0("results/boot-trajectory-control-lm-",o,".rds")) 
+  
+  print(paste0("Analysis 1, control cluster, Outcome",o))
+  print(mean(boot.trajectory.control$t0)) # post-period att
+  print(boot.ci(boot.trajectory.control, type=c("basic","norm")))
 }
