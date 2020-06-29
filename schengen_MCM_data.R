@@ -237,17 +237,17 @@ for(o in outcomes){
   colnames(best.var.treatment.cbw.hat) <- colnames(mask.cbw)
   rownames(best.var.treatment.cbw.hat) <- rownames(mask.cbw)
   
-  ## Est propensity scores as a function of best propensity model variable
+  ## Est propensity scores
   
   propensity.model.cbw.data <- list("M"=mask.cbw, 
-                                   "X" = best.var.treatment.cbw.m, # var with endogenous values
-                                   "X.hat"= best.var.treatment.cbw.hat, # var with imputed endogenous values
+                                   # "X" = best.var.treatment.cbw.m, # var with endogenous values
+                                   # "X.hat"= best.var.treatment.cbw.hat, # var with imputed endogenous values
                                    "mask" = matrix(0, nrow(mask.cbw),ncol(mask.cbw),
                                                    dimnames = list(rownames(mask.cbw), colnames(mask.cbw))), # no missing entries
                                    "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
                                                dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are virtually 1
   
-  propensity.model.cbw <- MCEst(propensity.model.cbw.data, rev=TRUE, covars=TRUE, nofes=TRUE) # run with no FEs
+  propensity.model.cbw <- MCEst(propensity.model.cbw.data, rev=TRUE, covars=FALSE, nofes=TRUE) # run with no FEs
   
   propensity.model.cbw$E <-propensity.model.cbw$L +  replicate(ncol(mask.cbw), as.vector(best.var.treatment.cbw.hat%*%propensity.model.cbw$B)) # reconstruct with imputed endogenous values
   
@@ -349,17 +349,17 @@ for(o in outcomes){
   colnames(best.var.treatment.lm.hat) <- colnames(mask.lm)
   rownames(best.var.treatment.lm.hat) <- rownames(mask.lm)
   
-  ## Est propensity scores as a function of best propensity model variable (with endogenous values)
+  ## Est propensity scores
   
   propensity.model.lm.data <- list("M"=mask.lm, 
-                              "X" = best.var.treatment.lm.m, # var with endogenous values
-                              "X.hat"= best.var.treatment.lm.hat, # var with imputed endogenous values
+                              # "X" = best.var.treatment.lm.m, # var with endogenous values
+                              # "X.hat"= best.var.treatment.lm.hat, # var with imputed endogenous values
                               "mask" = matrix(0, nrow(mask.lm),ncol(mask.lm),
                                             dimnames = list(rownames(mask.lm), colnames(mask.lm))), # no missing entries
                               "W"= matrix(0.5, nrow(mask.lm),ncol(mask.lm),
                                           dimnames = list(rownames(mask.lm), colnames(mask.lm))))# weights are virtually 1
   
-  propensity.model.lm <- MCEst(outcomes=propensity.model.lm.data, rev=FALSE, covars=TRUE, nofes=TRUE) # run with no FEs
+  propensity.model.lm <- MCEst(outcomes=propensity.model.lm.data, rev=FALSE, covars=FALSE, nofes=TRUE) # run with no FEs
   
   propensity.model.lm$E <-propensity.model.lm$L +  replicate(ncol(mask.lm), as.vector(best.var.treatment.lm.hat%*%propensity.model.lm$B)) # reconstruct with imputed endogenous values
   
