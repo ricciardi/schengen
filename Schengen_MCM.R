@@ -59,7 +59,7 @@ for(o in outcome.vars){
   print(mean(boot.trajectory.eastern$t0)) # test statistic S
   print(boot.ci(boot.trajectory.eastern, type=c("basic","norm")))
   
-  boot.trajectory.swiss <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, swiss=outcomes.cbw$swiss, covars=FALSE, rev=TRUE, t0=t0_eastern.swiss, R=1000, parallel = "multicore", l=bopt, sim = "geom") 
+  boot.trajectory.swiss <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, swiss=outcomes.cbw$swiss, covars=FALSE, rev=TRUE, t0=t0_eastern.lm, R=1000, parallel = "multicore", l=bopt, sim = "geom") 
   saveRDS(boot.trajectory.swiss, paste0("results/boot-trajectory-swiss-cbw-",o,".rds")) 
   
   print(paste0("Analysis 1, swiss cluster, Outcome",o))
@@ -109,7 +109,7 @@ for(o in outcome.vars){
   print(mean(boot.trajectory.eastern$t0)) # test statistic S
   print(boot.ci(boot.trajectory.eastern, type=c("basic","norm")))
   
-  boot.trajectory.swiss <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, swiss=outcomes.lm$swiss, covars=FALSE, rev=FALSE, t0=t0_eastern.swiss, R=1000, parallel = "multicore", l=bopt, sim = "geom") 
+  boot.trajectory.swiss <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, swiss=outcomes.lm$swiss, covars=FALSE, rev=FALSE, t0=t0_swiss.lm, R=1000, parallel = "multicore", l=bopt, sim = "geom") 
   saveRDS(boot.trajectory.swiss, paste0("results/boot-trajectory-swiss-lm-",o,".rds")) 
   
   print(paste0("Analysis 1, swiss cluster, Outcome",o))
