@@ -51,7 +51,7 @@ for(o in outcome.vars){
   
   t_final_placebo <- ncol(outcomes.cbw.placebo$M ) # all periods 
   
-  taus <- 1:length((4:t_final_placebo))
+  taus <- 1:5
   
   boot.trajectory.eastern.placebo.cbw <- lapply(taus, function(t){
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
@@ -81,7 +81,7 @@ for(o in outcome.vars){
   
   t_final_placebo <- ncol(outcomes.lm.placebo$M ) # all periods 
   
-  taus <- 1:length((4:t_final_placebo))
+  taus <- 1:5
   
   boot.trajectory.eastern.placebo.lm <- lapply(taus, function(t){
     t0_placebo <- t_final_placebo-t # n pre-treatment periods
