@@ -32,7 +32,6 @@ Run order
 	* MCEst.R
 	* PolitisWhite.R
 	* MCEstBoot.R
-	* ChernoTest.R
 
 3. mc-plot.R
 	* TsPlot.R
