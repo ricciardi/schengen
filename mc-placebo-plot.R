@@ -3,7 +3,7 @@ library(ggplot2)
 library(wesanderson)
 library(reshape2)
 
-outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcome.vars <- c("N_CBWbord","CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 outcomes.labels <- c("Share of residents working in border region",
                      "Share of employed residents working in border region",
                      "Regional employment rate",
@@ -28,13 +28,11 @@ for(o in outcome.vars){
     
     # get placebo results
     
-    iid.placebo <- readRDS(paste0("results/iid-placebo-cbw-",o,c,".rds"))
+    eastern.placebo.cbw <- readRDS(paste0("results/boot-trajectory-eastern-placebo-cbw",o,c,".rds"))
     
-    iid.block.placebo <- readRDS(paste0("results/iid-block-placebo-cbw-",o,c,".rds"))
+    swiss.placebo.cbw <- readRDS(paste0("results/boot-trajectory-eastern-placebo-cbw",o,c,".rds"))
     
-    moving.block.placebo <- readRDS(paste0("results/moving-block-placebo-cbw-",o,c,".rds"))
-    
-    taus <- 1:length(iid.placebo)
+    taus <- 1:length(eastern.placebo.cbw)
     
     p.values <- data.frame("iid"=c(sapply(taus, function(i) iid.placebo[[i]]$p)[1,],sapply(taus, function(i) iid.placebo[[i]]$p)[2,]),
                            "iid.block"=c(sapply(taus, function(i) iid.block.placebo[[i]]$p)[1,],sapply(taus, function(i) iid.block.placebo[[i]]$p)[2,]),
@@ -79,13 +77,11 @@ for(o in outcome.vars){
     
     # get placebo results
     
-    iid.placebo <- readRDS(paste0("results/iid-placebo-lm-",o,c,".rds"))
+    eastern.placebo.lm <- readRDS(paste0("results/boot-trajectory-eastern-placebo-lm",o,c,".rds"))
     
-    iid.block.placebo <- readRDS(paste0("results/iid-block-placebo-lm-",o,c,".rds"))
+    swiss.placebo.lm <- readRDS(paste0("results/boot-trajectory-eastern-placebo-lm",o,c,".rds"))
     
-    moving.block.placebo <- readRDS(paste0("results/moving-block-placebo-lm-",o,c,".rds"))
-    
-    taus <- 1:length(iid.placebo)
+    taus <- 1:length(eastern.placebo.lm)
     
     p.values <- data.frame("iid"=c(sapply(taus, function(i) iid.placebo[[i]]$p)[1,],sapply(taus, function(i) iid.placebo[[i]]$p)[2,]),
                            "iid.block"=c(sapply(taus, function(i) iid.block.placebo[[i]]$p)[1,],sapply(taus, function(i) iid.block.placebo[[i]]$p)[2,]),

@@ -30,7 +30,7 @@ for(o in outcome.vars){
   
   outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
   
-  # Discard pre-treatment periods
+  # Discard pre-treatment periods (retrospective)
   outcomes.cbw.placebo <- outcomes.cbw
   outcomes.cbw.placebo$M <- outcomes.cbw$M[,which(colnames(outcomes.cbw$M)=="20091"):ncol(outcomes.cbw$M)] 
   outcomes.cbw.placebo$W <- outcomes.cbw$W[,which(colnames(outcomes.cbw$W)=="20091"):ncol(outcomes.cbw$M)]

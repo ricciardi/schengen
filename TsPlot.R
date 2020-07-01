@@ -99,7 +99,7 @@ TsPlot <- function(df, main = "",y.title,vline,vline2,breaks,labels,rev) {
              , axis.text=element_text(size=14)
              , axis.title.x=element_text(size = 16, margin = margin(t = 20, r = 0, b = 0, l = 0))
              , axis.title.y=element_text(size = 16, margin = margin(t = 0, r = 20, b = 0, l = 0))
-             , legend.text=element_text(size=12, family = "serif")
+             , legend.text=element_text(size=10, family = "serif")
              , legend.box = "vertical"
              , legend.key = element_blank()
       ) +
@@ -115,14 +115,14 @@ TsPlot <- function(df, main = "",y.title,vline,vline2,breaks,labels,rev) {
       ticks + 
       theme( legend.title = element_blank()
              , plot.title = element_text(hjust = 0.5, size = 16)
-             , legend.justification = c(0.01,0.4)
-             , legend.position = c(0.01,0.4)
-             #  , legend.position = "top"
+             , legend.justification = c(0.01,0.05)
+             , legend.position = c(0.01,0.05)
+          #   , legend.position = "bottom"
              , legend.background = element_rect()
              , axis.text=element_text(size=14)
              , axis.title.x=element_text(size = 16, margin = margin(t = 20, r = 0, b = 0, l = 0))
              , axis.title.y=element_text(size = 16, margin = margin(t = 0, r = 20, b = 0, l = 0))
-             , legend.text=element_text(size=12, family = "serif")
+             , legend.text=element_text(size=10, family = "serif")
              , legend.box = "vertical"
              , legend.key = element_blank()
       ) +

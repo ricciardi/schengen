@@ -10,10 +10,11 @@ require(tseries)
 require(ggplot2)
 library(latex2exp)
 library(wesanderson)
+library(boot)
 
 source("TsPlot.R")
 
-PlotMCCapacity <- function(observed,main,y.title,mc_est,boot_result,treated,control,eastern,swiss,vline,vline2,breaks,labels,att.label){
+PlotMCCapacity <- function(observed,main,y.title,mc_est,boot_result,treated,control,eastern,swiss,vline,vline2,breaks,labels,att.label,rev){
   ## Create time series data
   
   predicted <- mc_est$Mhat
@@ -61,14 +62,14 @@ PlotMCCapacity <- function(observed,main,y.title,mc_est,boot_result,treated,cont
   
   ts.means.m$series<- factor(ts.means.m$series, levels=c("Observed/predicted", att.label)) # reverse order
   
-  ts.plot <- TsPlot(df=ts.means.m,main=main, y.title=y.title,vline,vline2,breaks,labels)
+  ts.plot <- TsPlot(df=ts.means.m,main=main, y.title=y.title,vline,vline2,breaks,labels,rev)
   
   return(ts.plot)
 }
 
 ## Plot time-series
 
-outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcome.vars <- c("N_CBWbord","CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 outcomes.labels <- c("Share of residents working in border region",
                      "Share of employed residents working in border region",
                      "Regional employment rate",
@@ -83,16 +84,20 @@ covarflag <- c("","-covars")
 
 for(o in outcome.vars){
   for(c in covarflag){
+    
+    if(c=="" && o %in% c("N_CBWbord","Thwusual")) next
+    if(c=="-covars" && o %in% c("Thwusual", "unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")) next
 
     ## Analysis 1: ST vs AT (retrospective, X=CBW) 
     
     outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
     mc.estimates.cbw <- readRDS(paste0("results/mc-estimates-cbw-",o,c,".rds"))
+    
     boot.cbw <- readRDS(paste0("results/boot-cbw-",o,c,".rds"))
     
     mc.plot <- PlotMCCapacity(observed = outcomes.cbw$M, 
                               y.title=outcomes.labels[which(outcome.vars==o)],
-                              main = "Retrospective prediction for later-treated by region",
+                              main = "Retrospective prediction for later-treated, by cluster",
                               mc_est=mc.estimates.cbw, 
                               boot_result=boot.cbw, 
                               treated=outcomes.cbw$treated, 
@@ -102,21 +107,23 @@ for(o in outcome.vars){
                               vline=20091,vline2=20111,
                               breaks=c(20051,20072,20091,20111,20184),
                               labels=c("20051","20072","20091","20111","20184"),
-                              att.label = TeX("$\\hat{\\bar{\\tau}}_t$"))
+                              att.label = TeX("$\\hat{\\bar{\\tau}}_t$"),
+                              rev=TRUE)
     
     ggsave(paste0("plots/mc-estimates-cbw-",o,c,".png"), mc.plot, width=8.5, height=11)
     
     ## Analysis 2:  ST vs NT (forward, X=LM)
     
-    if(o %in% c("CBWbord","CBWbordEMPL")) next
+    if(o %in% c("N_CBWbord","CBWbord","CBWbordEMPL","empl")) next
     
     outcomes.lm <- readRDS(paste0("data/outcomes-lm-",o,".rds"))
     mc.estimates.lm <- readRDS(paste0("results/mc-estimates-lm-",o,c,".rds"))
+    
     boot.lm <- readRDS(paste0("results/boot-lm-",o,c,".rds"))
     
     mc.plot <- PlotMCCapacity(observed = outcomes.lm$M, 
                               y.title=outcomes.labels[which(outcome.vars==o)],
-                              main = "Prospective prediction for later-treated by region",
+                              main = "Prospective prediction for later-treated, by cluster",
                               mc_est=mc.estimates.lm, 
                               boot_result=boot.lm, 
                               treated=outcomes.lm$treated, 
@@ -126,7 +133,8 @@ for(o in outcome.vars){
                               vline=20072,vline2=20081,
                               breaks=c(20051,20072,20091,20111,20184),
                               labels=c("20051","20072","20091","20111","20184"),
-                              att.label = TeX("$\\hat{\\bar{\\tau}}_t$"))
+                              att.label = TeX("$\\hat{\\bar{\\tau}}_t$"),
+                              rev=FALSE)
     
     ggsave(paste0("plots/mc-estimates-lm-",o,c,".png"), mc.plot, width=8.5, height=11)
     
@@ -139,23 +147,24 @@ for(c in covarflag){
   print(c)
   ## Analysis 1: ST vs AT (retrospective, X=CBW) 
   
-  iid <- lapply(outcome.vars, function(o){
-    p <- readRDS(paste0("results/iid-cbw-",o,c,".rds"))
-    return(p)
-  })
-  names(iid) <- outcome.vars
+  if(c=="" && o %in% c("N_CBWbord","Thwusual")) next
+  if(c=="-covars" && o %in% c("Thwusual", "unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")) next
   
-  iid.block <- lapply(outcome.vars, function(o){
-    p <- readRDS(paste0("results/iid-block-cbw-",o,c,".rds"))
-    return(p)
+  boot.trajectory.eastern.cbw  <- lapply(outcome.vars, function(o){
+    boot  <- readRDS(paste0("results/boot-trajectory-eastern-cbw-",o,c,".rds"))
+    names(boot) <- outcome.vars
+    ci <- boot.ci(boot[[o]], type=c("basic","norm"))
+    return(list("t0"=ci$t0, "ci.lower"=ci$basic[4], "ci.upper"=ci.basic[5]))
   })
-  names(iid.block) <- outcome.vars
+  names(boot.trajectory.eastern.cbw ) <- outcome.vars
   
-  moving.block <- lapply(outcome.vars, function(o){
-    p <- readRDS(paste0("results/moving-block-cbw-",o,c,".rds"))
-    return(p)
+  boot.trajectory.swiss.cbw  <- lapply(outcome.vars, function(o){
+    boot  <- readRDS(paste0("results/boot-trajectory-swiss-cbw-",o,c,".rds"))
+    names(boot) <- outcome.vars
+    ci <- boot.ci(boot[[o]], type=c("basic","norm"))
+    return(list("t0"=ci$t0, "ci.lower"=ci$basic[4], "ci.upper"=ci.basic[5]))
   })
-  names(moving.block) <- outcome.vars
+  names(boot.trajectory.swiss.cbw ) <- outcome.vars
   
   p.values <- data.frame("iid"=c(sapply(outcome.vars, function(i) iid[[i]]$p)[1,],sapply(outcome.vars, function(i) iid[[i]]$p)[2,]),
                          "iid.block"=c(sapply(outcome.vars, function(i) iid.block[[i]]$p)[1,],sapply(outcome.vars, function(i) iid.block[[i]]$p)[2,]),
@@ -170,7 +179,7 @@ for(c in covarflag){
   # Plot
   mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) + 
     geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
-    labs(title="Retrospective prediction for later-treated", 
+    labs(title="Retrospective prediction for later-treated, by cluster", 
          y="Randomization p-values",
          y="Outcomes") + 
     geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
@@ -194,24 +203,25 @@ for(c in covarflag){
   
   ## Analysis 2:  ST vs NT (forward, X=LM)
   
-  iid <- lapply(outcome.vars, function(o){
-    p <- readRDS(paste0("results/iid-lm-",o,c,".rds"))
-    return(p)
-  })
-  names(iid) <- outcome.vars
+  if(o %in% c("N_CBWbord","CBWbord","CBWbordEMPL","empl")) next
   
-  iid.block <- lapply(outcome.vars, function(o){
-    p <- readRDS(paste0("results/iid-block-lm-",o,c,".rds"))
-    return(p)
+  boot.trajectory.eastern.lm  <- lapply(outcome.vars, function(o){
+    boot  <- readRDS(paste0("results/boot-trajectory-eastern-lm-",o,c,".rds"))
+    names(boot) <- outcome.vars
+    ci <- boot.ci(boot[[o]], type=c("basic","norm"))
+    return(list("t0"=ci$t0, "ci.lower"=ci$basic[4], "ci.upper"=ci.basic[5]))
   })
-  names(iid.block) <- outcome.vars
+  names(boot.trajectory.eastern.lm ) <- outcome.vars
   
-  moving.block <- lapply(outcome.vars, function(o){
-    p <- readRDS(paste0("results/moving-block-lm-",o,c,".rds"))
-    return(p)
+  boot.trajectory.swiss.lm  <- lapply(outcome.vars, function(o){
+    boot  <- readRDS(paste0("results/boot-trajectory-swiss-lm-",o,c,".rds"))
+    names(boot) <- outcome.vars
+    ci <- boot.ci(boot[[o]], type=c("basic","norm"))
+    return(list("t0"=ci$t0, "ci.lower"=ci$basic[4], "ci.upper"=ci.basic[5]))
   })
-  names(moving.block) <- outcome.vars
+  names(boot.trajectory.swiss.lm ) <- outcome.vars
   
+  names(boot.trajectory.eastern.cbw ) <- outcome.vars
   p.values <- data.frame("iid"=c(sapply(outcome.vars, function(i) iid[[i]]$p)[1,],sapply(outcome.vars, function(i) iid[[i]]$p)[2,]),
                          "iid.block"=c(sapply(outcome.vars, function(i) iid.block[[i]]$p)[1,],sapply(outcome.vars, function(i) iid.block[[i]]$p)[2,]),
                          "moving.block"=c(sapply(outcome.vars, function(i) moving.block[[i]]$p)[1,],sapply(outcome.vars, function(i) moving.block[[i]]$p)[2,]),
@@ -225,7 +235,7 @@ for(c in covarflag){
   # Plot
   mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) + 
     geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
-    labs(title="Prospective prediction for later-treated", 
+    labs(title="Prospective prediction for later-treated, by cluster", 
          y="Randomization p-values",
          x="Outcomes") + 
     geom_vline(xintercept=0.05, linetype="dashed", color = "red") +

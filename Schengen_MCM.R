@@ -22,6 +22,7 @@ RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 outcome.vars <- c("N_CBWbord","CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")[-1] # N_CBWbord needs pop. control var
 
 for(o in outcome.vars){
+  print(o)
 
   ## Analysis 1: ST vs AT (retrospective, X=CBW) 
   
@@ -96,14 +97,14 @@ for(o in outcome.vars){
   boot.trajectory.eastern <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, eastern=outcomes.lm$eastern, covars=FALSE, rev=FALSE, t0=t0_eastern.lm, R=1000, parallel = "multicore", l=bopt, sim = "geom") 
   saveRDS(boot.trajectory.eastern, paste0("results/boot-trajectory-eastern-lm-",o,".rds")) 
   
-  print(paste0("Analysis 1, Eastern cluster, Outcome",o))
+  print(paste0("Analysis 2, Eastern cluster, Outcome",o))
   print(mean(boot.trajectory.eastern$t0)) # test statistic S
   print(boot.ci(boot.trajectory.eastern, type=c("basic","norm")))
   
   boot.trajectory.swiss <- tsboot(tseries=ts(t(outcomes.lm$M)), MCEstBoot, mask=outcomes.lm$mask, W=outcomes.lm$W, swiss=outcomes.lm$swiss, covars=FALSE, rev=FALSE, t0=t0_swiss.lm, R=1000, parallel = "multicore", l=bopt, sim = "geom") 
   saveRDS(boot.trajectory.swiss, paste0("results/boot-trajectory-swiss-lm-",o,".rds")) 
   
-  print(paste0("Analysis 1, swiss cluster, Outcome",o))
+  print(paste0("Analysis 2, swiss cluster, Outcome",o))
   print(mean(boot.trajectory.swiss$t0)) # post-period att
   print(boot.ci(boot.trajectory.swiss, type=c("basic","norm")))
 }
