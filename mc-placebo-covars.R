@@ -30,13 +30,13 @@ for(o in outcome.vars){
   
   outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
   
-  # Discard pre-treatment periods (retrospective)
+  # Use pre-treatment for LT (no missing values)
   outcomes.cbw.placebo <- outcomes.cbw
-  outcomes.cbw.placebo$M <- outcomes.cbw$M[,which(colnames(outcomes.cbw$M)=="20091"):ncol(outcomes.cbw$M)] 
-  outcomes.cbw.placebo$W <- outcomes.cbw$W[,which(colnames(outcomes.cbw$W)=="20091"):ncol(outcomes.cbw$M)]
-  outcomes.cbw.placebo$mask <- outcomes.cbw$mask[,which(colnames(outcomes.cbw$mask)=="20091"):ncol(outcomes.cbw$M)]
-  outcomes.cbw.placebo$X <- outcomes.cbw$X[,which(colnames(outcomes.cbw$X)=="20091"):ncol(outcomes.cbw$M)]
-  outcomes.cbw.placebo$X.hat <- outcomes.cbw$X.hat[,which(colnames(outcomes.cbw$X.hat)=="20091"):ncol(outcomes.cbw$M)]
+  outcomes.cbw.placebo$mask <- outcomes.cbw$mask[rownames(outcomes.cbw$mask)%in%outcomes.cbw$treated,][,1:(which(colnames(outcomes.cbw$mask)=="20091")-1)] -1 # all zeros
+  outcomes.cbw.placebo$M <- outcomes.cbw$M[,colnames(outcomes.cbw$M)%in%colnames(outcomes.cbw.placebo$mask)][rownames(outcomes.cbw$M)%in%rownames(outcomes.cbw.placebo$mask),]
+  outcomes.cbw.placebo$W <- outcomes.cbw$W[,colnames(outcomes.cbw$W)%in%colnames(outcomes.cbw.placebo$mask)][rownames(outcomes.cbw$W)%in%rownames(outcomes.cbw.placebo$mask),]
+  outcomes.cbw.placebo$X <- outcomes.cbw$X[,colnames(outcomes.cbw$X)%in%colnames(outcomes.cbw.placebo$mask)][rownames(outcomes.cbw$X)%in%rownames(outcomes.cbw.placebo$mask),]
+  outcomes.cbw.placebo$X.hat <- outcomes.cbw$X.hat[,colnames(outcomes.cbw$X.hat)%in%colnames(outcomes.cbw.placebo$mask)][rownames(outcomes.cbw$X.hat)%in%rownames(outcomes.cbw.placebo$mask),]
   
   # Get optimal stationary bootstrap lengths
   source("PolitisWhite.R")
@@ -49,17 +49,17 @@ for(o in outcome.vars){
   source("MCEst.R")
   source("MCEstBoot.R")
   
-  t_final_placebo <- ncol(outcomes.cbw.placebo$M ) # all periods 
+  t_final_placebo <- 1 # first period
   
   taus <- 1:5
   
   boot.trajectory.eastern.placebo.cbw <- lapply(taus, function(t){
-    t0_placebo <- t_final_placebo-t # n pre-treatment periods
+    t0_placebo <- t_final_placebo+t 
     tsboot(tseries=t(outcomes.cbw.placebo$M), MCEstBoot, mask=outcomes.cbw.placebo$mask, W=outcomes.cbw.placebo$W, X=outcomes.cbw.placebo$X,X.hat=outcomes.cbw.placebo$X.hat, eastern=outcomes.cbw$eastern, covars=TRUE, rev=TRUE, t0=t0_placebo, R=1000, parallel = "multicore", l=bopt, sim = "geom")})
   saveRDS(boot.trajectory.eastern.placebo.cbw,paste0("results/boot-trajectory-eastern-placebo-cbw-",o,"-covars.rds"))
   
   boot.trajectory.swiss.placebo.cbw <- lapply(taus, function(t){
-    t0_placebo <- t_final_placebo-t # n pre-treatment periods
+    t0_placebo <- t_final_placebo+t # 
     tsboot(tseries=t(outcomes.cbw.placebo$M), MCEstBoot, mask=outcomes.cbw.placebo$mask, W=outcomes.cbw.placebo$W, X=outcomes.cbw.placebo$X,X.hat=outcomes.cbw.placebo$X.hat, swiss=outcomes.cbw$swiss, covars=TRUE, rev=TRUE, t0=t0_placebo, R=1000, parallel = "multicore", l=bopt, sim = "geom")})
   saveRDS(boot.trajectory.swiss.placebo.cbw,paste0("results/boot-trajectory-swiss-placebo-cbw-",o,"-covars.rds"))
   
@@ -69,13 +69,13 @@ for(o in outcome.vars){
   
   outcomes.lm <- readRDS(paste0("data/outcomes-lm-",o,".rds"))
   
-  # Discard post-treatment periods
+  # Use pre-treatment (no missing values)
   outcomes.lm.placebo <- outcomes.lm
-  outcomes.lm.placebo$M <- outcomes.lm$M[,1:which(colnames(outcomes.lm$M)=="20091")-1]
-  outcomes.lm.placebo$W <- outcomes.lm$W[,1:which(colnames(outcomes.lm$W)=="20091")-1]
-  outcomes.lm.placebo$mask <- outcomes.lm$mask[,1:which(colnames(outcomes.lm$mask)=="20091")-1]
-  outcomes.lm.placebo$X <- outcomes.lm$X[,which(colnames(outcomes.lm$X)=="20091"):ncol(outcomes.lm$M)]
-  outcomes.lm.placebo$X.hat <- outcomes.lm$X.hat[,which(colnames(outcomes.lm$X.hat)=="20091"):ncol(outcomes.lm$M)]
+  outcomes.lm.placebo$mask <- outcomes.lm$mask[,1:(which(colnames(outcomes.lm$mask)=="20072")-1)] # all zeros
+  outcomes.lm.placebo$M <- outcomes.lm$M[,colnames(outcomes.lm$M)%in%colnames(outcomes.lm.placebo$mask)][rownames(outcomes.lm$M)%in%rownames(outcomes.lm.placebo$mask),]
+  outcomes.lm.placebo$W <- outcomes.lm$W[,colnames(outcomes.lm$W)%in%colnames(outcomes.lm.placebo$mask)][rownames(outcomes.lm$W)%in%rownames(outcomes.lm.placebo$mask),]
+  outcomes.lm.placebo$X <- outcomes.lm$X[,colnames(outcomes.lm$X)%in%colnames(outcomes.lm.placebo$mask)][rownames(outcomes.lm$X)%in%rownames(outcomes.lm.placebo$mask),]
+  outcomes.lm.placebo$X.hat <- outcomes.lm$X.hat[,colnames(outcomes.lm$X.hat)%in%colnames(outcomes.lm.placebo$mask)][rownames(outcomes.lm$X.hat)%in%rownames(outcomes.lm.placebo$mask),]
   
   # Get p-values
   

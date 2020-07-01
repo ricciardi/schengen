@@ -20,7 +20,7 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-outcome.vars <- c("N_CBWbord","CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")[-1] # N_CBWbord needs pop. control var
+outcome.vars <- c("N_CBWbord","CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 
 for(o in outcome.vars){
 
@@ -30,12 +30,12 @@ for(o in outcome.vars){
   
   outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
   
-  # Discard pre-treatment periods
+  # Use pre-treatment for LT (no missing values)
   outcomes.cbw.placebo <- outcomes.cbw
-  outcomes.cbw.placebo$M <- outcomes.cbw$M[,which(colnames(outcomes.cbw$M)=="20091"):ncol(outcomes.cbw$M)] 
-  outcomes.cbw.placebo$W <- outcomes.cbw$W[,which(colnames(outcomes.cbw$W)=="20091"):ncol(outcomes.cbw$M)]
-  outcomes.cbw.placebo$mask <- outcomes.cbw$mask[,which(colnames(outcomes.cbw$mask)=="20091"):ncol(outcomes.cbw$M)]
-  
+  outcomes.cbw.placebo$mask <- outcomes.cbw$mask[rownames(outcomes.cbw$mask)%in%outcomes.cbw$treated,][,1:(which(colnames(outcomes.cbw$mask)=="20091")-1)] -1 # all zeros
+  outcomes.cbw.placebo$M <- outcomes.cbw$M[,colnames(outcomes.cbw$M)%in%colnames(outcomes.cbw.placebo$mask)][rownames(outcomes.cbw$M)%in%rownames(outcomes.cbw.placebo$mask),]
+  outcomes.cbw.placebo$W <- outcomes.cbw$W[,colnames(outcomes.cbw$W)%in%colnames(outcomes.cbw.placebo$mask)][rownames(outcomes.cbw$W)%in%rownames(outcomes.cbw.placebo$mask),]
+
   # Get optimal stationary bootstrap lengths
   source("PolitisWhite.R")
   
@@ -47,17 +47,17 @@ for(o in outcome.vars){
   source("MCEst.R")
   source("MCEstBoot.R")
   
-  t_final_placebo <- ncol(outcomes.cbw.placebo$M ) # all periods 
+  t_final_placebo <- 1 # first period
   
   taus <- 1:5
   
   boot.trajectory.eastern.placebo.cbw <- lapply(taus, function(t){
-    t0_placebo <- t_final_placebo-t # n pre-treatment periods
+    t0_placebo <- t_final_placebo+t 
     tsboot(tseries=t(outcomes.cbw.placebo$M), MCEstBoot, mask=outcomes.cbw.placebo$mask, W=outcomes.cbw.placebo$W, eastern=outcomes.cbw$eastern, covars=FALSE, rev=TRUE, t0=t0_placebo, R=1000, parallel = "multicore", l=bopt, sim = "geom")})
   saveRDS(boot.trajectory.eastern.placebo.cbw,paste0("results/boot-trajectory-eastern-placebo-cbw-",o,".rds"))
   
   boot.trajectory.swiss.placebo.cbw <- lapply(taus, function(t){
-    t0_placebo <- t_final_placebo-t # n pre-treatment periods
+    t0_placebo <- t_final_placebo+t 
     tsboot(tseries=t(outcomes.cbw.placebo$M), MCEstBoot, mask=outcomes.cbw.placebo$mask, W=outcomes.cbw.placebo$W, swiss=outcomes.cbw$swiss, covars=FALSE, rev=TRUE, t0=t0_placebo, R=1000, parallel = "multicore", l=bopt, sim = "geom")})
   saveRDS(boot.trajectory.swiss.placebo.cbw,paste0("results/boot-trajectory-swiss-placebo-cbw-",o,".rds"))
   
@@ -67,11 +67,11 @@ for(o in outcome.vars){
   
   outcomes.lm <- readRDS(paste0("data/outcomes-lm-",o,".rds"))
   
-  # Discard post-treatment periods
+  # Use pre-treatment (no missing values)
   outcomes.lm.placebo <- outcomes.lm
-  outcomes.lm.placebo$M <- outcomes.lm$M[,1:which(colnames(outcomes.lm$M)=="20091")-1]
-  outcomes.lm.placebo$W <- outcomes.lm$W[,1:which(colnames(outcomes.lm$W)=="20091")-1]
-  outcomes.lm.placebo$mask <- outcomes.lm$mask[,1:which(colnames(outcomes.lm$mask)=="20091")-1]
+  outcomes.lm.placebo$mask <- outcomes.lm$mask[,1:(which(colnames(outcomes.lm$mask)=="20072")-1)] # all zeros
+  outcomes.lm.placebo$M <- outcomes.lm$M[,colnames(outcomes.lm$M)%in%colnames(outcomes.lm.placebo$mask)][rownames(outcomes.lm$M)%in%rownames(outcomes.lm.placebo$mask),]
+  outcomes.lm.placebo$W <- outcomes.lm$W[,colnames(outcomes.lm$W)%in%colnames(outcomes.lm.placebo$mask)][rownames(outcomes.lm$W)%in%rownames(outcomes.lm.placebo$mask),]
   
   # Get p-values
   

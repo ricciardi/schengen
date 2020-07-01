@@ -70,8 +70,9 @@ PlotMCCapacity <- function(observed,main,y.title,mc_est,boot_result,treated,cont
 ## Plot time-series
 
 outcome.vars <- c("N_CBWbord","CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
-outcomes.labels <- c("Share of residents working in border region",
-                     "Share of employed residents working in border region",
+outcomes.labels <- c("Number of residents working in border region",
+                     "Share of residents working in border region",
+                     "Share of residents working in border region, conditional on employment",
                      "Regional employment rate",
                      "Average total working hours",
                      "Unemployment rate",
@@ -147,11 +148,14 @@ for(c in covarflag){
   print(c)
   ## Analysis 1: ST vs AT (retrospective, X=CBW) 
   
-  if(c=="" && o %in% c("N_CBWbord","Thwusual")) next
-  if(c=="-covars" && o %in% c("Thwusual", "unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")) next
-  
   boot.trajectory.eastern.cbw  <- lapply(outcome.vars, function(o){
+    if(c=="" && o %in% c("N_CBWbord","Thwusual")) next
+    if(c=="-covars" && o %in% c("Thwusual", "unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")) next
+    
     boot  <- readRDS(paste0("results/boot-trajectory-eastern-cbw-",o,c,".rds"))
+    if(c=="" && o %in% c("N_CBWbord","Thwusual")) next
+    if(c=="-covars" && o %in% c("Thwusual", "unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")) next
+    
     names(boot) <- outcome.vars
     ci <- boot.ci(boot[[o]], type=c("basic","norm"))
     return(list("t0"=ci$t0, "ci.lower"=ci$basic[4], "ci.upper"=ci.basic[5]))
@@ -159,6 +163,9 @@ for(c in covarflag){
   names(boot.trajectory.eastern.cbw ) <- outcome.vars
   
   boot.trajectory.swiss.cbw  <- lapply(outcome.vars, function(o){
+    if(c=="" && o %in% c("N_CBWbord","Thwusual")) next
+    if(c=="-covars" && o %in% c("Thwusual", "unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")) next
+    
     boot  <- readRDS(paste0("results/boot-trajectory-swiss-cbw-",o,c,".rds"))
     names(boot) <- outcome.vars
     ci <- boot.ci(boot[[o]], type=c("basic","norm"))
@@ -206,6 +213,11 @@ for(c in covarflag){
   if(o %in% c("N_CBWbord","CBWbord","CBWbordEMPL","empl")) next
   
   boot.trajectory.eastern.lm  <- lapply(outcome.vars, function(o){
+    if(c=="" && o %in% c("N_CBWbord","Thwusual")) next
+    if(c=="" && o %in% c("N_CBWbord","CBWbord","CBWbordEMPL" )) next
+    
+    if(c=="-covars" && o %in% c("Thwusual", "unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")) next
+    
     boot  <- readRDS(paste0("results/boot-trajectory-eastern-lm-",o,c,".rds"))
     names(boot) <- outcome.vars
     ci <- boot.ci(boot[[o]], type=c("basic","norm"))
@@ -214,6 +226,10 @@ for(c in covarflag){
   names(boot.trajectory.eastern.lm ) <- outcome.vars
   
   boot.trajectory.swiss.lm  <- lapply(outcome.vars, function(o){
+    if(c=="" && o %in% c("N_CBWbord","Thwusual")) next
+    if(c=="" && o %in% c("N_CBWbord","CBWbord","CBWbordEMPL" )) next
+    if(c=="-covars" && o %in% c("Thwusual", "unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")) next
+    
     boot  <- readRDS(paste0("results/boot-trajectory-swiss-lm-",o,c,".rds"))
     names(boot) <- outcome.vars
     ci <- boot.ci(boot[[o]], type=c("basic","norm"))
