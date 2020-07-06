@@ -1,4 +1,4 @@
-MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, eastern=NULL, swiss=NULL, control=NULL, covars=TRUE, rev=TRUE, t0=NULL, hyp=FALSE) {
+MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, eastern=NULL, swiss=NULL, control=NULL, covars=TRUE, rev=TRUE, t0=NULL) {
   
   Y <- t(tseries) # NxT 
   

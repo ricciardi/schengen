@@ -19,7 +19,7 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-outcome.vars <- c("N_CBWbord","CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcomes <- c("CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 
 for(o in outcome.vars){
   print(o)
@@ -47,9 +47,18 @@ for(o in outcome.vars){
   t0_eastern.cbw <- which(colnames(outcomes.cbw$M)=="20111") # earliest combined treatment
   t0_swiss.cbw <- which(colnames(outcomes.cbw$M)=="20091") # earliest combined treatment
 
-  boot.trajectory.eastern <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, eastern=outcomes.cbw$eastern, covars=FALSE, rev=TRUE, t0=t0_eastern.cbw, hyp=FALSE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  boot.trajectory.eastern <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, eastern=outcomes.cbw$eastern, covars=FALSE, rev=TRUE, t0=t0_eastern.cbw, R=999, parallel = "multicore", l=bopt, sim = "geom") 
   saveRDS(boot.trajectory.eastern, paste0("results/boot-trajectory-eastern-cbw-",o,".rds")) 
   
-  boot.trajectory.swiss <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, swiss=outcomes.cbw$swiss, covars=FALSE, rev=TRUE, t0=t0_swiss.cbw, hyp=FALSE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  boot.trajectory.swiss <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, swiss=outcomes.cbw$swiss, covars=FALSE, rev=TRUE, t0=t0_swiss.cbw, R=999, parallel = "multicore", l=bopt, sim = "geom") 
   saveRDS(boot.trajectory.swiss, paste0("results/boot-trajectory-swiss-cbw-",o,".rds")) 
+  
+  # Get p-values
+  source("ChernoTest.R")
+  
+  iid.block.eastern <- ChernoTest(outcomes=outcomes.cbw[c("M","mask","W")], ns=1000, q=1, t.stat=boot.trajectory.eastern$t0, treat_indices_order=outcomes.cbw$eastern, permtype="iid.block",t0=t0_eastern.cbw,rev=TRUE,covars=FALSE,bopt=round(mean(bopt)))
+  saveRDS(iid.block.eastern,paste0("results/iid-block-cbw-eastern-",o,"-covars.rds"))
+  
+  iid.block.swiss <- ChernoTest(outcomes=outcomes.cbw[c("M","mask","W")], ns=1000, q=1, t.stat=boot.trajectory.swiss$t0, treat_indices_order=outcomes.cbw$swiss, permtype="iid.block",t0=t0_swiss.cbw,rev=TRUE,covars=FALSE,bopt=round(mean(bopt)))
+  saveRDS(iid.block.swiss,paste0("results/iid-block-cbw-swiss-",o,"-covars.rds"))
 }

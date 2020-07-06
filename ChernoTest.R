@@ -70,7 +70,7 @@ ChernoTest <- function(outcomes, ns=100, q=c(1,2), t.stat=NULL, treat_indices_or
     source("PolitisWhite.R")
     
     if(is.null(bopt)){
-      m <- try(median(b.star(t(outcomes$M),round=TRUE)[,1]))  # get optimal bootstrap lengths
+      m <- try(round(mean(b.star(t(outcomes$M),round=TRUE)[,1])))  # get optimal bootstrap lengths
       if("try-error" %in% class(m)) m <- 3
     }else{
       m <- bopt
