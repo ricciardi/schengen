@@ -1,4 +1,4 @@
-MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, eastern=NULL, swiss=NULL, control=NULL, covars=TRUE, rev=TRUE, t0=NULL) {
+MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, eastern=NULL, swiss=NULL, control=NULL, covars=TRUE, rev=TRUE, t0=NULL, hyp=FALSE) {
   
   Y <- t(tseries) # NxT 
   
@@ -35,15 +35,15 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, eastern=NULL, swiss=NULL
       if(!is.null(t0)){
         if(!is.null(eastern)){
           att <- as.matrix(colMeans(est_model_MCPanel_w$impact[,1:(t0-1)][rownames(est_model_MCPanel_w$impact) %in% eastern,])) # get mean pre-period impact on treated
-          return(mean(att))
+          return(att)
         }
         if(!is.null(swiss)){
           att <- as.matrix(colMeans(est_model_MCPanel_w$impact[,1:(t0-1)][rownames(est_model_MCPanel_w$impact) %in% swiss,]))
-          return(mean(att))
+          return(att)
         } 
         if(!is.null(control)){
           att<- as.matrix(colMeans(est_model_MCPanel_w$impact[,1:(t0-1)][rownames(est_model_MCPanel_w$impact) %in% control,]))
-          return(mean(att))
+          return(att)
         }
       }else{
         return(est_model_MCPanel_w$impact)
@@ -53,15 +53,15 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, eastern=NULL, swiss=NULL
       if(!is.null(t0)){
         if(!is.null(eastern)){
           att <- as.matrix(colMeans(est_model_MCPanel_w$impact[,t0:ncol(est_model_MCPanel_w$impact)][rownames(est_model_MCPanel_w$impact) %in% eastern,])) # get mean post-period impact on treated
-          return(mean(att))
+          return(att)
         }
         if(!is.null(swiss)){
           as.matrix(colMeans(est_model_MCPanel_w$impact[,t0:ncol(est_model_MCPanel_w$impact)][rownames(est_model_MCPanel_w$impact) %in% swiss,]))
-          return(mean(att))
+          return(att)
         } 
         if(!is.null(control)){
           att <- as.matrix(colMeans(est_model_MCPanel_w$impact[,t0:ncol(est_model_MCPanel_w$impact)][rownames(est_model_MCPanel_w$impact) %in% control,]))
-          return(mean(att))
+          return(att)
         }
       }else{
         return(est_model_MCPanel_w$impact)
@@ -81,15 +81,15 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, eastern=NULL, swiss=NULL
       if(!is.null(t0)){
         if(!is.null(eastern)){
           att <- as.matrix(colMeans(est_model_MCPanel$impact[,1:(t0-1)][rownames(est_model_MCPanel$impact) %in% eastern,])) # get mean pre-period impact on treated
-          return(mean(att))
+          return(att)
         }
         if(!is.null(swiss)){
           att <- as.matrix(colMeans(est_model_MCPanel$impact[,1:(t0-1)][rownames(est_model_MCPanel$impact) %in% swiss,]))
-          return(mean(att))
+          return(att)
         } 
         if(!is.null(control)){
           att <- as.matrix(colMeans(est_model_MCPanel$impact[,1:(t0-1)][rownames(est_model_MCPanel$impact) %in% control,]))
-          return(mean(att))
+          return(att)
         }      
       }else{
         return(est_model_MCPanel$impact)
@@ -100,15 +100,15 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, eastern=NULL, swiss=NULL
         if(!is.null(t0)){
           if(!is.null(eastern)){
             att <- as.matrix(colMeans(est_model_MCPanel$impact[,t0:ncol(est_model_MCPanel$impact)][rownames(est_model_MCPanel$impact) %in% eastern,])) # get mean post-period impact on treated
-            return(mean(att))
+            return(att)
           }
           if(!is.null(swiss)){
             att <- as.matrix(colMeans(est_model_MCPanel$impact[,t0:ncol(est_model_MCPanel$impact)][rownames(est_model_MCPanel$impact) %in% swiss,])) 
-            return(mean(att))
+            return(att)
           } 
           if(!is.null(control)){
             att <- as.matrix(colMeans(est_model_MCPanel$impact[,t0:ncol(est_model_MCPanel$impact)][rownames(est_model_MCPanel$impact) %in% control,])) 
-            return(mean(att))
+            return(att)
           }      
         }else{
           return(est_model_MCPanel$impact)
