@@ -172,7 +172,9 @@ for(o in outcomes){
                                                                            ncol= ncol(data.cbw), byrow = TRUE) # (N x T)
   # Save
   
-  outcomes.cbw <- list("M"=data.cbw, "mask"=mask.cbw, "W"= p.weights.cbw, "X"=best.var.outcome.cbw.m, "X.hat"=best.var.outcome.cbw.hat,
+  outcomes.cbw <- list("M"=data.cbw, "mask"=mask.cbw, "W"= p.weights.cbw,
+                       #"X"=best.var.outcome.cbw.m, "X.hat"=best.var.outcome.cbw.hat,
+                       "X"=(propensity.model.cbw$Mhat)/(1-propensity.model.cbw$Mhat), "X.hat"=(propensity.model.cbw$Mhat)/(1-propensity.model.cbw$Mhat),
                        "mc.outcome"=impute.best.var.outcome.cbw, "mc.propensity"=propensity.model.cbw,
                                "treated"=rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],
                                "control"=rownames(mask.cbw)[rownames(mask.cbw)%in%always.treated.cbw],
