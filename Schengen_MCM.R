@@ -56,9 +56,9 @@ for(o in outcome.vars){
   # Get p-values
   source("ChernoTest.R")
   
-  iid.block.eastern <- ChernoTest(outcomes=outcomes.cbw[c("M","mask","W")], ns=1000, q=1, t.stat=boot.trajectory.eastern$t0, treat_indices_order=outcomes.cbw$eastern, permtype="iid.block",t0=t0_eastern.cbw,rev=TRUE,covars=FALSE,bopt=round(mean(bopt)))
+  iid.block.eastern <- ChernoTest(outcomes=outcomes.cbw[c("M","mask","W","X","X.hat")], ns=1000, q=1, t.stat=boot.trajectory.eastern$t0, treat_indices_order=outcomes.cbw$eastern, permtype="iid.block",t0=t0_eastern.cbw,rev=TRUE,covars=FALSE,bopt=round(mean(bopt)))
   saveRDS(iid.block.eastern,paste0("results/iid-block-cbw-eastern-",o,"-covars.rds"))
-  
-  iid.block.swiss <- ChernoTest(outcomes=outcomes.cbw[c("M","mask","W")], ns=1000, q=1, t.stat=boot.trajectory.swiss$t0, treat_indices_order=outcomes.cbw$swiss, permtype="iid.block",t0=t0_swiss.cbw,rev=TRUE,covars=FALSE,bopt=round(mean(bopt)))
+                                      
+  iid.block.swiss <- ChernoTest(outcomes=outcomes.cbw[c("M","mask","W","X","X.hat")], ns=1000, q=1, t.stat=boot.trajectory.swiss$t0, treat_indices_order=outcomes.cbw$swiss, permtype="iid.block",t0=t0_swiss.cbw,rev=TRUE,covars=FALSE,bopt=round(mean(bopt)))
   saveRDS(iid.block.swiss,paste0("results/iid-block-cbw-swiss-",o,"-covars.rds"))
 }
