@@ -128,5 +128,5 @@ ChernoTest <- function(outcomes, ns=100, q=c(1,2), t.stat=NULL, treat_indices_or
   real_teststat <- sapply(q,
                           function(j) ((1/sqrt(length(real_att))) * sum(abs(real_att)^q[j]))^(1/q[j]))
   pval <- sapply(q, function(i) 1- ((1/length(teststats[,i]) * sum(teststats[,i] < real_teststat[i]))))
-  return(list("q"=q,"s"=real_teststat,"teststats"=teststats,"real_att" = real_att,"p"=pval))
+  return(list("q"=q,"s"=real_teststat,"teststats"=teststats,"real_att" = real_att,"p"=pval,"t0"=t0,"t_final"=t_final))
 }

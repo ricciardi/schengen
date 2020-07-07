@@ -30,13 +30,13 @@ for(o in outcome.vars){
   
   outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
   
-  # Use pre-treatment for LT (no missing values)
+  # Use post-treatment (no missing values)
   outcomes.cbw.placebo <- outcomes.cbw
   outcomes.cbw.placebo$mask <- outcomes.cbw$mask[,(which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask))]  # all zeros
-  outcomes.cbw.placebo$M <- outcomes.cbw$M[,colnames(outcomes.cbw$M)%in%colnames(outcomes.cbw.placebo$mask)][rownames(outcomes.cbw$M)%in%rownames(outcomes.cbw.placebo$mask),]
-  outcomes.cbw.placebo$W <- outcomes.cbw$W[,colnames(outcomes.cbw$W)%in%colnames(outcomes.cbw.placebo$mask)][rownames(outcomes.cbw$W)%in%rownames(outcomes.cbw.placebo$mask),]
-  outcomes.cbw.placebo$X <- outcomes.cbw$X[,colnames(outcomes.cbw$X)%in%colnames(outcomes.cbw.placebo$mask)][rownames(outcomes.cbw$X)%in%rownames(outcomes.cbw.placebo$mask),]
-  outcomes.cbw.placebo$X.hat <- outcomes.cbw$X.hat[,colnames(outcomes.cbw$X.hat)%in%colnames(outcomes.cbw.placebo$mask)][rownames(outcomes.cbw$X.hat)%in%rownames(outcomes.cbw.placebo$mask),]
+  outcomes.cbw.placebo$M <- outcomes.cbw$M[,(which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask))]
+  outcomes.cbw.placebo$W <- outcomes.cbw$W[,(which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask))]
+  outcomes.cbw.placebo$X <- outcomes.cbw$X[,(which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask))]
+  outcomes.cbw.placebo$X.hat <- outcomes.cbw$X.hat[,(which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask))]
   
   # Get p-values
   source("MCEst.R")
@@ -45,18 +45,16 @@ for(o in outcome.vars){
   t_final_placebo <- ncol(outcomes.cbw.placebo$M ) # all periods
   print(t_final_placebo) 
   
-  taus <- c(round(t_final_placebo/2), t_final_placebo-10, t_final_placebo-5, t_final_placebo-3)
+  t0_placebo <- c(round(t_final_placebo/10), round(t_final_placebo/8), round(t_final_placebo/5), round(t_final_placebo/3)) # n pre-treatment periods
   
-  iid.block.placebo.eastern <- lapply(taus, function(t){
-    t0_placebo <- t_final_placebo-t # n pre-treatment periods
-    ChernoTest(outcomes=outcomes.cbw.placebo[c("M","mask","W","X","X.hat")], ns=1000, q=1,treat_indices_order=outcomes.cbw$eastern, permtype="iid.block",t0=t0_placebo,rev=TRUE,covars=TRUE)
+  iid.block.placebo.eastern <- lapply(t0_placebo, function(t){
+    ChernoTest(outcomes=outcomes.cbw.placebo[c("M","mask","W","X","X.hat")], ns=1000, q=1,treat_indices_order=outcomes.cbw$eastern, permtype="iid.block",t0=t,rev=TRUE,covars=TRUE)
     
   })
   saveRDS(iid.block.placebo.eastern,paste0("results/iid-block-placebo-cbw-eastern",o,"-covars.rds"))
 
-    iid.block.placebo.swiss <- lapply(taus, function(t){
-    t0_placebo <- t_final_placebo-t # n pre-treatment periods
-    ChernoTest(outcomes=outcomes.cbw.placebo[c("M","mask","W","X","X.hat")], ns=1000, q=1,treat_indices_order=outcomes.cbw$swiss, permtype="iid.block",t0=t0_placebo,rev=TRUE,covars=TRUE)
+    iid.block.placebo.swiss <- lapply(t0_placebo, function(t){
+    ChernoTest(outcomes=outcomes.cbw.placebo[c("M","mask","W","X","X.hat")], ns=1000, q=1,treat_indices_order=outcomes.cbw$swiss, permtype="iid.block",t0=t,rev=TRUE,covars=TRUE)
     
   })
   saveRDS(iid.block.placebo.swiss,paste0("results/iid-block-placebo-cbw-swiss",o,"-covars.rds"))
