@@ -81,8 +81,8 @@ names(covars) <- c(covariates,covariates.cbw)
 
 covars.cbw <- lapply(c(covariates.cbw), function(i){ 
   subset <- covars[[i]][rownames(covars[[i]]) %in% cbw,]
-  impute <- predict(preProcess(subset, method = c("medianImpute")), subset) # Impute missing with column medians
-  return(impute)
+#  impute <- predict(preProcess(subset, method = c("medianImpute")), subset) # Impute missing with column medians
+  return(subset)
 }) # N x # predictors
 
 names(covars.cbw ) <- c(covariates.cbw)
@@ -125,13 +125,21 @@ for(o in outcomes){
      best.var.outcome.cbw.m <- as.matrix(covars.cbw[["GDPcapitaR"]][rownames(covars.cbw[["GDPcapitaR"]])%in%rownames(mask.cbw),])
    }
    
+   # Masked matrix for which 0=observed, 1 missing
+   mask.cbw.missing <- matrix(0, nrow = nrow(data.cbw ), 
+                              ncol= ncol(data.cbw),
+                              dimnames = list(rownames(data.cbw), colnames(data.cbw))) # (N x T)
+   mask.cbw.missing[which(is.na(best.var.outcome.cbw.m))] <- 1
+   best.var.outcome.cbw.m[is.na(best.var.outcome.cbw.m)] <- 0 # NA's are 0 in outcome matrix
+   
    outcomes.impute.cbw <- list("M"=best.var.outcome.cbw.m, 
                                "mask"=mask.cbw, 
                                "W"= matrix(0.99, nrow(mask.cbw),ncol(mask.cbw),
                                            dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are equal
    
-   impute.best.var.outcome.cbw <- MCEst(outcomes.impute.cbw, rev=TRUE, covars=FALSE, nofes=TRUE) # run with no FEs
-   best.var.outcome.cbw.hat <- best.var.outcome.cbw.m*(1-mask.cbw) + impute.best.var.outcome.cbw$Mhat*mask.cbw # only endogenous values imputed
+   impute.best.var.outcome.cbw <- MCEst(outcomes.impute.cbw, rev=TRUE, covars=FALSE)
+   best.var.outcome.cbw.m.imputed <- best.var.outcome.cbw.m*(1-mask.cbw.missing) + impute.best.var.outcome.cbw$Mhat*mask.cbw.missing + replicate(ncol(mask.cbw.missing),impute.best.var.outcome.cbw$u) + t(replicate(nrow(mask.cbw.missing),impute.best.var.outcome.cbw$v)) # only missing values imputed
+   best.var.outcome.cbw.hat <- best.var.outcome.cbw.m.imputed*(1-mask.cbw) + impute.best.var.outcome.cbw$Mhat*mask.cbw  + replicate(ncol(mask.cbw),impute.best.var.outcome.cbw$u) + t(replicate(nrow(mask.cbw),impute.best.var.outcome.cbw$v))  # only endogenous values imputed
    
    colnames(best.var.outcome.cbw.hat) <- colnames(mask.cbw)
    rownames(best.var.outcome.cbw.hat) <- rownames(mask.cbw)
@@ -139,17 +147,17 @@ for(o in outcomes){
   ## Estimate propsensity scores by matrix completion
    
    propensity.model.cbw.data <- list("M"=mask.cbw, 
-                                     "X" = best.var.outcome.cbw.m, # var with endogenous values
+                                     "X" = best.var.outcome.cbw.m.imputed, # var with endogenous values + imputed missing values
                                      "X.hat"= best.var.outcome.cbw.hat, # var with imputed endogenous values
                                      "mask" = matrix(0, nrow(mask.cbw),ncol(mask.cbw),
                                                      dimnames = list(rownames(mask.cbw), colnames(mask.cbw))), # no missing entries
                                      "W"= matrix(0.99, nrow(mask.cbw),ncol(mask.cbw),
                                                  dimnames = list(rownames(mask.cbw), colnames(mask.cbw)))) 
    
-   propensity.model.cbw <- MCEst(propensity.model.cbw.data, rev=TRUE, covars=TRUE, nofes=TRUE) # run with no FEs
+   propensity.model.cbw <- MCEst(propensity.model.cbw.data, rev=TRUE, covars=TRUE) 
    
-   propensity.model.cbw.scaled <- propensity.model.cbw$Mhat
-   propensity.model.cbw.scaled <-apply(propensity.model.cbw.scaled, MARGIN = 2, FUN = function(X) (X - min(X))/diff(range(X))) # standardize columns
+   propensity.model.cbw.values <- propensity.model.cbw$Mhat + replicate(ncol(mask.cbw),propensity.model.cbw$u) + t(replicate(nrow(mask.cbw),propensity.model.cbw$v))
+   propensity.model.cbw.scaled <-apply(propensity.model.cbw.values, MARGIN = 2, FUN = function(X) (X - min(X))/diff(range(X))) # standardize columns
    
    colnames(propensity.model.cbw.scaled) <- colnames(mask.cbw)
    rownames(propensity.model.cbw.scaled) <- rownames(mask.cbw)
@@ -173,8 +181,8 @@ for(o in outcomes){
   # Save
   
   outcomes.cbw <- list("M"=data.cbw, "mask"=mask.cbw, "W"= p.weights.cbw,
-                       #"X"=best.var.outcome.cbw.m, "X.hat"=best.var.outcome.cbw.hat,
-                       "X"=(propensity.model.cbw$Mhat)/(1-propensity.model.cbw$Mhat), "X.hat"=(propensity.model.cbw$Mhat)/(1-propensity.model.cbw$Mhat),
+                       #"X"=best.var.outcome.cbw.m.imputed, "X.hat"=best.var.outcome.cbw.hat,
+                       "X"=(propensity.model.cbw.values)/(1-propensity.model.cbw.values), "X.hat"=(propensity.model.cbw.values)/(1-propensity.model.cbw.values),
                        "mc.outcome"=impute.best.var.outcome.cbw, "mc.propensity"=propensity.model.cbw,
                                "treated"=rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],
                                "control"=rownames(mask.cbw)[rownames(mask.cbw)%in%always.treated.cbw],

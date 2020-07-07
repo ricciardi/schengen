@@ -46,13 +46,13 @@ for(o in outcome.vars){
   t0_placebo <- c(round(t_final_placebo/10), round(t_final_placebo/8), round(t_final_placebo/5), round(t_final_placebo/3)) # n pre-treatment periods
   
   iid.block.placebo.eastern <- lapply(t0_placebo, function(t){
-    ChernoTest(outcomes=outcomes.cbw.placebo[c("M","mask","W","X","X.hat")], ns=1000, q=1,treat_indices_order=outcomes.cbw$eastern, permtype="iid.block",t0=t,rev=TRUE,covars=FALSE)
+    ChernoTest(outcomes=outcomes.cbw.placebo[c("M","mask","W")], ns=1000, q=1,treat_indices_order=outcomes.cbw$eastern, permtype="iid.block",t0=t,rev=TRUE,covars=FALSE)
     
   })
   saveRDS(iid.block.placebo.eastern,paste0("results/iid-block-placebo-cbw-eastern",o,".rds"))
 
     iid.block.placebo.swiss <- lapply(t0_placebo, function(t){
-    ChernoTest(outcomes=outcomes.cbw.placebo[c("M","mask","W","X","X.hat")], ns=1000, q=1,treat_indices_order=outcomes.cbw$swiss, permtype="iid.block",t0=t,rev=TRUE,covars=FALSE)
+    ChernoTest(outcomes=outcomes.cbw.placebo[c("M","mask","W")], ns=1000, q=1,treat_indices_order=outcomes.cbw$swiss, permtype="iid.block",t0=t,rev=TRUE,covars=FALSE)
     
   })
   saveRDS(iid.block.placebo.swiss,paste0("results/iid-block-placebo-cbw-swiss",o,".rds"))
