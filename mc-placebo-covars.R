@@ -4,8 +4,6 @@
 
 ## Loading Source files
 library(MCPanel)
-library(glmnet)
-library(ggplot2)
 library(boot)
 
 # Setup parallel processing
@@ -38,25 +36,14 @@ for(o in outcome.vars){
   outcomes.cbw.placebo$X <- outcomes.cbw$X[,(which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask))]
   outcomes.cbw.placebo$X.hat <- outcomes.cbw$X.hat[,(which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask))]
   
-  # Get p-values
-  source("MCEst.R")
-  source("ChernoTest.R")
+  # Get optimal stationary bootstrap lengths
+  source("PolitisWhite.R")
   
-  t_final_placebo <- ncol(outcomes.cbw.placebo$M ) # all periods
-  print(t_final_placebo) 
+  bopt <- b.star(t(outcomes.cbw$M),round=TRUE)[,1]
   
-  t0_placebo <- c(round(t_final_placebo/10), round(t_final_placebo/8), round(t_final_placebo/5), round(t_final_placebo/3)) # n pre-treatment periods
+  # Bootstrap for per-period effects
+  source("MCEstBoot.R")
   
-  iid.block.placebo.eastern <- lapply(t0_placebo, function(t){
-    ChernoTest(outcomes=outcomes.cbw.placebo[c("M","mask","W","X","X.hat")], ns=1000, q=1,treat_indices_order=outcomes.cbw$eastern, permtype="iid.block",t0=t,rev=TRUE,covars=TRUE)
-    
-  })
-  saveRDS(iid.block.placebo.eastern,paste0("results/iid-block-placebo-cbw-eastern",o,"-covars.rds"))
-
-    iid.block.placebo.swiss <- lapply(t0_placebo, function(t){
-    ChernoTest(outcomes=outcomes.cbw.placebo[c("M","mask","W","X","X.hat")], ns=1000, q=1,treat_indices_order=outcomes.cbw$swiss, permtype="iid.block",t0=t,rev=TRUE,covars=TRUE)
-    
-  })
-  saveRDS(iid.block.placebo.swiss,paste0("results/iid-block-placebo-cbw-swiss",o,"-covars.rds"))
-
+  boot <- tsboot(tseries=ts(t(outcomes.cbw.placebo$M)), MCEstBoot, mask=outcomes.cbw.placebo$mask, W=outcomes.cbw.placebo$W, X=outcomes.cbw.placebo$X,X.hat=outcomes.cbw.placebo$X.hat,covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  saveRDS(boot, paste0("results/placebo-boot-cbw-",o,"-covars.rds")) 
 }

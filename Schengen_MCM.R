@@ -5,7 +5,6 @@
 ## Libraries
 library(MCPanel)
 library(boot)
-library(glmnet)
 
 # Setup parallel processing 
 library(parallel)
@@ -32,33 +31,27 @@ for(o in outcome.vars){
   
   # Get treatment effect estimates
     
-  source('MCEst.R')
-  mc.estimates.cbw <- MCEst(outcomes.cbw, rev=TRUE, covars=FALSE) 
-  saveRDS(mc.estimates.cbw, paste0("results/mc-estimates-cbw-",o,".rds"))
+  # source('MCEst.R')
+  # mc.estimates.cbw <- MCEst(outcomes.cbw, rev=TRUE, covars=FALSE)
+  # saveRDS(mc.estimates.cbw, paste0("results/mc-estimates-cbw-",o,".rds"))
   
   # Get optimal stationary bootstrap lengths
   source("PolitisWhite.R")
   
   bopt <- b.star(t(outcomes.cbw$M),round=TRUE)[,1]
   
-  # Bootstrap for ATT trajectory 
+  # Bootstrap for per-period effects
   source("MCEstBoot.R")
   
-  t0_eastern.cbw <- which(colnames(outcomes.cbw$M)=="20111") # earliest combined treatment
-  t0_swiss.cbw <- which(colnames(outcomes.cbw$M)=="20091") # earliest combined treatment
+  boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W,covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  saveRDS(boot, paste0("results/boot-cbw-",o,".rds")) 
+  
 
-  boot.trajectory.eastern <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, eastern=outcomes.cbw$eastern, covars=FALSE, rev=TRUE, t0=t0_eastern.cbw, R=999, parallel = "multicore", l=bopt, sim = "geom") 
-  saveRDS(boot.trajectory.eastern, paste0("results/boot-trajectory-eastern-cbw-",o,".rds")) 
-  
-  boot.trajectory.swiss <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, swiss=outcomes.cbw$swiss, covars=FALSE, rev=TRUE, t0=t0_swiss.cbw, R=999, parallel = "multicore", l=bopt, sim = "geom") 
-  saveRDS(boot.trajectory.swiss, paste0("results/boot-trajectory-swiss-cbw-",o,".rds")) 
-  
-  # Get p-values
+  # Bootstrap under the null
   source("ChernoTest.R")
   
-  iid.block.eastern <- ChernoTest(outcomes=outcomes.cbw[c("M","mask","W","X","X.hat")], ns=1000, q=1, t.stat=boot.trajectory.eastern$t0, treat_indices_order=outcomes.cbw$eastern, permtype="iid.block",t0=t0_eastern.cbw,rev=TRUE,covars=FALSE,bopt=round(mean(bopt)))
-  saveRDS(iid.block.eastern,paste0("results/iid-block-cbw-eastern-",o,"-covars.rds"))
-                                      
-  iid.block.swiss <- ChernoTest(outcomes=outcomes.cbw[c("M","mask","W","X","X.hat")], ns=1000, q=1, t.stat=boot.trajectory.swiss$t0, treat_indices_order=outcomes.cbw$swiss, permtype="iid.block",t0=t0_swiss.cbw,rev=TRUE,covars=FALSE,bopt=round(mean(bopt)))
-  saveRDS(iid.block.swiss,paste0("results/iid-block-cbw-swiss-",o,"-covars.rds"))
+  boot.null <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=matrix(0, nrow = nrow(outcomes.cbw$mask), 
+                                                                                    ncol= ncol(outcomes.cbw$mask),
+                                                                                    dimnames = list(rownames(outcomes.cbw$mask), colnames(outcomes.cbw$mask))), W=outcomes.cbw$W, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  saveRDS(boot.null, paste0("results/boot-null-cbw-",o,".rds")) 
 }

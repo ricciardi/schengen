@@ -27,8 +27,6 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, eastern=NULL, swiss=NULL
     
     est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v)) # use X with imputed endogenous values
     
-    est_model_MCPanel_w$impact <- (Y-est_model_MCPanel_w$Mhat)
-    
     if(rev){
       est_model_MCPanel_w$impact <- (est_model_MCPanel_w$Mhat-Y)
       
