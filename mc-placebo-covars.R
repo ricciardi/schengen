@@ -28,13 +28,13 @@ for(o in outcome.vars){
   
   outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
   
-  # Use post-treatment (no missing values)
+  # Use pre-treatment for LT (no missing values under the null)
   outcomes.cbw.placebo <- outcomes.cbw
-  outcomes.cbw.placebo$mask <- outcomes.cbw$mask[,(which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask))]  # all zeros
-  outcomes.cbw.placebo$M <- outcomes.cbw$M[,(which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask))]
-  outcomes.cbw.placebo$W <- outcomes.cbw$W[,(which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask))]
-  outcomes.cbw.placebo$X <- outcomes.cbw$X[,(which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask))]
-  outcomes.cbw.placebo$X.hat <- outcomes.cbw$X.hat[,(which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask))]
+  outcomes.cbw.placebo$mask <- outcomes.cbw$mask[,1:(which(colnames(outcomes.cbw$mask)=="20091")-1)][!rownames(outcomes.cbw$mask) %in% outcomes.cbw$control,] -1   # all zeros 
+  outcomes.cbw.placebo$M <- outcomes.cbw$M[,1:(which(colnames(outcomes.cbw$mask)=="20091")-1)][!rownames(outcomes.cbw$mask) %in% outcomes.cbw$control,]
+  outcomes.cbw.placebo$W <- outcomes.cbw$W[,1:(which(colnames(outcomes.cbw$mask)=="20091")-1)][!rownames(outcomes.cbw$mask) %in% outcomes.cbw$control,]
+  outcomes.cbw.placebo$X <- outcomes.cbw$X[,1:(which(colnames(outcomes.cbw$mask)=="20091")-1)][!rownames(outcomes.cbw$mask) %in% outcomes.cbw$control,]
+  outcomes.cbw.placebo$X.hat <- outcomes.cbw$X.hat[,1:(which(colnames(outcomes.cbw$mask)=="20091")-1)][!rownames(outcomes.cbw$mask) %in% outcomes.cbw$control,]
   
   # Get optimal stationary bootstrap lengths
   source("PolitisWhite.R")

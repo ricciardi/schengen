@@ -31,9 +31,9 @@ for(o in outcome.vars){
   
   # Get treatment effect estimates
     
-  # source('MCEst.R')
-  # mc.estimates.cbw <- MCEst(outcomes.cbw, rev=TRUE, covars=TRUE)
-  # saveRDS(mc.estimates.cbw, paste0("results/mc-estimates-cbw-",o,"-covars.rds"))
+  source('MCEst.R')
+  mc.estimates.cbw <- MCEst(outcomes.cbw, rev=TRUE, covars=TRUE)
+  saveRDS(mc.estimates.cbw, paste0("results/mc-estimates-cbw-",o,"-covars.rds"))
   
   # Get optimal stationary bootstrap lengths
   source("PolitisWhite.R")
@@ -47,7 +47,6 @@ for(o in outcome.vars){
   saveRDS(boot, paste0("results/boot-cbw-",o,"-covars.rds")) 
   
   # Bootstrap under the null
-  source("ChernoTest.R")
 
   boot.null <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=matrix(0, nrow = nrow(outcomes.cbw$mask), 
                                                                                     ncol= ncol(outcomes.cbw$mask),
