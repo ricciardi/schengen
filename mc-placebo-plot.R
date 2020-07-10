@@ -1,110 +1,110 @@
-# Plot p-values from placebo tests
+# Plot CIs from placebo tests
 library(ggplot2)
 library(wesanderson)
 library(reshape2)
 
-outcome.vars <- c("N_CBWbord","CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
-outcomes.labels <- c("Share of residents working in border region",
-                     "Share of employed residents working in border region",
+outcome.vars <- c("CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcomes.labels <- c("Share of residents\n working in border region",
                      "Regional employment rate",
-                     "Average total working hours",
+                     "Average total\n working hours",
                      "Unemployment rate",
                      "Inactivity rate",
-                     "% unemployed for < 1 month",
-                     "% unemployed for < 1-2 months",
-                     "% unemployed for < 3 months")
+                     "% unemployed for\n < 1 month",
+                     "% unemployed for\n < 1-2 months",
+                     "% unemployed for\n < 3 months")
 
-covarflag <- c("","-covars")
-for(o in outcome.vars){
-  for(c in covarflag){
-    print(o)
+cf<- ("")
+outcome.pvals <- lapply(outcome.vars, function(o){
+  
+  #Analysis 1: ST vs AT (retrospective, X=CBW) 
+  
+  print(paste0("Estimates for Analysis 1, outcome:",o,cf))
+  
+  # placebo data
+  outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
+  
+  # Use pre-treatment
+  outcomes.cbw.placebo <- outcomes.cbw
+  outcomes.cbw.placebo$mask <- outcomes.cbw$mask[,1:(which(colnames(outcomes.cbw$mask)=="20072")-1)]
+  outcomes.cbw.placebo$mask[outcomes.cbw.placebo$mask>0] <- 0
+  outcomes.cbw.placebo$mask[rownames(outcomes.cbw.placebo$mask)%in%outcomes.cbw.placebo$eastern,][,1:(which(colnames(outcomes.cbw.placebo$mask)=="20052"))] <- 1
+  outcomes.cbw.placebo$mask[rownames(outcomes.cbw.placebo$mask)%in%outcomes.cbw.placebo$swiss,][,1:(which(colnames(outcomes.cbw.placebo$mask)=="20054"))] <- 1
+  outcomes.cbw.placebo$M <- outcomes.cbw$M[,1:(which(colnames(outcomes.cbw$mask)=="20072")-1)]
+  outcomes.cbw.placebo$W <- outcomes.cbw$W[,1:(which(colnames(outcomes.cbw$mask)=="20072")-1)]
+  
+  #get placebo results
+  
+  placebo.boot.cbw <- readRDS(paste0("results/placebo-boot-cbw-",o,cf,".rds"))
+  
+  testhat <- placebo.boot.cbw$t0 # test stat on placebo data
+  test <- placebo.boot.cbw$t # boot statistics
+  
+  treat.status <- matrix(rownames(testhat), nrow=nrow(testhat), ncol=1)
+  treat.status[rownames(testhat) %in% outcomes.cbw.placebo$eastern] <- "eastern"
+  treat.status[rownames(testhat) %in% outcomes.cbw.placebo$swiss] <- "swiss"
+  treat.status[rownames(testhat) %in% outcomes.cbw.placebo$control] <- "control"
+  treat.status <- matrix(treat.status, dimnames=list(NULL, "status"))
+  
+  testhat.mean <-  aggregate(testhat, list(treat.status), mean)[-1]
+  colnames(testhat.mean) <- colnames(outcomes.cbw.placebo$mask)
+  
+  testhat.eastern <-  rowMeans(testhat.mean[2,][,1:(which(colnames(outcomes.cbw.placebo$mask)=="20052"))]) # tau bar
+  testhat.swiss <-  rowMeans(testhat.mean[3,][,1:(which(colnames(outcomes.cbw.placebo$mask)=="20054"))])
+  
+  test.eastern  <-apply(test, 1, function(x){
+    x <- matrix(x, nrow=dim(testhat)[1], ncol=dim(testhat)[2], byrow=FALSE,
+                dimnames=dimnames(testhat))
+    test.mean <-  aggregate(x, list(treat.status), mean)[-1]
+    colnames(test.mean) <- colnames(outcomes.cbw.placebo$mask)
     
-    ## Analysis 1: ST vs AT (retrospective, X=CBW) 
+    test.eastern <-  rowMeans(test.mean[2,][,1:(which(colnames(outcomes.cbw.placebo$mask)=="20052"))]) # tau bar
+    # test.swiss <-  rowMeans(test.mean[3,][,1:(which(colnames(outcomes.cbw.placebo$mask)=="20054"))])
     
-    print(paste0("Estimates for Analysis 1, outcome:",o,c))
+    return(test.eastern)
+  })
+  
+  test.swiss  <-apply(test, 1, function(x){
+    x <- matrix(x, nrow=dim(testhat)[1], ncol=dim(testhat)[2], byrow=FALSE,
+                dimnames=dimnames(testhat))
+    test.mean <-  aggregate(x, list(treat.status), mean)[-1]
+    colnames(test.mean) <- colnames(outcomes.cbw.placebo$mask)
     
-    # get placebo results
+    test.swiss <-  rowMeans(test.mean[3,][,1:(which(colnames(outcomes.cbw.placebo$mask)=="20054"))])
     
-    eastern.placebo.cbw <- readRDS(paste0("results/boot-trajectory-eastern-placebo-cbw-",o,c,".rds"))
-    eastern.placebo.cbw.p <- sapply(1:length(eastern.placebo.cbw),  function(i) 1- ((1/length(eastern.placebo.cbw[[i]]$t) * sum(eastern.placebo.cbw[[i]]$t < eastern.placebo.cbw[[i]]$t0))))
+    return(test.eastern)
+  })
+  
+  p.val.eastern <- 1- ((1/length( test.eastern ) * sum( test.eastern  < testhat.eastern)))
+  
+  p.val.swiss <- 1- ((1/length( test.swiss ) * sum( test.swiss  < testhat.swiss)))
+  
+  return(list("eastern"=p.val.eastern,"swiss"=p.val.swiss))
+})
+
+names(outcome.pvals) <- outcome.vars
     
-    swiss.placebo.cbw <- readRDS(paste0("results/boot-trajectory-swiss-placebo-cbw-",o,c,".rds"))
-    swiss.placebo.cbw.p <- sapply(1:length(swiss.placebo.cbw),  function(i) 1- ((1/length(swiss.placebo.cbw[[i]]$t) * sum(swiss.placebo.cbw[[i]]$t < swiss.placebo.cbw[[i]]$t0))))
-    
-    taus <- 1:length(eastern.placebo.cbw)
-    
-    p.values <- data.frame("Eastern"=c(eastern.placebo.cbw.p),
-                           "Swiss"=c(swiss.placebo.cbw.p),
-                           "tau"=taus)
-    
-    p.values.m <-melt(p.values,id.vars = c("tau"))
-    
-    # Plot
-    mc.placebo.plot <- ggplot(p.values.m, aes(x=value, y=tau)) + 
-      geom_point(stat='identity', aes(col=variable,shape=factor(variable)), size=3, alpha=0.5)  +
-      labs(title="Placebo test: retrospective prediction for later-treated", 
-           subtitle=outcomes.labels[which(outcome.vars==o)],
-           x="Block bootstrap p-values",
-           y=expression(rho)) + 
-      geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
-      scale_x_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
-                         labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
-      coord_flip() +
-      scale_shape_manual(name="Cluster", values = c("Eastern" = 2,
-                                                    "Swiss" = 4),
-                         labels=c("Eastern", "Swiss")) +
-      scale_colour_manual(name="Cluster", values = c(  "Eastern" = wes_palette("Darjeeling1")[1],
-                                                       "Swiss" = wes_palette("Darjeeling1")[2]),
-                          labels=c("Eastern", "Swiss")) +
-      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-            panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14), plot.subtitle = element_text(hjust = 0.5, size=12)) + 
-      theme(axis.text.y = element_text(size=8))
-    
-    ggsave(filename = paste0("plots/placebo-pvals-cbw-",o,c,".png"),plot = mc.placebo.plot)
-    
-    ## Analysis 2: ST vs NT (Prospective, X=LM) 
-    
-    if(o %in% c("N_lmbord","lmbord","lmbordEMPL")) next
-    
-    print(paste0("Estimates for Analysis 2, outcome:",o,c))
-    
-    # get placebo results
-    
-    eastern.placebo.lm <- readRDS(paste0("results/boot-trajectory-eastern-placebo-lm-",o,c,".rds"))
-    eastern.placebo.lm.p <- sapply(1:length(eastern.placebo.lm),  function(i) 1- ((1/length(eastern.placebo.lm[[i]]$t) * sum(eastern.placebo.lm[[i]]$t < eastern.placebo.lm[[i]]$t0))))
-    
-    swiss.placebo.lm <- readRDS(paste0("results/boot-trajectory-swiss-placebo-lm-",o,c,".rds"))
-    swiss.placebo.lm.p <- sapply(1:length(swiss.placebo.lm),  function(i) 1- ((1/length(swiss.placebo.lm[[i]]$t) * sum(swiss.placebo.lm[[i]]$t < swiss.placebo.lm[[i]]$t0))))
-    
-    taus <- 1:length(eastern.placebo.lm)
-    
-    p.values <- data.frame("Eastern"=c(eastern.placebo.lm.p),
-                           "Swiss"=c(swiss.placebo.lm.p),
-                           "tau"=taus)
-    
-    p.values.m <-melt(p.values,id.vars = c("tau"))
-    
-    # Plot
-    mc.placebo.plot <- ggplot(p.values.m, aes(x=value, y=tau)) + 
-      geom_point(stat='identity', aes(col=variable,shape=factor(variable)), size=3, alpha=0.5)  +
-      labs(title="Placebo test: prospective prediction for later-treated", 
-           subtitle=outcomes.labels[which(outcome.vars==o)],
-           x="Block bootstrap p-values",
-           y=expression(rho)) + 
-      geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
-      scale_x_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
-                         labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
-      coord_flip() +
-      scale_shape_manual(name="Cluster", values = c("Eastern" = 2,
-                                                    "Swiss" = 4),
-                         labels=c("Eastern", "Swiss")) +
-      scale_colour_manual(name="Cluster", values = c(  "Eastern" = wes_palette("Darjeeling1")[1],
-                                                       "Swiss" = wes_palette("Darjeeling1")[2]),
-                          labels=c("Eastern", "Swiss")) +
-      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-            panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14), plot.subtitle = element_text(hjust = 0.5, size=12)) + 
-      theme(axis.text.y = element_text(size=8))
-    
-    ggsave(filename = paste0("plots/placebo-pvals-lm-",o,c,".png"),plot = mc.placebo.plot)
-  }
-}
+p.values <- data.frame("pvals"= c(unlist(lapply(outcome.pvals, '[[', 1)),unlist(lapply(outcome.pvals, '[[', 2))),
+                       "Cluster"=c(rep("Eastern", length(outcome.vars)), rep("Swiss", length(outcome.vars))),
+                       "Outcome"=rep(outcome.vars, 2))
+
+#p.values.m <-melt(p.values,id.vars = c("Cluster","Outcome"))
+
+#Plot
+mc.placebo.plot <- ggplot(p.values, aes(x=pvals, y=Outcome)) + 
+  geom_point(stat='identity', aes(col=factor(Cluster),shape=factor(Cluster)), size=4, alpha=0.9)  +
+  labs(x="Placebo test p-values",
+       y=" ") + 
+  geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
+  scale_x_continuous(breaks=c(0,0.05,0.1,0.25,0.5,0.75,1), 
+                     labels=c("0","0.05","0.10","0.25","0.50","0.75","1")) +
+  scale_y_discrete(labels=outcomes.labels, limits = levels(p.values$outcomes))+
+  coord_flip() +
+  scale_shape_manual(name="Cluster", values = c("Eastern" = 2,
+                                                "Swiss" = 4),
+                     labels=c("Eastern", "Swiss")) +
+  scale_colour_manual(name="Cluster", values = c(  "Eastern" = wes_palette("Darjeeling1")[5],
+                                                   "Swiss" = wes_palette("Darjeeling1")[4]),
+                      labels=c("Eastern", "Swiss")) + theme(legend.key=element_blank(), legend.title=element_text(size=12)) + theme(plot.title = element_text(hjust = 0.5, size=12), plot.subtitle = element_text(hjust = 0.5, size=8)) + 
+  theme(axis.text.y = element_text(size=16,margin = margin(t = 0, r = 0, b = 0, l = 20))) +  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(filename = paste0("plots/placebo-pvals-cbw",cf,".png"),plot = mc.placebo.plot, scale=1.25)
