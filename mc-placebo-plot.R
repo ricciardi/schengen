@@ -3,15 +3,12 @@ library(ggplot2)
 library(wesanderson)
 library(reshape2)
 
-outcome.vars <- c("CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
-outcomes.labels <- c("Share of residents\n working in border region",
-                     "Regional employment rate",
+outcome.vars <- c("CBWbordEMPL","empl","Thwusual","unempl","seekdur_3more")
+outcomes.labels <- c("% working in border region", # order of covar name
+                     "Employment rate",
+                     "% unemployed for\n < 1 year",
                      "Average total\n working hours",
-                     "Unemployment rate",
-                     "Inactivity rate",
-                     "% unemployed for\n < 1 month",
-                     "% unemployed for\n < 1-2 months",
-                     "% unemployed for\n < 3 months")
+                     "Unemployment rate")
 
 cf<- ("")
 outcome.pvals <- lapply(outcome.vars, function(o){
@@ -58,7 +55,6 @@ outcome.pvals <- lapply(outcome.vars, function(o){
     colnames(test.mean) <- colnames(outcomes.cbw.placebo$mask)
     
     test.eastern <-  rowMeans(test.mean[2,][,1:(which(colnames(outcomes.cbw.placebo$mask)=="20052"))]) # tau bar
-    # test.swiss <-  rowMeans(test.mean[3,][,1:(which(colnames(outcomes.cbw.placebo$mask)=="20054"))])
     
     return(test.eastern)
   })
@@ -104,7 +100,7 @@ mc.placebo.plot <- ggplot(p.values, aes(x=pvals, y=Outcome)) +
                      labels=c("Eastern", "Swiss")) +
   scale_colour_manual(name="Cluster", values = c(  "Eastern" = wes_palette("Darjeeling1")[5],
                                                    "Swiss" = wes_palette("Darjeeling1")[4]),
-                      labels=c("Eastern", "Swiss")) + theme(legend.key=element_blank(), legend.title=element_text(size=12)) + theme(plot.title = element_text(hjust = 0.5, size=12), plot.subtitle = element_text(hjust = 0.5, size=8)) + 
-  theme(axis.text.y = element_text(size=16,margin = margin(t = 0, r = 0, b = 0, l = 20))) +  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+                      labels=c("Eastern", "Swiss")) + theme(legend.key=element_blank(), legend.title=element_text(size=12)) + theme(plot.title = element_text(hjust = 0.5, size=12), plot.subtitle = element_text(hjust = 0.5, size=12)) + 
+  theme(axis.text.y = element_text(size=12,margin = margin(t = 0, r = 0, b = 0, l = 20))) #+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=8))
 
-ggsave(filename = paste0("plots/placebo-pvals-cbw",cf,".png"),plot = mc.placebo.plot, scale=1.25)
+ggsave(filename = paste0("plots/placebo-pvals-cbw",cf,".png"),plot = mc.placebo.plot, scale=1.6)
