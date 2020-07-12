@@ -27,15 +27,15 @@ SchengenSim <- function(outcome,sim){
   outcomes.cbw.placebo$mask[outcomes.cbw.placebo$mask>0] <- 0
   outcomes.cbw.placebo$M <- outcomes.cbw$M[,1:(which(colnames(outcomes.cbw$mask)=="20072")-1)]
   outcomes.cbw.placebo$W <- outcomes.cbw$W[,1:(which(colnames(outcomes.cbw$mask)=="20072")-1)]
-
+  
+  Y <- outcomes.cbw.placebo$M # NxT 
+  treat <- outcomes.cbw.placebo$mask # NxT masked matrix 
+  
   weights <- outcomes.cbw.placebo$W
   weights <- weights[rownames(weights) %in% row.names(Y),]
   weights <- weights[row.names(Y),]  # ensure correct order
   
   weights <- (weights)/(1-weights) 
-  
-  Y <- outcomes.cbw.placebo$M # NxT 
-  treat <- outcomes.cbw.placebo$mask # NxT masked matrix 
   
   ## Setting up the configuration
   N <- nrow(treat)

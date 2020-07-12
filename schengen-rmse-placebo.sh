@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name="schengen-placebo"
-#SBATCH -e schengen-placebo.err
+#SBATCH --job-name="schengen-rmse-placebo"
+#SBATCH -e schengen-rmse-placebo.err
 #SBATCH -p common
 #SBATCH -c 6
 #SBATCH --mem=30G
