@@ -150,7 +150,7 @@ SchengenSim <- function(outcome,sim){
                    replicate(length(T0),"SCM"),
                    replicate(length(T0),"Vertical")))
   
-  filename<-paste0(paste0(paste0(paste0(paste0(paste0(gsub("\\.", "_", d),"_N_", N),"_T_", T),"_numruns_", num_runs), "_num_treated_", N_t), "_simultaneuous_", is_simul,outcome),".rds")
+  filename<-paste0(paste0(paste0(paste0(paste0(paste0(gsub("\\.", "_", o),"_N_", N),"_T_", T),"_numruns_", num_runs), "_num_treated_", N_t), "_simultaneuous_", is_simul),".rds")
   save(df1, file = paste0("results/plots/",filename))
 
 }
