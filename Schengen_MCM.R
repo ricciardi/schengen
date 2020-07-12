@@ -45,12 +45,15 @@ for(o in outcome.vars){
   
   boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W,covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
   saveRDS(boot, paste0("results/boot-cbw-",o,".rds")) 
+
+  # Bootstrap by group
   
-
-  # Bootstrap under the null
-
-  boot.null <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=matrix(0, nrow = nrow(outcomes.cbw$mask), 
-                                                                                    ncol= ncol(outcomes.cbw$mask),
-                                                                                    dimnames = list(rownames(outcomes.cbw$mask), colnames(outcomes.cbw$mask))), W=outcomes.cbw$W, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
-  saveRDS(boot.null, paste0("results/boot-null-cbw-",o,".rds")) 
+  boot.eastern<- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, eastern=outcomes.cbw$eastern, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  saveRDS(boot.eastern, paste0("results/boot-eastern-cbw-",o,".rds")) 
+  
+  boot.swiss<- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, swiss=outcomes.cbw$swiss, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  saveRDS(boot.swiss, paste0("results/boot-swiss-cbw-",o,".rds")) 
+  
+  boot.control<- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, control=outcomes.cbw$control, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  saveRDS(boot.control, paste0("results/boot-control-cbw-",o,".rds")) 
 }
