@@ -32,20 +32,29 @@ for(o in outcome.vars){
   outcomes.cbw.placebo <- outcomes.cbw
   outcomes.cbw.placebo$mask <- outcomes.cbw$mask[,1:(which(colnames(outcomes.cbw$mask)=="20072")-1)]
   outcomes.cbw.placebo$mask[outcomes.cbw.placebo$mask>0] <- 0
-  outcomes.cbw.placebo$mask[rownames(outcomes.cbw.placebo$mask)%in%outcomes.cbw.placebo$eastern,][,1:(which(colnames(outcomes.cbw.placebo$mask)=="20052"))] <- 1
-  outcomes.cbw.placebo$mask[rownames(outcomes.cbw.placebo$mask)%in%outcomes.cbw.placebo$swiss,][,1:(which(colnames(outcomes.cbw.placebo$mask)=="20054"))] <- 1
   outcomes.cbw.placebo$M <- outcomes.cbw$M[,1:(which(colnames(outcomes.cbw$mask)=="20072")-1)]
   outcomes.cbw.placebo$W <- outcomes.cbw$W[,1:(which(colnames(outcomes.cbw$mask)=="20072")-1)]
-
   
   # Get optimal stationary bootstrap lengths
   source("PolitisWhite.R")
   
   bopt <- b.star(t(outcomes.cbw$M),round=TRUE)[,1]
   
-  # Bootstrap for per-period effects
-  source("MCEstBoot.R")
-  
-  boot <- tsboot(tseries=ts(t(outcomes.cbw.placebo$M)), MCEstBoot, mask=outcomes.cbw.placebo$mask, W=outcomes.cbw.placebo$W, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  # Random staggered adoption among actual treated 
+  T0 <- 4:(ncol(outcomes.cbw.placebo$mask)-1) # vary t0
+  boot <- lapply(T0, function(t0){
+    treat_indices <- which(rownames(outcomes.cbw.placebo$mask) %in%outcomes.cbw.placebo$treated) # keep treated fixed to actual treated
+    treat_mat <- (1-stag_adapt(outcomes.cbw.placebo$M, length(treat_indices),t0, treat_indices)) # invert again in MCEstBoot
+    
+    rotate <- function(x) t(apply(x, 2, rev))
+    
+    treat_mat <- rotate(rotate(treat_mat)) # retrospective analysis
+    
+    # Bootstrap for per-period effects
+    source("MCEstBoot.R")
+    
+    tsboot(tseries=ts(t(outcomes.cbw.placebo$M)), MCEstBoot, mask=outcomes.cbw.placebo$mask, W=outcomes.cbw.placebo$W, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  })
+  names(boot) <- T0
   saveRDS(boot, paste0("results/placebo-boot-cbw-",o,".rds")) 
 }
