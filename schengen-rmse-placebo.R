@@ -40,7 +40,7 @@ SchengenSim <- function(outcome,sim){
   N <- nrow(treat)
   T <- ncol(treat)
   T0 <- round(c(ncol(outcomes.cbw.placebo$mask)-1, ncol(outcomes.cbw.placebo$mask)/1.25, ncol(outcomes.cbw.placebo$mask)/1.5))
-  num_runs <- 100
+  num_runs <- 200
   is_simul <- sim ## Whether to simulate Simultaneus Adoption or Staggered Adoption
 
   ## Matrices for saving RMSE values
@@ -148,7 +148,7 @@ SchengenSim <- function(outcome,sim){
                    replicate(length(T0),"SCM"),
                    replicate(length(T0),"Vertical")))
   
-  filename<-paste0(paste0(paste0(paste0(paste0(paste0(gsub("\\.", "_", o),"_N_", N),"_T_", T),"_numruns_", num_runs), "_num_treated_", N_t), "_simultaneuous_", is_simul),".rds")
+  filename<-paste0(paste0(paste0(paste0(paste0(paste0(gsub("\\.", "_", o),"_N_", N),"_T_", T),"_numruns_", num_runs), "_num_treated_", length(treat_indices)), "_simultaneuous_", is_simul),".rds")
   save(df1, file = paste0("results/",filename))
 
 }
