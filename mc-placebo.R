@@ -53,7 +53,7 @@ for(o in outcome.vars){
     # Bootstrap for per-period effects
     source("MCEstBoot.R")
     
-    tsboot(tseries=ts(t(outcomes.cbw.placebo$M)), MCEstBoot, mask=outcomes.cbw.placebo$mask, W=outcomes.cbw.placebo$W, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+    tsboot(tseries=ts(t(outcomes.cbw.placebo$M)), MCEstBoot, mask=outcomes.cbw.placebo$mask, W=outcomes.cbw.placebo$W, covars=FALSE, rev=TRUE, R=1999, parallel = "multicore", l=bopt, sim = "geom") 
   })
   names(boot) <- T0
   saveRDS(boot, paste0("results/placebo-boot-cbw-",o,".rds")) 

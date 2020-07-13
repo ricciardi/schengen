@@ -90,7 +90,8 @@ outcomes.labels <- c("% working in border region",
                      "Unemployment rate",
                      "% unemployed for < 1 year")
 
-covarflag <- c("","-covars")
+#covarflag <- c("","-covars")
+covarflag <- c("")
 
 for(o in outcome.vars){
   for(cf in covarflag){
@@ -103,13 +104,15 @@ for(o in outcome.vars){
     mc.estimates.cbw <- readRDS(paste0("results/mc-estimates-cbw-",o,cf,".rds"))
     
     boot.cbw <- readRDS(paste0("results/boot-cbw-",o,cf,".rds"))
-
+    boot.eastern.cbw <- readRDS(paste0("results/boot-eastern-cbw-",o,cf,".rds"))
+    boot.swiss.cbw <- readRDS(paste0("results/boot-swiss-cbw-",o,cf,".rds"))
+    
     mc.plot <- PlotMCCapacity(observed = outcomes.cbw$M, 
                               y.title=outcomes.labels[which(outcome.vars==o)],
                            #   main = "Retrospective prediction for later-treated, by cluster",
                               main= "",
                               mc_est=mc.estimates.cbw, 
-                              boot_result=boot.cbw,
+                              boot_result=boot.eastern.cbw,
                               treated=outcomes.cbw$treated, 
                               control=outcomes.cbw$control, 
                               eastern =outcomes.cbw$eastern,

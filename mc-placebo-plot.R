@@ -11,7 +11,7 @@ outcomes.labels <- c("% working in border region", # order of covar name
                      "Unemployment rate")
 
 cf<- ("")
-outcome.pvals <- lapply(outcome.vars, function(o){
+outcome.pvals <- lapply(outcome.vars, function(o){lapply
   
   #Analysis 1: ST vs AT (retrospective, X=CBW) 
   
@@ -31,7 +31,7 @@ outcome.pvals <- lapply(outcome.vars, function(o){
   
   #get placebo results
   
-  placebo.boot.cbw <- readRDS(paste0("results/placebo-boot-cbw-",o,cf,".rds"))
+  placebo.boot.cbw <- readRDS(paste0("results/placebo-boot-cbw-",o,cf,".rds"))[[1]] # Placebo t0 = 4
   
   testhat <- placebo.boot.cbw$t0 # test stat on placebo data
   test <- placebo.boot.cbw$t # boot statistics
@@ -101,6 +101,6 @@ mc.placebo.plot <- ggplot(p.values, aes(x=pvals, y=Outcome)) +
   scale_colour_manual(name="Cluster", values = c(  "Eastern" = wes_palette("Darjeeling1")[5],
                                                    "Swiss" = wes_palette("Darjeeling1")[4]),
                       labels=c("Eastern", "Swiss")) + theme(legend.key=element_blank(), legend.title=element_text(size=12)) + theme(plot.title = element_text(hjust = 0.5, size=12), plot.subtitle = element_text(hjust = 0.5, size=12)) + 
-  theme(axis.text.y = element_text(size=12,margin = margin(t = 0, r = 0, b = 0, l = 20))) #+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=8))
+  theme(axis.text.y = element_text(size=12,margin = margin(t = 0, r = 0, b = 0, l = 20))) +  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=8))
 
-ggsave(filename = paste0("plots/placebo-pvals-cbw",cf,".png"),plot = mc.placebo.plot, scale=1.6)
+ggsave(filename = paste0("plots/placebo-pvals-cbw",cf,".png"),plot = mc.placebo.plot, scale=1.25)
