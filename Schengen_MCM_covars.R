@@ -53,7 +53,7 @@ for(o in outcome.vars){
  # saveRDS(boot, paste0("results/boot-cbw-eastern",o,"-covars.rds")) 
  #  
  # boot.swiss <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X,X.hat=outcomes.cbw$X.hat,t0=t0.swiss, swiss=outcomes.cbw$swiss,covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
- #saveRDS(boot, paste0("results/boot-cbw-swiss",o,"-covars.rds")) 
+ # saveRDS(boot, paste0("results/boot-cbw-swiss",o,"-covars.rds")) 
   
   # Bootstrap for trajectories
   # Resample trajectories without time component, calculate ATTs for each cluster

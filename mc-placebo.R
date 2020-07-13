@@ -28,12 +28,11 @@ for(o in outcome.vars){
   
   outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
   
-  # Use pre-treatment
+  # Use post-treatment (all zeros)
   outcomes.cbw.placebo <- outcomes.cbw
-  outcomes.cbw.placebo$mask <- outcomes.cbw$mask[,1:(which(colnames(outcomes.cbw$mask)=="20072")-1)]
-  outcomes.cbw.placebo$mask[outcomes.cbw.placebo$mask>0] <- 0
-  outcomes.cbw.placebo$M <- outcomes.cbw$M[,1:(which(colnames(outcomes.cbw$mask)=="20072")-1)]
-  outcomes.cbw.placebo$W <- outcomes.cbw$W[,1:(which(colnames(outcomes.cbw$mask)=="20072")-1)]
+  outcomes.cbw.placebo$mask <- outcomes.cbw$mask[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
+  outcomes.cbw.placebo$M <- outcomes.cbw$M[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
+  outcomes.cbw.placebo$W <- outcomes.cbw$W[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
   
   # Get optimal stationary bootstrap lengths
   source("PolitisWhite.R")
@@ -41,20 +40,46 @@ for(o in outcome.vars){
   bopt <- b.star(t(outcomes.cbw$M),round=TRUE)[,1]
   
   # Random staggered adoption among actual treated 
-  T0 <- 4:(ncol(outcomes.cbw.placebo$mask)-1) # vary t0
+  T0 <- round(c(ncol(outcomes.cbw.placebo$mask)-1, ncol(outcomes.cbw.placebo$mask)/1.25, ncol(outcomes.cbw.placebo$mask)/1.5)) # vary t0
   boot <- lapply(T0, function(t0){
     treat_indices <- which(rownames(outcomes.cbw.placebo$mask) %in%outcomes.cbw.placebo$treated) # keep treated fixed to actual treated
-    treat_mat <- (1-stag_adapt(outcomes.cbw.placebo$M, length(treat_indices),t0, treat_indices)) # invert again in MCEstBoot
+    treat_mat <- (1-stag_adapt(outcomes.cbw.placebo$M, length(treat_indices),t0, treat_indices)) # invert again in MCEst
     
     rotate <- function(x) t(apply(x, 2, rev))
     
-    treat_mat <- rotate(rotate(treat_mat)) # retrospective analysis
+    outcomes.cbw.placebo$mask <- rotate(rotate(treat_mat)) # retrospective analysis
     
-    # Bootstrap for per-period effects
-    source("MCEstBoot.R")
+    source('MCEst.R')
+    mc.estimates.cbw.placebo <- MCEst(outcomes.cbw.placebo, rev=TRUE, covars=FALSE)
     
-    tsboot(tseries=ts(t(outcomes.cbw.placebo$M)), MCEstBoot, mask=outcomes.cbw.placebo$mask, W=outcomes.cbw.placebo$W, covars=FALSE, rev=TRUE, R=1999, parallel = "multicore", l=bopt, sim = "geom") 
+    # Resample trajectories without time component, calculate ATTs for each cluster
+    source("MCEstBootTraj.R")
+    
+    impact <- mc.estimates.cbw.placebo$impact # = boot_result$t0
+    
+    trajectory.eastern <- rowMeans(impact[,1:(t0-1)])
+    trajectory.swiss <- rowMeans(impact[,1:(t0-1)])
+    
+    # eastern
+    
+    boot.trajectory.eastern <- boot(trajectory.eastern, 
+                                    MCEstBootTraj, 
+                                    eastern=outcomes.cbw$eastern,
+                                    R=999,
+                                    parallel = "multicore") 
+    
+  
+    # swiss
+    
+    boot.trajectory.swiss <- boot(trajectory.swiss, 
+                                  MCEstBootTraj, 
+                                  swiss=outcomes.cbw$swiss,
+                                  R=999,
+                                  parallel = "multicore") 
+    
+    return(list("eastern"=boot.trajectory.eastern,"swiss"=boot.trajectory.swiss))
+
   })
-  names(boot) <- T0
+  names(boot) <- T0/ncol(outcomes.cbw.placebo$mask)
   saveRDS(boot, paste0("results/placebo-boot-cbw-",o,".rds")) 
 }

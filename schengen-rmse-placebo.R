@@ -21,12 +21,11 @@ SchengenSim <- function(outcome,sim){
   
   outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
   
-  # Use pre-treatment
+  # Use post-treatment (all zeros)
   outcomes.cbw.placebo <- outcomes.cbw
-  outcomes.cbw.placebo$mask <- outcomes.cbw$mask[,1:(which(colnames(outcomes.cbw$mask)=="20072")-1)]
-  outcomes.cbw.placebo$mask[outcomes.cbw.placebo$mask>0] <- 0
-  outcomes.cbw.placebo$M <- outcomes.cbw$M[,1:(which(colnames(outcomes.cbw$mask)=="20072")-1)]
-  outcomes.cbw.placebo$W <- outcomes.cbw$W[,1:(which(colnames(outcomes.cbw$mask)=="20072")-1)]
+  outcomes.cbw.placebo$mask <- outcomes.cbw$mask[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
+  outcomes.cbw.placebo$M <- outcomes.cbw$M[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
+  outcomes.cbw.placebo$W <- outcomes.cbw$W[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
   
   Y <- outcomes.cbw.placebo$M # NxT 
   treat <- outcomes.cbw.placebo$mask # NxT masked matrix 
@@ -40,9 +39,8 @@ SchengenSim <- function(outcome,sim){
   ## Setting up the configuration
   N <- nrow(treat)
   T <- ncol(treat)
-  T0 <- 4:(ncol(outcomes.cbw.placebo$mask)-1)
-  N_t <- ceiling(N*0.5) # no. treated units desired <=N
-  num_runs <- 1000
+  T0 <- round(c(ncol(outcomes.cbw.placebo$mask)-1, ncol(outcomes.cbw.placebo$mask)/1.25, ncol(outcomes.cbw.placebo$mask)/1.5))
+  num_runs <- 100
   is_simul <- sim ## Whether to simulate Simultaneus Adoption or Staggered Adoption
 
   ## Matrices for saving RMSE values
@@ -58,14 +56,14 @@ SchengenSim <- function(outcome,sim){
   for(i in c(1:num_runs)){
     print(paste0(paste0("Run number ", i)," started"))
     ## Fix the treated units in the whole run for a better comparison
-    treat_indices <- sort(sample(1:N, N_t))
+    treat_indices <- which(rownames(outcomes.cbw.placebo$mask) %in%outcomes.cbw.placebo$treated) # keep treated fixed to actual treated
     for (j in c(1:length(T0))){
       t0 <- T0[j]
       ## Simultaneuous (simul_adapt) or Staggered adoption (stag_adapt)
       if(is_simul == 1){
-        treat_mat <- simul_adapt(Y, N_t, t0, treat_indices) 
+        treat_mat <- simul_adapt(Y, length(treat_indices) t0, treat_indices) 
       }else{
-        treat_mat <- stag_adapt(Y, N_t, t0, treat_indices) 
+        treat_mat <- stag_adapt(Y, length(treat_indices), t0, treat_indices) 
       }
       
       rotate <- function(x) t(apply(x, 2, rev))
@@ -144,7 +142,7 @@ SchengenSim <- function(outcome,sim){
                MCPanel_avg_RMSE + 1.96*MCPanel_std_error, 
                ADH_avg_RMSE + 1.96*ADH_std_error,
                ENT_avg_RMSE + 1.96*ENT_std_error),
-      "x" = 1-(T0/T),
+      "x" = T0/T,
       "Method" = c(replicate(length(T0),"DID"), 
                    replicate(length(T0),"MC-NNM"), 
                    replicate(length(T0),"SCM"),
