@@ -42,7 +42,7 @@ SchengenSim <- function(outcome,sim){
   T <- ncol(treat)
   T0 <- 4:(ncol(outcomes.cbw.placebo$mask)-1)
   N_t <- ceiling(N*0.5) # no. treated units desired <=N
-  num_runs <- 100
+  num_runs <- 1000
   is_simul <- sim ## Whether to simulate Simultaneus Adoption or Staggered Adoption
 
   ## Matrices for saving RMSE values

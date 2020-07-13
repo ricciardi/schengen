@@ -43,17 +43,17 @@ for(o in outcome.vars){
   # Bootstrap for per-period effects
   source("MCEstBoot.R")
   
-  boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X,X.hat=outcomes.cbw$X.hat,covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X,X.hat=outcomes.cbw$X.hat,covars=TRUE, rev=TRUE, R=1999, parallel = "multicore", l=bopt, sim = "geom") 
   saveRDS(boot, paste0("results/boot-cbw-",o,"-covars.rds")) 
   
-  # Bootstrap by group
-
-  boot.eastern<- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X,X.hat=outcomes.cbw$X.hat,eastern=outcomes.cbw$eastern, covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
-  saveRDS(boot.eastern, paste0("results/boot-eastern-cbw-",o,"-covars.rds")) 
-  
-  boot.swiss<- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X,X.hat=outcomes.cbw$X.hat,swiss=outcomes.cbw$swiss, covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
-  saveRDS(boot.swiss, paste0("results/boot-swiss-cbw-",o,"-covars.rds")) 
-  
-  boot.control<- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X,X.hat=outcomes.cbw$X.hat,control=outcomes.cbw$control, covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
-  saveRDS(boot.control, paste0("results/boot-control-cbw-",o,"-covars.rds")) 
+  # # Bootstrap by group
+  # 
+  # boot.eastern<- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X,X.hat=outcomes.cbw$X.hat,eastern=outcomes.cbw$eastern, covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  # saveRDS(boot.eastern, paste0("results/boot-eastern-cbw-",o,"-covars.rds")) 
+  # 
+  # boot.swiss<- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X,X.hat=outcomes.cbw$X.hat,swiss=outcomes.cbw$swiss, covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  # saveRDS(boot.swiss, paste0("results/boot-swiss-cbw-",o,"-covars.rds")) 
+  # 
+  # boot.control<- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X,X.hat=outcomes.cbw$X.hat,control=outcomes.cbw$control, covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  # saveRDS(boot.control, paste0("results/boot-control-cbw-",o,"-covars.rds")) 
 }
