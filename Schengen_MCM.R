@@ -18,7 +18,7 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-outcome.vars <- c("CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_3more")
 
 for(o in outcome.vars){
   print(o)
@@ -43,17 +43,50 @@ for(o in outcome.vars){
   # Bootstrap for per-period effects
   source("MCEstBoot.R")
   
-  boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W,covars=FALSE, rev=TRUE, R=1999, parallel = "multicore", l=bopt, sim = "geom") 
+  t0.eastern <- which(colnames(outcomes.cbw$mask)==20111)
+  t0.swiss <- which(colnames(outcomes.cbw$mask)==20072)
+  
+  boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W,covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
   saveRDS(boot, paste0("results/boot-cbw-",o,".rds")) 
+  
+  # boot.eastern <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, t0=t0.eastern, eastern=outcomes.cbw$eastern, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  # saveRDS(boot.eastern, paste0("results/boot-cbw-eastern",o,".rds")) 
+  # 
+  # boot.swiss <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, t0=t0.swiss, swiss=outcomes.cbw$swiss, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  # saveRDS(boot.swiss, paste0("results/boot-cbw-swiss",o,".rds")) 
 
-  # # Bootstrap by group
-  # 
-  # boot.eastern<- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, eastern=outcomes.cbw$eastern, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
-  # saveRDS(boot.eastern, paste0("results/boot-eastern-cbw-",o,".rds")) 
-  # 
-  # boot.swiss<- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, swiss=outcomes.cbw$swiss, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
-  # saveRDS(boot.swiss, paste0("results/boot-swiss-cbw-",o,".rds")) 
-  # 
-  # boot.control<- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, control=outcomes.cbw$control, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
-  # saveRDS(boot.control, paste0("results/boot-control-cbw-",o,".rds")) 
+  # Bootstrap for trajectories
+  # Resample trajectories without time component, calculate ATTs for each cluster
+  source("MCEstBootTraj.R")
+  
+  impact <- mc.estimates.cbw$impact # = boot_result$t0
+  
+  trajectory.eastern <- rowMeans(impact[,1:(t0.eastern-1)])
+  trajectory.swiss <- rowMeans(impact[,1:(t0.swiss-1)])
+  
+  # eastern
+
+  boot.trajectory.eastern <- boot(trajectory.eastern, 
+                                  MCEstBootTraj, 
+                                  eastern=outcomes.cbw$eastern,
+                                  R=999,
+                                  parallel = "multicore") 
+  
+  print(boot.trajectory.eastern$t0)
+  print(boot.ci(boot.trajectory.eastern,type=c("norm","basic", "perc")))
+  
+  saveRDS(boot.trajectory.eastern, paste0("results/boot-cbw-trajectory-eastern-",o,".rds")) 
+  
+  # swiss
+  
+  boot.trajectory.swiss <- boot(trajectory.swiss, 
+                                  MCEstBootTraj, 
+                                  swiss=outcomes.cbw$swiss,
+                                  R=999,
+                                  parallel = "multicore") 
+  
+  print(boot.trajectory.swiss$t0)
+  print(boot.ci(boot.trajectory.swiss,type=c("norm","basic", "perc")))
+  
+  saveRDS(boot.trajectory.swiss, paste0("results/boot-cbw-trajectory-swiss-",o,".rds")) 
 }
