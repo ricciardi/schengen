@@ -29,7 +29,7 @@ data <- read.dta13("FINAL.dta", generate.factors=T) # includes variables for 2 a
 ## inactivity rate (inact)
 ## % of unemployed with unemployment duration less than 1 month (seekdur_0), 1-2 months (seekdur_1_2), 3 months or more (seekdur_3more).
 
-outcomes <- c("CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcomes <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 
 ## Covariates:
 
@@ -134,7 +134,7 @@ for(o in outcomes){
    
    outcomes.impute.cbw <- list("M"=best.var.outcome.cbw.m, 
                                "mask"=mask.cbw.missing, 
-                               "W"= matrix(0.99, nrow(mask.cbw),ncol(mask.cbw),
+                               "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
                                            dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are equal
    
    impute.best.var.outcome.cbw <- MCEst(outcomes.impute.cbw, rev=TRUE, covars=FALSE)
@@ -142,7 +142,7 @@ for(o in outcomes){
    
    outcomes.impute.endog.cbw <- list("M"=best.var.outcome.cbw.m.imputed, # imputed data
                                "mask"=mask.cbw, 
-                               "W"= matrix(0.99, nrow(mask.cbw),ncol(mask.cbw),
+                               "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
                                            dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are equal
    
    impute.endog.best.var.outcome.cbw <- MCEst(outcomes.impute.endog.cbw, rev=TRUE, covars=FALSE)
@@ -158,16 +158,15 @@ for(o in outcomes){
                                      "X.hat"= best.var.outcome.cbw.hat, # var with imputed endogenous values
                                      "mask" = matrix(0, nrow(mask.cbw),ncol(mask.cbw),
                                                      dimnames = list(rownames(mask.cbw), colnames(mask.cbw))), # no missing entries
-                                     "W"= matrix(0.99, nrow(mask.cbw),ncol(mask.cbw),
+                                     "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
                                                  dimnames = list(rownames(mask.cbw), colnames(mask.cbw)))) 
    
    propensity.model.cbw <- MCEst(propensity.model.cbw.data, rev=TRUE, covars=TRUE) 
    
    propensity.model.cbw.values <- propensity.model.cbw$Mhat # incl. B, gamma, delta
-   propensity.model.cbw.scaled <-apply(propensity.model.cbw.values, MARGIN = 2, FUN = function(X) (X - min(X))/diff(range(X))) # standardize columns
    
-   colnames(propensity.model.cbw.scaled) <- colnames(mask.cbw)
-   rownames(propensity.model.cbw.scaled) <- rownames(mask.cbw)
+   colnames(propensity.model.cbw.values) <- colnames(mask.cbw)
+   rownames(propensity.model.cbw.values) <- rownames(mask.cbw)
    
   ## Elapsed time Weights (future and past)
   
@@ -177,19 +176,18 @@ for(o in outcomes){
   z.cbw.swiss <- round(c(seq(0.999, 0.7, length.out=which(colnames(mask.cbw)=="20091")),
                          seq(0.719, 0.999, length.out=ncol(mask.cbw)-which(colnames(mask.cbw)=="20091"))),3)
   
-  p.weights.cbw <- matrix(propensity.model.cbw.scaled%*%diag(z.cbw.eastern), 
+  p.weights.cbw <- matrix(propensity.model.cbw.values%*%diag(z.cbw.eastern), 
                           nrow = nrow(data.cbw ), 
                           ncol= ncol(data.cbw),
                           dimnames = list(rownames(data.cbw), colnames(data.cbw)), byrow = TRUE) # (N x T)
   
-  p.weights.cbw[rownames(p.weights.cbw) %in% swiss.cluster.cbw,] <- matrix(propensity.model.cbw.scaled[rownames(propensity.model.cbw.scaled) %in% swiss.cluster.cbw,]%*%diag(z.cbw.swiss), 
+  p.weights.cbw[rownames(p.weights.cbw) %in% swiss.cluster.cbw,] <- matrix(propensity.model.cbw.values[rownames(propensity.model.cbw.values) %in% swiss.cluster.cbw,]%*%diag(z.cbw.swiss), 
                                                                            nrow = length(swiss.cluster.cbw), 
                                                                            ncol= ncol(data.cbw), byrow = TRUE) # (N x T)
   # Save
   
-  outcomes.cbw <- list("M"=data.cbw, "mask"=mask.cbw, "W"= p.weights.cbw,
-                       #"X"=best.var.outcome.cbw.m.imputed, "X.hat"=best.var.outcome.cbw.hat,
-                       "X"=(propensity.model.cbw.values)/(1-propensity.model.cbw.values), "X.hat"=(propensity.model.cbw.values)/(1-propensity.model.cbw.values),
+  outcomes.cbw <- list("M"=data.cbw, "mask"=mask.cbw, "W"= p.weights.cbw,"W.no.z"= propensity.model.cbw.values,
+                       "X"=best.var.outcome.cbw.m.imputed, "X.hat"=best.var.outcome.cbw.hat,
                        "mc.outcome"=impute.best.var.outcome.cbw, "mc.propensity"=propensity.model.cbw,
                                "treated"=rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],
                                "control"=rownames(mask.cbw)[rownames(mask.cbw)%in%always.treated.cbw],
