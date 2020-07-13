@@ -18,7 +18,7 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_3more")
+outcome.vars <- c("CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_3more")
 
 for(o in outcome.vars){
   print(o)

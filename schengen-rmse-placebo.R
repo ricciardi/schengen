@@ -61,7 +61,7 @@ SchengenSim <- function(outcome,sim){
       t0 <- T0[j]
       ## Simultaneuous (simul_adapt) or Staggered adoption (stag_adapt)
       if(is_simul == 1){
-        treat_mat <- simul_adapt(Y, length(treat_indices) t0, treat_indices) 
+        treat_mat <- simul_adapt(Y, length(treat_indices), t0, treat_indices) 
       }else{
         treat_mat <- stag_adapt(Y, length(treat_indices), t0, treat_indices) 
       }
@@ -154,7 +154,7 @@ SchengenSim <- function(outcome,sim){
 }
 
 # Read data
-outcome.vars <- c("CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcome.vars <- c("CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_3more")
 
 for(o in outcome.vars){
   SchengenSim(outcome=o, sim=0)
