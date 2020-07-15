@@ -1,4 +1,4 @@
-TsPlot <- function(df, main = "",y.title,vline,vline2,breaks,labels,rev) {
+TsPlot <- function(df, main = "",y.title,vline,vline2,breaks,labels,hline,rev) {
   library(ggplot2)
   library(zoo)
   library(scales)
@@ -14,11 +14,11 @@ TsPlot <- function(df, main = "",y.title,vline,vline2,breaks,labels,rev) {
     # line colours
     geom_line(data = subset(df, variable == "observed.eastern"), aes(y = value, colour = "observed.eastern", linetype="observed.eastern"), show.legend = TRUE, size=1) +
     geom_line(data = subset(df, variable == "predicted.eastern"), aes(y = value, colour = "predicted.eastern", linetype="predicted.eastern"), show.legend = FALSE, size=1) +
-    geom_line(data = subset(df, variable == "pointwise.eastern"), aes(y = value, colour = "predicted.eastern", linetype="predicted.eastern"), show.legend = FALSE, size=1) +
+    geom_line(data = subset(df, variable == "pointwise.eastern"), aes(y = value, colour = "predicted.eastern", linetype="predicted.eastern"), show.legend = FALSE, size=1, na.rm=TRUE) +
 
     geom_line(data = subset(df, variable == "observed.swiss"), aes(y = value, colour = "observed.swiss", linetype="observed.swiss"), show.legend = TRUE, size=1) +
     geom_line(data = subset(df, variable == "predicted.swiss"), aes(y = value, colour = "predicted.swiss", linetype="predicted.swiss"), show.legend = FALSE, size=1) +
-    geom_line(data = subset(df, variable == "pointwise.swiss"), aes(y = value, colour = "predicted.swiss", linetype="predicted.swiss"), show.legend = FALSE, size=1) +
+    geom_line(data = subset(df, variable == "pointwise.swiss"), aes(y = value, colour = "predicted.swiss", linetype="predicted.swiss"), show.legend = FALSE, size=1, na.rm = TRUE) +
     
     geom_line(data = subset(df, variable == "observed.control"), aes(y = value, colour = "observed.control", linetype="observed.control"), show.legend = TRUE, size=1) +
     
@@ -27,7 +27,7 @@ TsPlot <- function(df, main = "",y.title,vline,vline2,breaks,labels,rev) {
     geom_ribbon(data = subset(df, variable == "pointwise.swiss"), aes(ymin = lower, ymax=upper, colour="predicted.swiss"), alpha=.1, size=0.2, show.legend = FALSE) +
     
     # horizontal line to indicate zero values
-   # geom_hline(yintercept = 0, size = 0.5, colour = "black") +
+     geom_hline(aes(yintercept = hline), size = 0.5, colour = "black") +
     
     # main y-axis title
     ylab(y.title) +
@@ -41,7 +41,7 @@ TsPlot <- function(df, main = "",y.title,vline,vline2,breaks,labels,rev) {
   # vertical line to indicate intervention
   
   intervention <- geom_vline(xintercept=vline, linetype=3)
-  intervention2 <- geom_vline(xintercept=vline2, linetype=3)
+  intervention2 <- geom_vline(xintercept=vline2, linetype=2)
   
   # horizontal ticks
   
@@ -92,13 +92,13 @@ TsPlot <- function(df, main = "",y.title,vline,vline2,breaks,labels,rev) {
       ticks + 
       theme( legend.title = element_blank()
              , plot.title = element_text(hjust = 0.5, size = 16)
-             , legend.justification = c(0.9,0.15)
-             , legend.position = c(0.9,0.15)
+             , legend.justification = c(0.95,0.2)
+             , legend.position = c(0.95,0.2)
              #  , legend.position = "top"
              , legend.background = element_rect(fill="transparent")
              , axis.text=element_text(size=14)
-             , axis.title.x=element_text(size = 16, margin = margin(t = 20, r = 0, b = 0, l = 0))
-             , axis.title.y=element_text(size = 16, margin = margin(t = 0, r = 20, b = 0, l = 0))
+             , axis.title.x=element_text(size = 14, margin = margin(t = 20, r = 0, b = 0, l = 0))
+             , axis.title.y=element_text(size = 14, margin = margin(t = 0, r = 20, b = 0, l = 0))
              , legend.text=element_text(size=14, family = "serif")
              , legend.box = "vertical"
              , legend.key = element_blank()

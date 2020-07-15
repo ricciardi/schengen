@@ -63,20 +63,34 @@ PlotMCCapacity <- function(observed,main,y.title,mc_est,boot_result,treated,cont
   ts.means.m <- merge(ts.means.m, ts.ci.upper.means.m, by=c("year","variable"), all.x=TRUE) # bind std. error
   colnames(ts.means.m) <- c("year", "variable", "value", "boot.lower","boot.upper")
   
-  ts.means.m <- ts.means.m %>% # pivot CI
-    mutate(upper = 2*value -boot.lower,
-           lower = 2*value -boot.upper)
+  ts.means.m <- ts.means.m %>%
+    mutate(upper = value -boot.lower,
+           lower = value -boot.upper)
   
   # Labels
   
   ts.means.m$series <- NA
-  ts.means.m$series[grep("observed.", ts.means.m$variable)] <- "Time-series"
-  ts.means.m$series[grep("predicted.", ts.means.m$variable)] <- "Time-series"
+  ts.means.m$series[grep("observed.", ts.means.m$variable)] <- "Timeseries"
+  ts.means.m$series[grep("predicted.", ts.means.m$variable)] <- "Timeseries"
   ts.means.m$series[grep("pointwise.", ts.means.m$variable)] <- att.label
   
-  ts.means.m$series<- factor(ts.means.m$series, levels=c("Time-series", att.label)) # reverse order
+  ts.means.m$series<- factor(ts.means.m$series, levels=c("Timeseries", att.label)) # reverse order
   
-  ts.plot <- TsPlot(df=ts.means.m,main=main, y.title=y.title,vline,vline2,breaks,labels,rev)
+  ts.means.m$hline <-NA
+  ts.means.m$hline[ts.means.m$series!="Timeseries"] <-0
+  
+  if(rev){
+    ts.means.m$value[ts.means.m$year > vline2 & (ts.means.m$variable=="pointwise.eastern" | ts.means.m$variable=="predicted.eastern")] <- NA # censor 
+    ts.means.m$value[ts.means.m$year > vline & (ts.means.m$variable=="pointwise.swiss" | ts.means.m$variable=="predicted.swiss")] <- NA
+    
+    ts.means.m$upper[ts.means.m$year > vline2 & (ts.means.m$variable=="pointwise.eastern" | ts.means.m$variable=="predicted.eastern")] <- NA 
+    ts.means.m$upper[ts.means.m$year > vline & (ts.means.m$variable=="pointwise.swiss" | ts.means.m$variable=="predicted.swiss")] <- NA
+    
+    ts.means.m$lower[ts.means.m$year > vline2 & ts.means.m$variable=="pointwise.eastern"] <- NA 
+    ts.means.m$lower[ts.means.m$year > vline & ts.means.m$variable=="pointwise.swiss"] <- NA
+  }
+  
+  ts.plot <- TsPlot(df=ts.means.m,main=main, y.title=y.title,vline,vline2,breaks,labels,hline=ts.means.m$hline,rev)
   
   return(ts.plot)
 }
@@ -90,29 +104,24 @@ outcomes.labels <- c("% working in border region",
                      "Unemployment rate",
                      "% unemployed for < 1 year")
 
-#covarflag <- c("","-covars")
-covarflag <- c("")
+covarflag <- c("","-covars")
 
 for(o in outcome.vars){
   for(cf in covarflag){
     
-  #  if(cf=="" && o %in% c("N_CBWbord")) next
-
     ## Analysis 1: ST vs AT (retrospective, X=CBW) 
     
     outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
     mc.estimates.cbw <- readRDS(paste0("results/mc-estimates-cbw-",o,cf,".rds"))
     
     boot.cbw <- readRDS(paste0("results/boot-cbw-",o,cf,".rds"))
-    boot.eastern.cbw <- readRDS(paste0("results/boot-eastern-cbw-",o,cf,".rds"))
-    boot.swiss.cbw <- readRDS(paste0("results/boot-swiss-cbw-",o,cf,".rds"))
     
     mc.plot <- PlotMCCapacity(observed = outcomes.cbw$M, 
                               y.title=outcomes.labels[which(outcome.vars==o)],
                            #   main = "Retrospective prediction for later-treated, by cluster",
                               main= "",
                               mc_est=mc.estimates.cbw, 
-                              boot_result=boot.eastern.cbw,
+                              boot_result=boot.cbw,
                               treated=outcomes.cbw$treated, 
                               control=outcomes.cbw$control, 
                               eastern =outcomes.cbw$eastern,
@@ -124,60 +133,57 @@ for(o in outcome.vars){
                               rev=TRUE)
     
     ggsave(paste0("plots/mc-estimates-cbw-",o,cf,".png"), mc.plot, width=8.5, height=11)
+    ggsave(paste0("plots/mc-estimates-cbw-",o,cf,"-slides.png"), mc.plot, scale=1.75) 
   }
 } 
 
-# ## Plot p-values
+# ## Plot trajectory CIs
 # 
-# outcome.vars <- c("CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
-# for(o in outcome.vars){
-#   for(c in covarflag){
-#     print(c)
-#     
-#     iid.block.eastern <- lapply(outcome.vars, function(o){
-#       p <- readRDS(paste0("results/iid-block-cbw-eastern-",o,cf,".rds"))
-#       return(p)
-#     })
-#     
-#     names(iid.block.eastern) <- outcome.vars
-#     
-#     iid.block.swiss<- lapply(outcome.vars, function(o){
-#       p <- readRDS(paste0("results/iid-block-cbw-swiss-",o,cf,".rds"))
-#       return(p)
-#     })
-#     
-#     names(iid.block.swiss) <- outcome.vars
-#     
-#     p.values <- data.frame("p"=c(sapply(outcome.vars, function(i) iid.block.eastern[[i]]$p), sapply(outcome.vars, function(i) iid.block.swiss[[i]]$p)),
-#                            "clusters"=c(rep("Eastern", each=length(outcome.vars)), rep("Swiss", each=length(outcome.vars))),
-#                            "outcomes"=c(rep(outcome.vars, times=2)))
-#     
-#     p.values.m <-melt(p.values,id.vars = c("outcomes","clusters"))
-#     
+# ## Analysis 1: ST vs AT (retrospective, X=CBW) 
 # 
-#     # Plot
-#     mc.pvals.plot <- ggplot(p.values.m, aes(x=outcomes, y=value)) + 
-#       geom_point(stat='identity', aes(col=variable,shape=factor(q)), size=3, alpha=0.5)  +
-#       labs(title="Retrospective prediction for later-treated", 
-#            y="Randomization p-values",
-#            y="Outcomes") + 
-#       geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
-#       scale_y_continuous(breaks=c(0.05,0.25,0.5,0.75,1), 
-#                          labels=c("0.05","0.25","0.50","0.75","1")) +
-#       scale_x_discrete(labels=rev(outcomes.labels), limits = rev(levels(p.values.m$outcomes)))+
-#       coord_flip() +
-#       scale_shape_manual(name="", values = c("1" = 2,
-#                                              "2" = 4),
-#                          labels=c("q=1", "q=2")) +
-#       scale_colour_manual(name="Randomization type", values = c(  "iid" = wes_palette("Darjeeling1")[1],
-#                                                                   "iid.block" = wes_palette("Darjeeling1")[2], 
-#                                                                   "moving.block" = wes_palette("Darjeeling1")[4]),
-#                           labels=c("IID", "IID Block", 
-#                                    "Moving block")) +
-#       theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-#             panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
-#       theme(axis.text.y = element_text(size=8))
-#     
-#     ggsave(filename = "plots/pvals-cbw-.png",plot = mc.pvals.plot)
-#   }
-# }
+# boot.trajectory.eastern.placebo.cbw  <- lapply(outcome.vars, function(o,cf="-covars"){
+#   boot  <- readRDS(paste0("results/boot-cbw-trajectory-eastern-",o,cf,".rds"))
+#   return(list("t0"=boot$t0, "ci.lower"=boot.ci(boot, type="perc")$percent[4],
+#               "ci.upper"=boot.ci(boot, type="perc")$percent[5]))
+# })
+# names(boot.trajectory.eastern.placebo.cbw ) <- outcome.vars
+# 
+# boot.trajectory.swiss.placebo.cbw  <- lapply(outcome.vars, function(o,cf="-covars"){
+#   boot  <- readRDS(paste0("results/boot-cbw-trajectory-swiss-",o,cf,".rds"))
+#   return(list("t0"=boot$t0, "ci.lower"=boot.ci(boot, type="perc")$percent[4],
+#               "ci.upper"=boot.ci(boot, type="perc")$percent[5]))
+# })
+# names(boot.trajectory.swiss.placebo.cbw ) <- outcome.vars
+# 
+# ci.values <- data.frame("t0"=c(sapply(outcome.vars, function(i) boot.trajectory.eastern.placebo.cbw[[i]]$t0),
+#                                sapply(outcome.vars, function(i) boot.trajectory.swiss.placebo.cbw[[i]]$t0)),
+#                         "lower"=c(sapply(outcome.vars, function(i) boot.trajectory.eastern.placebo.cbw[[i]]$ci.lower),
+#                                   sapply(outcome.vars, function(i) boot.trajectory.swiss.placebo.cbw[[i]]$ci.lower)),
+#                         "upper"=c(sapply(outcome.vars, function(i) boot.trajectory.eastern.placebo.cbw[[i]]$ci.upper),
+#                                   sapply(outcome.vars, function(i) boot.trajectory.swiss.placebo.cbw[[i]]$ci.upper)),
+#                         "Cluster"= c(rep(rep("Eastern",5), length(outcome.vars)), rep(rep("Swiss",5), length(outcome.vars))),
+#                         "Outcome"=rep(outcome.vars,2*5))
+# 
+# # Plot
+# cbw.placebo.plot <- ggplot(ci.values, aes(x=Outcome, y=t0, colour=as.factor(Cluster))) + 
+#   geom_pointrange(aes(ymin=lower, ymax=upper))  +
+#   labs(title="Retrospective prediction for later-treated", 
+#        y=TeX("$S(\\hat{\\bar{\\tau}}_t)$"),
+#        x="") + 
+#   geom_hline(yintercept=0, linetype="dashed", color = "red") +
+#   #ylim(-0.002, 0.002) +
+# #  scale_x_discrete(labels=outcomes.labels, limits = levels(ci.values.m$Outcome)) +
+#   # scale_shape_manual(name=expression(rho), values = c(1:5),
+#   #                    labels = c(paste0(expression(rho),"=","1"),
+#   #                               paste0(expression(rho),"=","2"),
+#   #                               paste0(expression(rho),"=","3"),
+#   #                               paste0(expression(rho),"=","4"),
+#   #                               paste0(expression(rho),"=","5"))) +
+#   scale_colour_manual(name="Cluster", values = c(  "Eastern" = wes_palette("Darjeeling1")[5],
+#                                                    "Swiss" = wes_palette("Darjeeling1")[4]),
+#                       labels=c("Eastern", "Swiss")) +
+#   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+#         panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
+#   theme(axis.text.y = element_text(size=8)) + theme(axis.text.x = element_text(angle = 55, vjust = 1, hjust=1, size=8))
+# 
+# ggsave(filename = paste0("plots/ci-cbw-",cf,".png"),plot = cbw.placebo.plot )

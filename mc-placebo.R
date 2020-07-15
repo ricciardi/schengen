@@ -67,8 +67,6 @@ for(o in outcome.vars){
                                     eastern=outcomes.cbw$eastern,
                                     R=999,
                                     parallel = "multicore") 
-    
-  
     # swiss
     
     boot.trajectory.swiss <- boot(trajectory.swiss, 
