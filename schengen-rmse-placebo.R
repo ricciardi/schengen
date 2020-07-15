@@ -17,7 +17,7 @@ cl <- makePSOCKcluster(cores)
 
 doParallel::registerDoParallel(cores) # register cores (<p)
 
-SchengenSim <- function(outcome,sim){
+SchengenSim <- function(outcome,sim,covars){
   
   outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
   
@@ -26,6 +26,8 @@ SchengenSim <- function(outcome,sim){
   outcomes.cbw.placebo$mask <- outcomes.cbw$mask[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
   outcomes.cbw.placebo$M <- outcomes.cbw$M[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
   outcomes.cbw.placebo$W <- outcomes.cbw$W[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
+  outcomes.cbw.placebo$X <- outcomes.cbw$X[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
+  outcomes.cbw.placebo$X.hat <- outcomes.cbw$X.hat[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
   
   Y <- outcomes.cbw.placebo$M # NxT 
   treat <- outcomes.cbw.placebo$mask # NxT masked matrix 
@@ -82,17 +84,26 @@ SchengenSim <- function(outcome,sim){
       ADH_RMSE_test[i,j] <- est_model_ADH_test_RMSE
       print(paste("ADH RMSE:", round(est_model_ADH_test_RMSE,3),"run",i))
       
-
-      ## ------
-      ## MC-NNM
-      ## ------
-      
-      est_model_MCPanel <- mcnnm_cv(M = Y_obs, mask = treat_mat, W = weights, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 3, niter = 1000, rel_tol = 1e-03, cv_ratio = 0.8, num_folds = 2, is_quiet = 1) 
-      est_model_MCPanel$Mhat <- est_model_MCPanel$L  + replicate(T,est_model_MCPanel$u) + t(replicate(N,est_model_MCPanel$v)) # use X with imputed endogenous values
-      est_model_MCPanel$msk_err <- (est_model_MCPanel$Mhat - Y)*(1-treat_mat)
-      est_model_MCPanel$test_RMSE <- sqrt((1/sum(1-treat_mat)) * sum(est_model_MCPanel$msk_err^2, na.rm = TRUE))
-      MCPanel_RMSE_test[i,j] <- est_model_MCPanel$test_RMSE
-      print(paste("MC-NNM RMSE:", round(est_model_MCPanel$test_RMSE,3),"run",i))
+      if(covars){
+        est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 3, num_lam_B = 3, niter = 1000, rel_tol = 1e-03, cv_ratio = 0.8, num_folds = 2, is_quiet = 1) 
+        est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v)) # use X with imputed endogenous values
+        est_model_MCPanel_w$msk_err <- (est_model_MCPanel_w$Mhat - Y)*(1-treat_mat)
+        est_model_MCPanel_w$test_RMSE <- sqrt((1/sum(1-treat_mat)) * sum(est_model_MCPanel_w$msk_err^2, na.rm = TRUE))
+        MCPanel_RMSE_test[i,j] <- est_model_MCPanel_w$test_RMSE
+        print(paste("MC-NNM RMSE:", round(est_model_MCPanel_w$test_RMSE,3),"run",i))
+      }
+      else{
+        ## ------
+        ## MC-NNM
+        ## ------
+        
+        est_model_MCPanel <- mcnnm_cv(M = Y_obs, mask = treat_mat, W = weights, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 3, niter = 1000, rel_tol = 1e-03, cv_ratio = 0.8, num_folds = 2, is_quiet = 1) 
+        est_model_MCPanel$Mhat <- est_model_MCPanel$L  + replicate(T,est_model_MCPanel$u) + t(replicate(N,est_model_MCPanel$v)) # use X with imputed endogenous values
+        est_model_MCPanel$msk_err <- (est_model_MCPanel$Mhat - Y)*(1-treat_mat)
+        est_model_MCPanel$test_RMSE <- sqrt((1/sum(1-treat_mat)) * sum(est_model_MCPanel$msk_err^2, na.rm = TRUE))
+        MCPanel_RMSE_test[i,j] <- est_model_MCPanel$test_RMSE
+        print(paste("MC-NNM RMSE:", round(est_model_MCPanel$test_RMSE,3),"run",i))
+      }
       
       ## -----
       ## DID
@@ -149,7 +160,7 @@ SchengenSim <- function(outcome,sim){
                    replicate(length(T0),"SCM"),
                    replicate(length(T0),"Vertical")))
   
-  filename<-paste0(paste0(paste0(paste0(paste0(paste0(gsub("\\.", "_", o),"_N_", N),"_T_", T),"_numruns_", num_runs), "_num_treated_", N_t), "_simultaneuous_", is_simul),".rds")
+  filename<-paste0(paste0(paste0(paste0(paste0(paste0(gsub("\\.", "_", o),"_N_", N),"_T_", T),"_numruns_", num_runs), "_num_treated_", N_t), "_simultaneuous_", is_simul,"_covars_",covars),".rds")
   save(df1, file = paste0("results/",filename))
 
 }
@@ -158,5 +169,5 @@ SchengenSim <- function(outcome,sim){
 outcome.vars <- c("CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_3more")
 
 for(o in outcome.vars){
-  SchengenSim(outcome=o, sim=1)
+  SchengenSim(outcome=o, sim=1,covars = TRUE)
 }
