@@ -30,6 +30,8 @@ SchengenSim <- function(outcome,sim,covars){
   outcomes.cbw.placebo$X.hat <- outcomes.cbw$X.hat[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
   
   Y <- outcomes.cbw.placebo$M # NxT 
+  X <- outcomes.cbw.placebo$X # NxT 
+  X.hat <- outcomes.cbw.placebo$X # NxT 
   treat <- outcomes.cbw.placebo$mask # NxT masked matrix 
   
   weights <- outcomes.cbw.placebo$W
