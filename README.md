@@ -1,7 +1,5 @@
 # schengen
-Code and data for the paper "Retrospective causal inference via elapsed time-weighted
-matrix completion, with an evaluation of the effect of the
-Schengen Area on the labour market of border regions"
+Code and data for the paper "Retrospective causal inference via matrix completion, with an evaluation of the effect of European integration on labour market outcomes"
 
 Prerequsites
 ------
@@ -26,15 +24,19 @@ mkdir plots
 Run order
 ------
 
-0. package-list.R
-1. schengen_MCM_data.R
-2. Schengen_MCM_covars.R 
+0. package-list.R # required packages
+1. schengen_MCM_data.R # prepare data for analyses
+2. Schengen_MCM_covars.R # estimates with covariates
 	* MCEst.R
 	* PolitisWhite.R
 	* MCEstBoot.R
+	* MCEstBootTraj.R
 
-3. mc-plot.R
+3. mc-plot.R # plot estimates
 	* TsPlot.R
 
-4. mc-placebo_covars.R
-5. mc-placebo-plot.R 
+4. schengen-rmse-placebo.R # placebo tests: compare different estimators in terms of RMSE (without covariates)
+5. schengen-rmse-placebo-plot.R  # plot placebo test results
+
+6. mc-placebo.R # placebo test of null hypothesis
+7. mc-placebo-plot.R # placebo test p-values

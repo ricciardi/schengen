@@ -97,12 +97,13 @@ PlotMCCapacity <- function(observed,main,y.title,mc_est,boot_result,treated,cont
 
 ## Plot time-series
 
-outcome.vars <- c("CBWbordEMPL","empl","Thwusual","unempl","seekdur_3more")
+outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","seekdur_3more")
 outcomes.labels <- c("% working in border region",
+                     "% working in border region,\n conditional on employment",
                      "Employment rate",
                      "Average total working hours",
                      "Unemployment rate",
-                     "% unemployed for < 1 year")
+                     "% unemployed for > 1 year")
 
 covarflag <- c("","-covars")
 
@@ -133,57 +134,6 @@ for(o in outcome.vars){
                               rev=TRUE)
     
     ggsave(paste0("plots/mc-estimates-cbw-",o,cf,".png"), mc.plot, width=8.5, height=11)
-    ggsave(paste0("plots/mc-estimates-cbw-",o,cf,"-slides.png"), mc.plot, scale=1.75) 
+    ggsave(paste0("plots/mc-estimates-cbw-",o,cf,"-slides.png"), mc.plot + ggtitle("Matrix completion estimates of the effect of Schengen and FoM") + theme(plot.title = element_text(family="serif", size=16, hjust = 0.5)), scale=2) 
   }
 } 
-
-# ## Plot trajectory CIs
-# 
-# ## Analysis 1: ST vs AT (retrospective, X=CBW) 
-# 
-# boot.trajectory.eastern.placebo.cbw  <- lapply(outcome.vars, function(o,cf="-covars"){
-#   boot  <- readRDS(paste0("results/boot-cbw-trajectory-eastern-",o,cf,".rds"))
-#   return(list("t0"=boot$t0, "ci.lower"=boot.ci(boot, type="perc")$percent[4],
-#               "ci.upper"=boot.ci(boot, type="perc")$percent[5]))
-# })
-# names(boot.trajectory.eastern.placebo.cbw ) <- outcome.vars
-# 
-# boot.trajectory.swiss.placebo.cbw  <- lapply(outcome.vars, function(o,cf="-covars"){
-#   boot  <- readRDS(paste0("results/boot-cbw-trajectory-swiss-",o,cf,".rds"))
-#   return(list("t0"=boot$t0, "ci.lower"=boot.ci(boot, type="perc")$percent[4],
-#               "ci.upper"=boot.ci(boot, type="perc")$percent[5]))
-# })
-# names(boot.trajectory.swiss.placebo.cbw ) <- outcome.vars
-# 
-# ci.values <- data.frame("t0"=c(sapply(outcome.vars, function(i) boot.trajectory.eastern.placebo.cbw[[i]]$t0),
-#                                sapply(outcome.vars, function(i) boot.trajectory.swiss.placebo.cbw[[i]]$t0)),
-#                         "lower"=c(sapply(outcome.vars, function(i) boot.trajectory.eastern.placebo.cbw[[i]]$ci.lower),
-#                                   sapply(outcome.vars, function(i) boot.trajectory.swiss.placebo.cbw[[i]]$ci.lower)),
-#                         "upper"=c(sapply(outcome.vars, function(i) boot.trajectory.eastern.placebo.cbw[[i]]$ci.upper),
-#                                   sapply(outcome.vars, function(i) boot.trajectory.swiss.placebo.cbw[[i]]$ci.upper)),
-#                         "Cluster"= c(rep(rep("Eastern",5), length(outcome.vars)), rep(rep("Swiss",5), length(outcome.vars))),
-#                         "Outcome"=rep(outcome.vars,2*5))
-# 
-# # Plot
-# cbw.placebo.plot <- ggplot(ci.values, aes(x=Outcome, y=t0, colour=as.factor(Cluster))) + 
-#   geom_pointrange(aes(ymin=lower, ymax=upper))  +
-#   labs(title="Retrospective prediction for later-treated", 
-#        y=TeX("$S(\\hat{\\bar{\\tau}}_t)$"),
-#        x="") + 
-#   geom_hline(yintercept=0, linetype="dashed", color = "red") +
-#   #ylim(-0.002, 0.002) +
-# #  scale_x_discrete(labels=outcomes.labels, limits = levels(ci.values.m$Outcome)) +
-#   # scale_shape_manual(name=expression(rho), values = c(1:5),
-#   #                    labels = c(paste0(expression(rho),"=","1"),
-#   #                               paste0(expression(rho),"=","2"),
-#   #                               paste0(expression(rho),"=","3"),
-#   #                               paste0(expression(rho),"=","4"),
-#   #                               paste0(expression(rho),"=","5"))) +
-#   scale_colour_manual(name="Cluster", values = c(  "Eastern" = wes_palette("Darjeeling1")[5],
-#                                                    "Swiss" = wes_palette("Darjeeling1")[4]),
-#                       labels=c("Eastern", "Swiss")) +
-#   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-#         panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme_set(theme_bw() + theme(legend.key=element_blank(), legend.title=element_text(size=10))) + theme(plot.title = element_text(hjust = 0.5, size=14)) + 
-#   theme(axis.text.y = element_text(size=8)) + theme(axis.text.x = element_text(angle = 55, vjust = 1, hjust=1, size=8))
-# 
-# ggsave(filename = paste0("plots/ci-cbw-",cf,".png"),plot = cbw.placebo.plot )

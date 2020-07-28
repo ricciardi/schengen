@@ -92,11 +92,11 @@ TsPlot <- function(df, main = "",y.title,vline,vline2,breaks,labels,hline,rev) {
       ticks + 
       theme( legend.title = element_blank()
              , plot.title = element_text(hjust = 0.5, size = 16)
-             , legend.justification = c(0.95,0.2)
-             , legend.position = c(0.95,0.2)
+             , legend.justification = c(0.98,0.17)
+             , legend.position = c(0.99,0.17)
              #  , legend.position = "top"
              , legend.background = element_rect(fill="transparent")
-             , axis.text=element_text(size=14)
+             , axis.text=element_text(size=10)
              , axis.title.x=element_text(size = 14, margin = margin(t = 20, r = 0, b = 0, l = 0))
              , axis.title.y=element_text(size = 14, margin = margin(t = 0, r = 20, b = 0, l = 0))
              , legend.text=element_text(size=14, family = "serif")
