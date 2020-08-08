@@ -18,7 +18,7 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-outcomes <- c("CBWbord","CBWbordEMPL","Thwusual")
+outcome.vars <- c("CBWbord","CBWbordEMPL","Thwusual")
 sim.labels <- c("Staggered adoption","Simultaneous adoption")
 
 for(i in c(0,1)){
@@ -58,7 +58,7 @@ for(i in c(0,1)){
       outcomes.cbw.placebo$mask <- rotate(rotate(treat_mat)) # retrospective analysis
       
       source('MCEst.R')
-      mc.estimates.cbw.placebo <- MCEst(outcomes.cbw.placebo, rev=TRUE, covars=FALSE)
+      mc.estimates.cbw.placebo <- MCEst(outcomes.cbw.placebo, rev=TRUE, covars=TRUE)
       
       # Resample trajectories without time component, calculate ATTs for each cluster
       source("MCEstBootTraj.R")

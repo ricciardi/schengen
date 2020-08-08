@@ -26,7 +26,8 @@ Run order
 
 0. package-list.R # required packages
 1. schengen_MCM_data.R # prepare data for analyses
-2. Schengen_MCM_covars.R # estimates with covariates
+2. Schengen_MCM_covars.R # estimates with covariates 
+  (Schengen_MCM.R # estimates without covariates)
 	* MCEst.R
 	* PolitisWhite.R
 	* MCEstBoot.R

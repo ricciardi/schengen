@@ -168,10 +168,10 @@ SchengenSim <- function(outcome,sim,covars){
 }
 
 # Read data
-outcomes <- c("CBWbord","CBWbordEMPL","Thwusual")
+outcome.vars <- c("CBWbord","CBWbordEMPL","Thwusual")
 
 for(o in outcome.vars){
   for(i in c(0,1)){
-    SchengenSim(outcome=o, sim=i,covars = FALSE)
+    SchengenSim(outcome=o, sim=i,covars = TRUE)
   }
 }
