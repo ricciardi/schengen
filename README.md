@@ -26,8 +26,8 @@ Run order
 
 0. package-list.R # required packages
 1. schengen_MCM_data.R # prepare data for analyses
-2. Schengen_MCM_covars.R # estimates with covariates 
-  (Schengen_MCM.R # estimates without covariates)
+2. Schengen_MCM_covars.R # model with covariates 
+  (Schengen_MCM.R # model without covariates)
 	* MCEst.R
 	* PolitisWhite.R
 	* MCEstBoot.R
@@ -36,8 +36,8 @@ Run order
 3. mc-plot.R # plot estimates
 	* TsPlot.R
 
-4. schengen-rmse-placebo.R # placebo tests: compare different estimators in terms of RMSE (without covariates)
+4. schengen-rmse-placebo.R # placebo tests: compare different estimators in terms of RMSE (model without covariates)
 5. schengen-rmse-placebo-plot.R  # plot placebo test results
 
-6. mc-placebo.R # placebo test of null hypothesis
+6. mc-placebo.R # placebo test of null hypothesis (model without covariates)
 7. mc-placebo-plot.R # placebo test p-values

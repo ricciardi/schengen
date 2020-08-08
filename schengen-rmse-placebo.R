@@ -172,6 +172,6 @@ outcome.vars <- c("CBWbord","CBWbordEMPL","Thwusual")
 
 for(o in outcome.vars){
   for(i in c(0,1)){
-    SchengenSim(outcome=o, sim=i,covars = TRUE)
+    SchengenSim(outcome=o, sim=i,covars = FALSE)
   }
 }
