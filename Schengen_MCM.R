@@ -18,7 +18,7 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_3more")
+outcomes <- c("CBWbord","CBWbordEMPL","Thwusual")
 
 for(o in outcome.vars){
   print(o)
@@ -43,29 +43,27 @@ for(o in outcome.vars){
   # Bootstrap for per-period effects
   source("MCEstBoot.R")
   
-  t0.eastern <- which(colnames(outcomes.cbw$mask)==20111)
-  t0.swiss <- which(colnames(outcomes.cbw$mask)==20072)
-  
   boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W,covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
   saveRDS(boot, paste0("results/boot-cbw-",o,".rds")) 
   
-  # boot.eastern <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, t0=t0.eastern, eastern=outcomes.cbw$eastern, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
-  # saveRDS(boot.eastern, paste0("results/boot-cbw-eastern",o,".rds")) 
-  # 
-  # boot.swiss <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, t0=t0.swiss, swiss=outcomes.cbw$swiss, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
-  # saveRDS(boot.swiss, paste0("results/boot-cbw-swiss",o,".rds")) 
-
   # Bootstrap for trajectories
   # Resample trajectories without time component, calculate ATTs for each cluster
   source("MCEstBootTraj.R")
   
   impact <- mc.estimates.cbw$impact # = boot_result$t0
-  
-  trajectory.eastern <- rowMeans(impact[,1:(t0.eastern-1)])
-  trajectory.swiss <- rowMeans(impact[,1:(t0.swiss-1)])
-  
-  # eastern
 
+  t0.eastern <- which(colnames(outcomes.cbw$mask)==20111)
+  t0.swiss <- which(colnames(outcomes.cbw$mask)==20091)
+  
+  trajectory.eastern <- rowMeans(impact[,1:(t0.eastern-1)]) # Schengen + FoM
+  trajectory.swiss <- rowMeans(impact[,1:(t0.swiss-1)]) # Schengen + FoM
+
+  trajectory.07 <- rowMeans(impact[,1:(which(colnames(outcomes.cbw$mask)==20072)-1)]) # Swiss (FoM)
+  trajectory.08 <- rowMeans(impact[,1:(which(colnames(outcomes.cbw$mask)==20081)-1)]) # Eastern (Schengen) / Swiss (FoM)
+  trajectory.09 <- rowMeans(impact[,1:(which(colnames(outcomes.cbw$mask)==20091)-1)]) # Eastern (Schengen)
+
+  # eastern
+  
   boot.trajectory.eastern <- boot(trajectory.eastern, 
                                   MCEstBootTraj, 
                                   eastern=outcomes.cbw$eastern,
@@ -76,17 +74,61 @@ for(o in outcome.vars){
   print(boot.ci(boot.trajectory.eastern,type=c("norm","basic", "perc")))
   
   saveRDS(boot.trajectory.eastern, paste0("results/boot-cbw-trajectory-eastern-",o,".rds")) 
+
+  boot.trajectory.eastern.08 <- boot(trajectory.08, 
+                                  MCEstBootTraj, 
+                                  eastern=outcomes.cbw$eastern,
+                                  R=999,
+                                  parallel = "multicore") 
+  
+  print(boot.trajectory.eastern.08$t0)
+  print(boot.ci(boot.trajectory.eastern.08,type=c("norm","basic", "perc")))
+  
+  saveRDS(boot.trajectory.eastern.08, paste0("results/boot-cbw-trajectory-eastern-08-",o,".rds")) 
+
+  boot.trajectory.eastern.09 <- boot(trajectory.09, 
+                                  MCEstBootTraj, 
+                                  eastern=outcomes.cbw$eastern,
+                                  R=999,
+                                  parallel = "multicore") 
+  
+  print(boot.trajectory.eastern.09$t0)
+  print(boot.ci(boot.trajectory.eastern.09,type=c("norm","basic", "perc")))
+  
+  saveRDS(boot.trajectory.eastern.09, paste0("results/boot-cbw-trajectory-eastern-09-",o,".rds")) 
   
   # swiss
   
   boot.trajectory.swiss <- boot(trajectory.swiss, 
-                                  MCEstBootTraj, 
-                                  swiss=outcomes.cbw$swiss,
-                                  R=999,
-                                  parallel = "multicore") 
+                                MCEstBootTraj, 
+                                swiss=outcomes.cbw$swiss,
+                                R=999,
+                                parallel = "multicore") 
   
   print(boot.trajectory.swiss$t0)
   print(boot.ci(boot.trajectory.swiss,type=c("norm","basic", "perc")))
   
   saveRDS(boot.trajectory.swiss, paste0("results/boot-cbw-trajectory-swiss-",o,".rds")) 
+
+  boot.trajectory.swiss.07 <- boot(trajectory.07, 
+                                MCEstBootTraj, 
+                                swiss=outcomes.cbw$swiss,
+                                R=999,
+                                parallel = "multicore") 
+  
+  print(boot.trajectory.swiss.07$t0)
+  print(boot.ci(boot.trajectory.swiss.07,type=c("norm","basic", "perc")))
+  
+  saveRDS(boot.trajectory.swiss.07, paste0("results/boot-cbw-trajectory-swiss-07-",o,".rds")) 
+
+  boot.trajectory.swiss.08 <- boot(trajectory.08, 
+                                MCEstBootTraj, 
+                                swiss=outcomes.cbw$swiss,
+                                R=999,
+                                parallel = "multicore") 
+  
+  print(boot.trajectory.swiss.08$t0)
+  print(boot.ci(boot.trajectory.swiss.08,type=c("norm","basic", "perc")))
+  
+  saveRDS(boot.trajectory.swiss.08, paste0("results/boot-cbw-trajectory-swiss-08-",o,".rds"))  
 }
