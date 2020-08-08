@@ -168,7 +168,7 @@ SchengenSim <- function(outcome,sim,covars){
 }
 
 # Read data
-outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_3more")
+outcomes <- c("CBWbord","CBWbordEMPL","Thwusual")
 
 for(o in outcome.vars){
   for(i in c(0,1)){

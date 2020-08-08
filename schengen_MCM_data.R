@@ -23,13 +23,9 @@ data <- read.dta13("FINAL.dta", generate.factors=T) # includes variables for 2 a
 ## N_CBWbord: number of cross-border workers in the region
 ## CBWbord: share of residents working in another country, which shares the border with the region of residence, unconditional on employment
 ## CBWbordEMPL: share of residents working in another country, which shares the border with the region of residence, conditional on employment
-## regional employment rate (empl),
 ## average total working hours (Thwusual)
-## unemployed rate (unempl)
-## inactivity rate (inact)
-## % of unemployed with unemployment duration less than 1 month (seekdur_0), 1-2 months (seekdur_1_2), 3 months or more (seekdur_3more).
 
-outcomes <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcomes <- c("CBWbord","CBWbordEMPL","Thwusual")
 
 ## Covariates:
 
@@ -81,7 +77,6 @@ names(covars) <- c(covariates,covariates.cbw)
 
 covars.cbw <- lapply(c(covariates.cbw), function(i){ 
   subset <- covars[[i]][rownames(covars[[i]]) %in% cbw,]
-#  impute <- predict(preProcess(subset, method = c("medianImpute")), subset) # Impute missing with column medians
   return(subset)
 }) # N x # predictors
 
@@ -161,22 +156,12 @@ for(o in outcomes){
                                      "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
                                                  dimnames = list(rownames(mask.cbw), colnames(mask.cbw)))) 
    
-   propensity.model.cbw <- MCEst(propensity.model.cbw.data, rev=TRUE, covars=FALSE, fe=FALSE) 
+   propensity.model.cbw <- MCEst(propensity.model.cbw.data, rev=TRUE, covars=TRUE, fe=TRUE) 
    
-   propensity.model.cbw.values <- propensity.model.cbw$Mhat # L
+   propensity.model.cbw.values <- propensity.model.cbw$Mhat # L + X_hat*B + u + v
    
    colnames(propensity.model.cbw.values) <- colnames(mask.cbw)
    rownames(propensity.model.cbw.values) <- rownames(mask.cbw)
-
-
-    ## Estimate propensity scores by matrix completion
-   
-   propensity.model.cbw.covars <- MCEst(propensity.model.cbw.data, rev=TRUE, covars=TRUE, fe=FALSE) 
-   
-   propensity.model.cbw.covars.values <- propensity.model.cbw.covars$Mhat # L + B
-   
-   colnames(propensity.model.cbw.covars.values) <- colnames(mask.cbw)
-   rownames(propensity.model.cbw.covars.values) <- rownames(mask.cbw)
    
   ## Elapsed time Weights (future and past)
   
@@ -194,20 +179,11 @@ for(o in outcomes){
   p.weights.cbw[rownames(p.weights.cbw) %in% swiss.cluster.cbw,] <- matrix(propensity.model.cbw.values[rownames(propensity.model.cbw.values) %in% swiss.cluster.cbw,]%*%diag(z.cbw.swiss), 
                                                                            nrow = length(swiss.cluster.cbw), 
                                                                            ncol= ncol(data.cbw), byrow = TRUE) # (N x T)
-
-  p.weights.cbw.covars <- matrix(propensity.model.cbw.covars.values%*%diag(z.cbw.eastern), 
-                          nrow = nrow(data.cbw ), 
-                          ncol= ncol(data.cbw),
-                          dimnames = list(rownames(data.cbw), colnames(data.cbw)), byrow = TRUE) # (N x T)
-  
-  p.weights.cbw.covars[rownames(p.weights.cbw.covars) %in% swiss.cluster.cbw,] <- matrix(propensity.model.cbw.covars.values[rownames(propensity.model.cbw.covars.values) %in% swiss.cluster.cbw,]%*%diag(z.cbw.swiss), 
-                                                                           nrow = length(swiss.cluster.cbw), 
-                                                                           ncol= ncol(data.cbw), byrow = TRUE) # (N x T)
   # Save
   
-  outcomes.cbw <- list("M"=data.cbw, "mask"=mask.cbw, "W"= p.weights.cbw,"W.no.z"= propensity.model.cbw.values, "W.covars.no.z"= propensity.model.cbw.covars.values,
+  outcomes.cbw <- list("M"=data.cbw, "mask"=mask.cbw, "W"= p.weights.cbw,"W.no.z"= propensity.model.cbw.values,
                        "X"=best.var.outcome.cbw.m.imputed, "X.hat"=best.var.outcome.cbw.hat,
-                       "mc.outcome"=impute.best.var.outcome.cbw, "mc.propensity"=propensity.model.cbw, "mc.covars.propensity"=propensity.model.cbw.covars,
+                       "mc.outcome"=impute.best.var.outcome.cbw, "mc.propensity"=propensity.model.cbw,
                                "treated"=rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],
                                "control"=rownames(mask.cbw)[rownames(mask.cbw)%in%always.treated.cbw],
                                "eastern"=eastern.cluster.cbw, "swiss"=swiss.cluster.cbw)

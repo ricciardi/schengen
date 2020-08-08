@@ -3,13 +3,10 @@ library(ggplot2)
 library(wesanderson)
 library(reshape2)
 
-outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","seekdur_3more")
+outcomes <- c("CBWbord","CBWbordEMPL","Thwusual")
 outcomes.labels <- c("% working in border region",
                      "% working in border region,\n conditional on employment",
-                     "Employment rate",
-                     "Average total working hours",
-                     "Unemployment rate",
-                     "% unemployed for > 1 year")
+                     "Average total working hours")
 cf<- ("")
 T0 <- c("0.96875","0.8125","0.65625","0.5")
 
