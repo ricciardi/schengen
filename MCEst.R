@@ -11,12 +11,13 @@ MCEst <- function(outcomes,rev=TRUE,covars=TRUE,fe=TRUE) {
   
   Y_obs <- Y * treat_mat
   
-  weights <- outcomes$W
-  weights <- weights[rownames(weights) %in% row.names(Y),]
-  weights <- weights[row.names(Y),]  # ensure correct order
+  W <- outcomes$W
+  W <- W[rownames(W) %in% row.names(Y),]
+  W <- W[row.names(Y),]  # ensure correct order
   
-  weights <- (weights)/(1-weights) 
-
+  weights <- matrix(NA, nrow=nrow(W), ncol=ncol(W), dimnames = list(rownames(W), colnames(W)))
+  weights <- treat + (1-treat)*((W)/(1-W))
+  
   if(covars){
     
     X <- outcomes$X # NxT
@@ -27,10 +28,12 @@ MCEst <- function(outcomes,rev=TRUE,covars=TRUE,fe=TRUE) {
     
     if(fe){
       est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 10, num_lam_B = 5, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 2, is_quiet = 1) 
-      est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat*mean(est_model_MCPanel_w$B) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v)) # use X with imputed endogenous values
+      est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v)) # use X with imputed endogenous values
+      est_model_MCPanel_w$rankL <- rankMatrix(t(est_model_MCPanel_w$L), method="qr.R")[1]
     }else{
       est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 0, to_estimate_v = 0, num_lam_L = 10, num_lam_B = 5, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 2, is_quiet = 1) 
-      est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat*mean(est_model_MCPanel_w$B)  # use X with imputed endogenous values
+      est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B))  # use X with imputed endogenous values
+      est_model_MCPanel_w$rankL <- rankMatrix(t(est_model_MCPanel_w$L), method="qr.R")[1]
     }
 
     if(rev){
@@ -48,9 +51,11 @@ MCEst <- function(outcomes,rev=TRUE,covars=TRUE,fe=TRUE) {
     if(fe){
       est_model_MCPanel <- mcnnm_cv(M = Y_obs, mask = treat_mat, W = weights, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 10, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 2, is_quiet = 1)
       est_model_MCPanel$Mhat <- est_model_MCPanel$L + replicate(T,est_model_MCPanel$u) + t(replicate(N,est_model_MCPanel$v))
+      est_model_MCPanel$rankL <- rankMatrix(t(est_model_MCPanel$L), method="qr.R")[1]
       }else{
         est_model_MCPanel <- mcnnm_cv(M = Y_obs, mask = treat_mat, W = weights, to_estimate_u = 0, to_estimate_v = 0, num_lam_L = 10, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 2, is_quiet = 1)
         est_model_MCPanel$Mhat <- est_model_MCPanel$L
+        est_model_MCPanel$rankL <- rankMatrix(t(est_model_MCPanel$L), method="qr.R")[1]
       }
 
     if(rev){

@@ -92,8 +92,8 @@ TsPlot <- function(df, main = "",y.title,vline,vline2,breaks,labels,hline,rev) {
       ticks + 
       theme( legend.title = element_blank()
              , plot.title = element_text(hjust = 0.5, size = 16)
-             , legend.justification = c(0.98,0.17)
-             , legend.position = c(0.99,0.17)
+             , legend.justification = c(0.98,0.25)
+             , legend.position = c(0.99,0.25)
              #  , legend.position = "top"
              , legend.background = element_rect(fill="transparent")
              , axis.text=element_text(size=10)

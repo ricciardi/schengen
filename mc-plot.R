@@ -97,7 +97,7 @@ PlotMCCapacity <- function(observed,main,y.title,mc_est,boot_result,treated,cont
 
 ## Plot time-series
 
-outcomes <- c("CBWbord","CBWbordEMPL","Thwusual")
+outcome.vars <- c("CBWbord","CBWbordEMPL","Thwusual")
 outcomes.labels <- c("% working in border region",
                      "% working in border region,\n conditional on employment",
                      "Average total working hours")

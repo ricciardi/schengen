@@ -24,20 +24,21 @@ mkdir plots
 Run order
 ------
 
-0. package-list.R # required packages
+0. package-list.R # required **R** packages
 1. schengen_MCM_data.R # prepare data for analyses
 2. Schengen_MCM_covars.R # model with covariates 
-  (Schengen_MCM.R # model without covariates)
 	* MCEst.R
 	* PolitisWhite.R
 	* MCEstBoot.R
 	* MCEstBootTraj.R
-
-3. mc-plot.R # plot estimates
+3. Schengen_MCM.R # model without covariates
+4. mc-plot.R # plot estimates
 	* TsPlot.R
 
-4. schengen-rmse-placebo.R # placebo tests: compare different estimators in terms of RMSE (model without covariates)
-5. schengen-rmse-placebo-plot.R  # plot placebo test results
+5. schengen-rmse-placebo.R # placebo tests: compare different estimators in terms of RMSE (model without covariates)
+6. schengen-rmse-placebo-plot.R  # plot placebo test results
 
-6. mc-placebo.R # placebo test of null hypothesis (model without covariates)
-7. mc-placebo-plot.R # placebo test p-values
+7. mc-placebo.R # placebo test of null hypothesis (model without covariates)
+8. mc-placebo-plot.R # placebo test p-values
+
+9. test_MCPanel.R # rank simulations

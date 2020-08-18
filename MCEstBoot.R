@@ -1,4 +1,4 @@
-MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, eastern=NULL, swiss=NULL, control=NULL, covars=TRUE, rev=TRUE) {
+MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, eastern=NULL, swiss=NULL, control=NULL, covars=TRUE, rev=TRUE, fe=TRUE) {
   
   Y <- t(tseries) # NxT 
   
@@ -11,11 +11,12 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, eastern=NULL, s
   
   Y_obs <- Y * treat_mat
   
-  weights <- W
-  weights <- weights[rownames(weights) %in% row.names(Y),]
-  weights <- weights[row.names(Y),]  # reorder
+  W <- W
+  W <- W[rownames(W) %in% row.names(Y),]
+  W <- W[row.names(Y),]  # reorder
 
-  weights <- (weights)/(1-weights) 
+  weights <- matrix(NA, nrow=nrow(W), ncol=ncol(W), dimnames = list(rownames(W), colnames(W)))
+  weights <- treat + (1-treat)*((W)/(1-W))
   
   if(covars){
     
@@ -23,10 +24,17 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, eastern=NULL, s
     ## MC-NNM-W
     ## ------
     
-    est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 10, num_lam_B = 5, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 2, is_quiet = 1) 
-    
-    est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v)) # use X with imputed endogenous values
-    
+    if(fe){
+      est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 10, num_lam_B = 5, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 2, is_quiet = 1) 
+      
+      est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v)) # use X with imputed endogenous values
+      
+    }else{
+      est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 0, to_estimate_v = 0, num_lam_L = 10, num_lam_B = 5, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 2, is_quiet = 1) 
+      
+      est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) # use X with imputed endogenous values
+      
+    }
     if(rev){
       est_model_MCPanel_w$impact <- (est_model_MCPanel_w$Mhat-Y)
       

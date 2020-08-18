@@ -5,6 +5,7 @@
 ## Libraries
 library(MCPanel)
 library(boot)
+library(Matrix)
 
 # Setup parallel processing 
 library(parallel)
@@ -21,19 +22,19 @@ RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 outcome.vars <- c("CBWbord","CBWbordEMPL","Thwusual")
 
 for(o in outcome.vars){
-  print(o)
+  print(paste0("Outcome: ", o))
 
-  ## Analysis 1: ST vs AT (retrospective, X=CBW) 
-  
-  print(paste0("Estimates for Analysis 1, outcome:",o))
+  print(paste0("No covariates + FEs, outcome:",o))
   
   outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
   
   # Get treatment effect estimates
     
   source('MCEst.R')
-  mc.estimates.cbw <- MCEst(outcomes.cbw, rev=TRUE, covars=FALSE)
+  mc.estimates.cbw <- MCEst(outcomes.cbw, rev=TRUE, covars=FALSE, fe=TRUE)
   saveRDS(mc.estimates.cbw, paste0("results/mc-estimates-cbw-",o,".rds"))
+  
+  print(paste0("Rank of L: ", mc.estimates.cbw$rankL))
   
   # Get optimal stationary bootstrap lengths
   source("PolitisWhite.R")
@@ -70,7 +71,7 @@ for(o in outcome.vars){
                                   R=999,
                                   parallel = "multicore") 
   
-  print(boot.trajectory.eastern$t0)
+  print(paste0("Eastern: Combined treatment effect: ", boot.trajectory.eastern$t0))
   print(boot.ci(boot.trajectory.eastern,type=c("norm","basic", "perc")))
   
   saveRDS(boot.trajectory.eastern, paste0("results/boot-cbw-trajectory-eastern-",o,".rds")) 
@@ -81,7 +82,7 @@ for(o in outcome.vars){
                                   R=999,
                                   parallel = "multicore") 
   
-  print(boot.trajectory.eastern.08$t0)
+  print(paste0("Eastern: 2008: ", boot.trajectory.eastern.08$t0))
   print(boot.ci(boot.trajectory.eastern.08,type=c("norm","basic", "perc")))
   
   saveRDS(boot.trajectory.eastern.08, paste0("results/boot-cbw-trajectory-eastern-08-",o,".rds")) 
@@ -92,7 +93,7 @@ for(o in outcome.vars){
                                   R=999,
                                   parallel = "multicore") 
   
-  print(boot.trajectory.eastern.09$t0)
+  print(paste0("Eastern: 2009: ", boot.trajectory.eastern.09$t0))
   print(boot.ci(boot.trajectory.eastern.09,type=c("norm","basic", "perc")))
   
   saveRDS(boot.trajectory.eastern.09, paste0("results/boot-cbw-trajectory-eastern-09-",o,".rds")) 
@@ -105,7 +106,7 @@ for(o in outcome.vars){
                                 R=999,
                                 parallel = "multicore") 
   
-  print(boot.trajectory.swiss$t0)
+  print(paste0("Swiss: Combined treatment effect: ", boot.trajectory.swiss$t0))
   print(boot.ci(boot.trajectory.swiss,type=c("norm","basic", "perc")))
   
   saveRDS(boot.trajectory.swiss, paste0("results/boot-cbw-trajectory-swiss-",o,".rds")) 
@@ -116,7 +117,7 @@ for(o in outcome.vars){
                                 R=999,
                                 parallel = "multicore") 
   
-  print(boot.trajectory.swiss.07$t0)
+  print(paste0("Swiss: 2007: ", boot.trajectory.swiss.07$t0))
   print(boot.ci(boot.trajectory.swiss.07,type=c("norm","basic", "perc")))
   
   saveRDS(boot.trajectory.swiss.07, paste0("results/boot-cbw-trajectory-swiss-07-",o,".rds")) 
@@ -127,7 +128,7 @@ for(o in outcome.vars){
                                 R=999,
                                 parallel = "multicore") 
   
-  print(boot.trajectory.swiss.08$t0)
+  print(paste0("Swiss: 2008: ", boot.trajectory.swiss.08$t0))
   print(boot.ci(boot.trajectory.swiss.08,type=c("norm","basic", "perc")))
   
   saveRDS(boot.trajectory.swiss.08, paste0("results/boot-cbw-trajectory-swiss-08-",o,".rds"))  

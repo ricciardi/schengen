@@ -132,7 +132,7 @@ for(o in outcomes){
                                "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
                                            dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are equal
    
-   impute.best.var.outcome.cbw <- MCEst(outcomes.impute.cbw, rev=TRUE, covars=FALSE, fe=FALSE)
+   impute.best.var.outcome.cbw <- MCEst(outcomes.impute.cbw, rev=TRUE, covars=FALSE, fe=TRUE)
    best.var.outcome.cbw.m.imputed <- best.var.outcome.cbw.m*(1-mask.cbw.missing) + impute.best.var.outcome.cbw$Mhat*mask.cbw.missing # only missing values imputed
    
    outcomes.impute.endog.cbw <- list("M"=best.var.outcome.cbw.m.imputed, # imputed data
@@ -140,7 +140,7 @@ for(o in outcomes){
                                "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
                                            dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are equal
    
-   impute.endog.best.var.outcome.cbw <- MCEst(outcomes.impute.endog.cbw, rev=TRUE, covars=FALSE, fe=FALSE)
+   impute.endog.best.var.outcome.cbw <- MCEst(outcomes.impute.endog.cbw, rev=TRUE, covars=FALSE, fe=TRUE)
    best.var.outcome.cbw.hat <- best.var.outcome.cbw.m.imputed*(1-mask.cbw) + impute.endog.best.var.outcome.cbw$Mhat*mask.cbw  # only endogenous values imputed
    
    colnames(best.var.outcome.cbw.hat) <- colnames(mask.cbw)
