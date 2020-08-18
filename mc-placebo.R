@@ -5,6 +5,7 @@
 ## Loading Source files
 library(MCPanel)
 library(boot)
+library(Matrix)
 
 # Setup parallel processing
 library(parallel)
