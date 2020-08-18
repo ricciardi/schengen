@@ -4,6 +4,7 @@ library(dplyr)
 library(readstata13)
 library(caret)
 library(MCPanel)
+library(Matrix)
 
 # Setup parallel processing 
 library(parallel)
