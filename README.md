@@ -32,6 +32,7 @@ Run order
 	* MCEstBoot.R
 	* MCEstBootTraj.R
 3. Schengen_MCM.R # model without covariates
+
 4. mc-plot.R # plot estimates
 	* TsPlot.R
 
@@ -42,3 +43,5 @@ Run order
 8. mc-placebo-plot.R # placebo test p-values
 
 9. test_MCPanel.R # rank simulations
+
+10. Schengen_DID.R # DID estimates for comparison 
