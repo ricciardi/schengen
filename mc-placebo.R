@@ -39,11 +39,6 @@ for(i in c(0,1)){
     outcomes.cbw.placebo$X <- outcomes.cbw$X[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
     outcomes.cbw.placebo$X.hat <- outcomes.cbw$X.hat[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
     
-    # Get optimal stationary bootstrap lengths
-    source("PolitisWhite.R")
-    
-    bopt <- b.star(t(outcomes.cbw$M),round=TRUE)[,1]
-    
     # Random staggered adoption among actual treated 
     T0 <- round(c(ncol(outcomes.cbw.placebo$mask)-1, ncol(outcomes.cbw.placebo$mask)/1.25, ncol(outcomes.cbw.placebo$mask)/1.5, ncol(outcomes.cbw.placebo$mask)/2))
     boot <- lapply(T0, function(t0){

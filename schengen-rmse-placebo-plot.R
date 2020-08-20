@@ -3,7 +3,7 @@ library(latex2exp)
 library(dplyr)
 library(scales)
 
-outcomes <- c("CBWbord","CBWbordEMPL","Thwusual")
+outcome.vars <- c("CBWbord","CBWbordEMPL","Thwusual")
 outcomes.labels <- c("% working in border region",
                      "% working in border region,\n conditional on employment",
                      "Average total working hours")

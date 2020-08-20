@@ -97,6 +97,8 @@ results <- foreach(R = R.set, .combine='rbind') %dopar% {
 results <- matrix(unlist(results), ncol = n, byrow = FALSE) # coerce into matrix
 saveRDS(results, "rank-test.rds")
 
+#results <- as.matrix(readRDS('results/rank-test.rds'))
+
 model.names <- c("Without fixed effects ", "With fixed effects")
 sim.data <- data.frame("mean"=rowMeans(results),
                        "sd"=rowSds(results),
@@ -125,4 +127,4 @@ MCtest <- ggplot(data = sim.data, aes(R, mean, color = Model, shape =Model)) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))  # rm background
 
-ggsave("plots/MCtest.png", MCtest, width=8.5, height=11)
+ggsave("plots/MCtest.png", MCtest, scale=1.25)
