@@ -2,8 +2,8 @@
 #SBATCH --job-name="schengen-estimates-covars"
 #SBATCH -e schengen-estimates-covars.err
 #SBATCH -p common
-#SBATCH -c 12
-#SBATCH --mem=30G
+#SBATCH -c 24
+#SBATCH --mem=50G
 
 module load R/3.6.0
 

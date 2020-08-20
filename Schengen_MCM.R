@@ -44,7 +44,7 @@ for(o in outcome.vars){
   # Bootstrap for per-period effects
   source("MCEstBoot.R")
   
-  boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W,covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+  boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W,covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom", best_L=mc.estimates.cbw$best_lambda_L) 
   saveRDS(boot, paste0("results/boot-cbw-",o,".rds")) 
   
   # Bootstrap for trajectories
