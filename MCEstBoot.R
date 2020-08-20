@@ -25,12 +25,12 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, eastern=NULL, s
     ## ------
     
     if(fe){
-      est_model_MCPanel_w <- mcnnm_wc(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, lambda_L=best_L, lambda_B = best_B, niter = 1000, rel_tol = 1e-05, is_quiet = 1) 
+      est_model_MCPanel_w <- mcnnm_wc(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, lambda_L=best_L, lambda_B = best_B, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]] 
       
       est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v)) # use X with imputed endogenous values
       
     }else{
-      est_model_MCPanel_w <- mcnnm_wc(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 0, to_estimate_v = 0, lambda_L=best_L, lambda_B = best_B, niter = 1000, rel_tol = 1e-05, is_quiet = 1) 
+      est_model_MCPanel_w <- mcnnm_wc(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 0, to_estimate_v = 0, lambda_L=best_L, lambda_B = best_B, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]]
       
       est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) # use X with imputed endogenous values
       
@@ -74,7 +74,7 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, eastern=NULL, s
     ## MC-NNM
     ## ------
     
-    est_model_MCPanel <- mcnnm(M = Y_obs, mask = treat_mat, W = weights, to_estimate_u = 1, to_estimate_v = 1, lambda_L=best_L, niter = 1000, rel_tol = 1e-05, is_quiet = 1)
+    est_model_MCPanel <- mcnnm(M = Y_obs, mask = treat_mat, W = weights, to_estimate_u = 1, to_estimate_v = 1, lambda_L=best_L, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]]
     
     est_model_MCPanel$Mhat <- est_model_MCPanel$L + replicate(T,est_model_MCPanel$u) + t(replicate(N,est_model_MCPanel$v))
     
