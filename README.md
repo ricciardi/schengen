@@ -42,8 +42,7 @@ Run order
 6. schengen-rmse-placebo-plot.R  # plot placebo test results
 
 7. mc-placebo.R # placebo test of null hypothesis (model without covariates)
-8. mc-placebo-plot.R # placebo test p-values
 
-9. test_MCPanel.R # rank simulations
+8. test_MCPanel.R # rank simulations
 
-10. Schengen_DID.R # DID estimates for comparison 
+9. Schengen_DID.R # DID estimates for comparison 
