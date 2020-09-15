@@ -61,14 +61,11 @@ for(i in c(0,1)){
       
       impact <- mc.estimates.cbw.placebo$impact # = boot_result$t0
       
-      trajectory.eastern <- rowMeans(impact[,1:(t0-1)])
-      trajectory.swiss <- rowMeans(impact[,1:(t0-1)])
-      
       # eastern
       
       boot.trajectory.eastern <- boot(trajectory.eastern, 
                                       MCEstBootTraj, 
-                                      eastern=outcomes.cbw$eastern,
+                                      t0.eastern=t0,
                                       R=999,
                                       parallel = "multicore") 
       
@@ -79,7 +76,7 @@ for(i in c(0,1)){
       
       boot.trajectory.swiss <- boot(trajectory.swiss, 
                                     MCEstBootTraj, 
-                                    swiss=outcomes.cbw$swiss,
+                                    t0.swiss=t0,
                                     R=999,
                                     parallel = "multicore") 
       

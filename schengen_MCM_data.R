@@ -111,6 +111,14 @@ for(o in outcomes){
   }
    mask.cbw[rownames(mask.cbw)%in%rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],] <- abs(mask.cbw[rownames(mask.cbw)%in%rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],]-1) # retrospective analysis: estimate Y(1)_LT,pre
 
+   ## Elapsed time Weights (future and past)
+   
+   z.cbw.eastern <- c(rev(SSlogis(1:which(colnames(mask.cbw)=="20111"), Asym = 1, xmid = 0.85, scal = 1)),
+                      SSlogis(1:(ncol(mask.cbw)-which(colnames(mask.cbw)=="20111")), Asym = 1, xmid = 0, scal = 1))
+   
+   z.cbw.swiss <- c(rev(SSlogis(1:which(colnames(mask.cbw)=="20091"), Asym = 1, xmid = 0.85, scal = 1)),
+                    SSlogis(1:(ncol(mask.cbw)-which(colnames(mask.cbw)=="20091")), Asym = 1, xmid = 0, scal = 1))
+   
    ## Impute missing & endogenous values of covariates
    
    source('MCEst.R')
@@ -131,7 +139,9 @@ for(o in outcomes){
    outcomes.impute.cbw <- list("M"=best.var.outcome.cbw.m, 
                                "mask"=mask.cbw.missing, 
                                "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
-                                           dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are equal
+                                           dimnames = list(rownames(mask.cbw), colnames(mask.cbw))), # weights are equal 
+                               "z.cbw.eastern"=z.cbw.eastern,
+                               "z.cbw.swiss"= z.cbw.swiss)
    
    impute.best.var.outcome.cbw <- MCEst(outcomes.impute.cbw, rev=TRUE, covars=FALSE, fe=TRUE)
    best.var.outcome.cbw.m.imputed <- best.var.outcome.cbw.m*(1-mask.cbw.missing) + impute.best.var.outcome.cbw$Mhat*mask.cbw.missing # only missing values imputed
@@ -139,7 +149,9 @@ for(o in outcomes){
    outcomes.impute.endog.cbw <- list("M"=best.var.outcome.cbw.m.imputed, # imputed data
                                "mask"=mask.cbw, 
                                "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
-                                           dimnames = list(rownames(mask.cbw), colnames(mask.cbw))))# weights are equal
+                                           dimnames = list(rownames(mask.cbw), colnames(mask.cbw))), # weights are equal 
+                               "z.cbw.eastern"=z.cbw.eastern,
+                               "z.cbw.swiss"= z.cbw.swiss)
    
    impute.endog.best.var.outcome.cbw <- MCEst(outcomes.impute.endog.cbw, rev=TRUE, covars=FALSE, fe=TRUE)
    best.var.outcome.cbw.hat <- best.var.outcome.cbw.m.imputed*(1-mask.cbw) + impute.endog.best.var.outcome.cbw$Mhat*mask.cbw  # only endogenous values imputed
@@ -154,6 +166,8 @@ for(o in outcomes){
                                      "X.hat"= best.var.outcome.cbw.hat, # var with imputed endogenous values
                                      "mask" = matrix(0, nrow(mask.cbw),ncol(mask.cbw),
                                                      dimnames = list(rownames(mask.cbw), colnames(mask.cbw))), # no missing entries
+                                     "z.cbw.eastern"=z.cbw.eastern,
+                                     "z.cbw.swiss"=z.cbw.swiss,
                                      "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
                                                  dimnames = list(rownames(mask.cbw), colnames(mask.cbw)))) 
    
@@ -163,26 +177,15 @@ for(o in outcomes){
    
    colnames(propensity.model.cbw.values) <- colnames(mask.cbw)
    rownames(propensity.model.cbw.values) <- rownames(mask.cbw)
-   
-  ## Elapsed time Weights (future and past)
   
-  z.cbw.eastern <- round(c(seq(0.999, 0.7, length.out=which(colnames(mask.cbw)=="20111")),
-                           seq(0.712, 0.999, length.out=ncol(mask.cbw)-which(colnames(mask.cbw)=="20111"))),3) # "earliest" combined treatment
-  
-  z.cbw.swiss <- round(c(seq(0.999, 0.7, length.out=which(colnames(mask.cbw)=="20091")),
-                         seq(0.719, 0.999, length.out=ncol(mask.cbw)-which(colnames(mask.cbw)=="20091"))),3)
-  
-  p.weights.cbw <- matrix(propensity.model.cbw.values%*%diag(z.cbw.eastern), 
+   p.weights.cbw <- matrix(propensity.model.cbw.values, 
                           nrow = nrow(data.cbw ), 
                           ncol= ncol(data.cbw),
                           dimnames = list(rownames(data.cbw), colnames(data.cbw)), byrow = TRUE) # (N x T)
-  
-  p.weights.cbw[rownames(p.weights.cbw) %in% swiss.cluster.cbw,] <- matrix(propensity.model.cbw.values[rownames(propensity.model.cbw.values) %in% swiss.cluster.cbw,]%*%diag(z.cbw.swiss), 
-                                                                           nrow = length(swiss.cluster.cbw), 
-                                                                           ncol= ncol(data.cbw), byrow = TRUE) # (N x T)
   # Save
   
-  outcomes.cbw <- list("M"=data.cbw, "mask"=mask.cbw, "W"= p.weights.cbw,"W.no.z"= propensity.model.cbw.values,
+  outcomes.cbw <- list("M"=data.cbw, "mask"=mask.cbw, "W"= p.weights.cbw,"z.cbw.eastern"= z.cbw.eastern, 
+                       "z.cbw.swiss"= z.cbw.swiss,
                        "X"=best.var.outcome.cbw.m.imputed, "X.hat"=best.var.outcome.cbw.hat,
                        "mc.outcome"=impute.best.var.outcome.cbw, "mc.propensity"=propensity.model.cbw,
                                "treated"=rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],

@@ -15,8 +15,13 @@ MCEst <- function(outcomes,rev=TRUE,covars=TRUE,fe=TRUE) {
   W <- W[rownames(W) %in% row.names(Y),]
   W <- W[row.names(Y),]  # ensure correct order
   
+  z.cbw.eastern <- outcomes$z.cbw.eastern
+  z.cbw.swiss <- outcomes$z.cbw.eastern
+  
   weights <- matrix(NA, nrow=nrow(W), ncol=ncol(W), dimnames = list(rownames(W), colnames(W)))
-  weights <- treat + (1-treat)*((W)/(1-W))
+  weights <- treat*(1-W) + (1-treat)*(W) 
+  weights[rownames(weights) %in% outcomes$eastern,] <- weights[rownames(weights) %in% outcomes$eastern,] %*%diag(z.cbw.eastern)
+  weights[rownames(weights) %in% outcomes$swiss,] <- weights[rownames(weights) %in% outcomes$swiss,] %*%diag(z.cbw.swiss)
   
   if(covars){
     

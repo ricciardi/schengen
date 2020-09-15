@@ -127,7 +127,7 @@ for(o in outcome.vars){
                               vline=20091,vline2=20111,
                               breaks=c(20051,20072,20091,20111,20184),
                               labels=c("2005Q1","2007Q2","2009Q1","2011Q1","2018Q4"),
-                              att.label = TeX("$\\hat{\\bar{\\tau}}_t$"),
+                              att.label = TeX("$\\hat{\\tau}_{t}^{\ATT}$"),
                               rev=TRUE)
     
     ggsave(paste0("plots/mc-estimates-cbw-",o,cf,".png"), mc.plot, width=8.5, height=11)

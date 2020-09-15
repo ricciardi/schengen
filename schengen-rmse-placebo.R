@@ -34,11 +34,17 @@ SchengenSim <- function(outcome,sim,covars){
   X.hat <- outcomes.cbw.placebo$X # NxT 
   treat <- outcomes.cbw.placebo$mask # NxT masked matrix 
   
-  weights <- outcomes.cbw.placebo$W
-  weights <- weights[rownames(weights) %in% row.names(Y),]
-  weights <- weights[row.names(Y),]  # ensure correct order
+  W <- outcomes.cbw.placebo$W
+  W <- W[rownames(W) %in% row.names(Y),]
+  W <- W[row.names(Y),]  # ensure correct order
   
-  weights <- (weights)/(1-weights) 
+  z.cbw.eastern <- outcomes$z.cbw.eastern
+  z.cbw.swiss <- outcomes$z.cbw.eastern
+  
+  weights <- matrix(NA, nrow=nrow(W), ncol=ncol(W), dimnames = list(rownames(W), colnames(W)))
+  weights <- treat*(1-W) + (1-treat)*(W) 
+  weights[rownames(weights) %in% outcomes$eastern,] <- weights[rownames(weights) %in% outcomes$eastern,] %*%diag(z.cbw.eastern)
+  weights[rownames(weights) %in% outcomes$swiss,] <- weights[rownames(weights) %in% outcomes$swiss,] %*%diag(z.cbw.swiss)
   
   ## Setting up the configuration
   N <- nrow(treat)
