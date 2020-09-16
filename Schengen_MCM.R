@@ -45,7 +45,7 @@ for(o in outcome.vars){
   source("MCEstBoot.R")
   
   boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, 
-                 z.cbw.eastern =outcomes$z.cbw.eastern, z.cbw.swiss = z.cbw.swiss, eastern=outcomes$eastern, swiss=outcomes$swiss,covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom", best_L=mc.estimates.cbw$best_lambda_L) 
+                 z.cbw.eastern=outcomes.cbw$z.cbw.eastern, z.cbw.swiss = outcomes.cbw$z.cbw.swiss, eastern=outcomes.cbw$eastern, swiss=outcomes.cbw$swiss, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom", best_L=mc.estimates.cbw$best_lambda) 
   saveRDS(boot, paste0("results/boot-cbw-",o,".rds")) 
   
   # Bootstrap for trajectories
@@ -61,7 +61,8 @@ for(o in outcome.vars){
   
   boot.trajectory.eastern <- boot(impact, 
                                   MCEstBootTraj, 
-                                  t0.eastern,
+                                  t0.eastern=t0.eastern,
+                                  eastern=outcomes.cbw$eastern,
                                   R=999,
                                   parallel = "multicore") 
   
@@ -74,7 +75,8 @@ for(o in outcome.vars){
   
   boot.trajectory.swiss <- boot(impact, 
                                 MCEstBootTraj, 
-                                t0.swiss,
+                                t0.swiss=t0.swiss,
+                                swiss=outcomes.cbw$swiss, 
                                 R=999,
                                 parallel = "multicore") 
   

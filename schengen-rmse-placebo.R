@@ -38,14 +38,6 @@ SchengenSim <- function(outcome,sim,covars){
   W <- W[rownames(W) %in% row.names(Y),]
   W <- W[row.names(Y),]  # ensure correct order
   
-  z.cbw.eastern <- outcomes$z.cbw.eastern
-  z.cbw.swiss <- outcomes$z.cbw.eastern
-  
-  weights <- matrix(NA, nrow=nrow(W), ncol=ncol(W), dimnames = list(rownames(W), colnames(W)))
-  weights <- treat*(1-W) + (1-treat)*(W) 
-  weights[rownames(weights) %in% outcomes$eastern,] <- weights[rownames(weights) %in% outcomes$eastern,] %*%diag(z.cbw.eastern)
-  weights[rownames(weights) %in% outcomes$swiss,] <- weights[rownames(weights) %in% outcomes$swiss,] %*%diag(z.cbw.swiss)
-  
   ## Setting up the configuration
   N <- nrow(treat)
   T <- ncol(treat)
@@ -82,6 +74,18 @@ SchengenSim <- function(outcome,sim,covars){
       treat_mat <- rotate(rotate(treat_mat)) # retrospective analysis
       
       Y_obs <- Y * treat_mat # treated are 0 
+      
+      z.cbw.eastern <- c(rev(SSlogis(1:t0, Asym = 1, xmid = 0.85, scal = 1)),
+                         SSlogis(1:(ncol(treat_mat)-t0), Asym = 1, xmid = 0, scal = 1))
+      
+      z.cbw.swiss <- z.cbw.eastern
+      
+      treat <- 1-treat_mat # treated are 1
+      
+      weights <- matrix(NA, nrow=nrow(W), ncol=ncol(W), dimnames = list(rownames(W), colnames(W)))
+      weights <- treat*(1-W) + (1-treat)*(W) 
+      weights[rownames(weights) %in% outcomes.cbw$eastern,] <- weights[rownames(weights) %in% outcomes.cbw.placebo$eastern,] %*%diag(z.cbw.eastern)
+      weights[rownames(weights) %in% outcomes.cbw$swiss,] <- weights[rownames(weights) %in% outcomes.cbw.placebo$swiss,] %*%diag(z.cbw.swiss)
 
       ## -----
       ## ADH

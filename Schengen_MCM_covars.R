@@ -45,7 +45,7 @@ for(o in outcome.vars){
   source("MCEstBoot.R")
   
   boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X, X.hat=outcomes.cbw$X.hat, 
-                 z.cbw.eastern =outcomes$z.cbw.eastern, z.cbw.swiss = z.cbw.swiss, eastern=outcomes$eastern, swiss=outcomes$swiss, covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom", best_L=mc.estimates.cbw$best_lambda_L, best_B=mc.estimates.cbw$best_lambda_B) 
+                 z.cbw.eastern =outcomes.cbw$z.cbw.eastern, z.cbw.swiss = outcomes.cbw$z.cbw.swiss, eastern=outcomes.cbw$eastern, swiss=outcomes.cbw$swiss, covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom", best_L=mc.estimates.cbw$best_lambda_L, best_B=mc.estimates.cbw$best_lambda_B) 
   saveRDS(boot, paste0("results/boot-cbw-",o,"-covars.rds")) 
   
   # Bootstrap for trajectories
@@ -61,8 +61,9 @@ for(o in outcome.vars){
   
   boot.trajectory.eastern <- boot(impact, 
                                   MCEstBootTraj, 
-                                  t0.eastern,
                                   R=999,
+                                  t0.eastern=t0.eastern,
+                                  eastern=outcomes.cbw$eastern,
                                   parallel = "multicore") 
   
   print(paste0("Eastern: Combined treatment effect: ", boot.trajectory.eastern$t0))
@@ -74,7 +75,8 @@ for(o in outcome.vars){
   
   boot.trajectory.swiss <- boot(impact, 
                                 MCEstBootTraj, 
-                                t0.swiss,
+                                t0.swiss=t0.swiss,
+                                swiss=outcomes.cbw$swiss,
                                 R=999,
                                 parallel = "multicore") 
   

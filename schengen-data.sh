@@ -5,7 +5,7 @@
 #SBATCH -c 6
 #SBATCH --mem=25G
 
-module load R/3.6.0 
+module load R/3.6.3
 
 # Run 
 R --no-save < schengen_MCM_data.R

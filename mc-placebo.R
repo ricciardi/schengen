@@ -53,6 +53,12 @@ for(i in c(0,1)){
       
       outcomes.cbw.placebo$mask <- rotate(rotate(treat_mat)) # retrospective analysis
       
+      z.cbw.eastern <- c(rev(SSlogis(1:t0, Asym = 1, xmid = 0.85, scal = 1)),
+                         SSlogis(1:(ncol(outcomes.cbw.placebo$mask)-t0), Asym = 1, xmid = 0, scal = 1))
+      
+      outcomes.cbw.placebo$z.cbw.eastern <- z.cbw.eastern
+      outcomes.cbw.placebo$z.cbw.swiss <- z.cbw.swiss
+      
       source('MCEst.R')
       mc.estimates.cbw.placebo <- MCEst(outcomes.cbw.placebo, rev=TRUE, covars=FALSE)
       

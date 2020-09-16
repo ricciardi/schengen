@@ -1,11 +1,11 @@
-MCEstBootTraj <- function(impact,indices, t0.eastern=NULL, t0.swiss=NULL) {
+MCEstBootTraj <- function(impact,indices, t0.eastern=NULL, t0.swiss=NULL,eastern=NULL,swiss=NULL) {
   
   if(!is.null(t0.eastern)){
-    trajectory.eastern <- rowMeans(impact[,1:(t0.eastern-1)])[indices] # Schengen + FoM
-    return(mean(att[names(att) %in% eastern])) # avg over cluster
+    att.eastern <- rowMeans(impact[indices,][,1:(t0.eastern-1)])# Schengen + FoM
+    return(mean(att.eastern[names(att.eastern) %in% eastern])) # avg over cluster
   }
   if(!is.null(t0.swiss)){
-    trajectory.swiss <- rowMeans(impact[,1:(t0.swiss-1)])[indices] # Schengen + FoM
-    return(mean(att[names(att) %in% swiss])) # avg over cluster
+    att.swiss <- rowMeans(impact[indices,][,1:(t0.swiss-1)]) # Schengen + FoM
+    return(mean(att.swiss[names(att.swiss) %in% swiss])) # avg over cluster
   }
 }
