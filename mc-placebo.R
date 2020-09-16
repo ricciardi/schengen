@@ -57,7 +57,7 @@ for(i in c(0,1)){
                          SSlogis(1:(ncol(outcomes.cbw.placebo$mask)-t0), Asym = 1, xmid = 0, scal = 1))
       
       outcomes.cbw.placebo$z.cbw.eastern <- z.cbw.eastern
-      outcomes.cbw.placebo$z.cbw.swiss <- z.cbw.swiss
+      outcomes.cbw.placebo$z.cbw.swiss <- z.cbw.eastern
       
       source('MCEst.R')
       mc.estimates.cbw.placebo <- MCEst(outcomes.cbw.placebo, rev=TRUE, covars=FALSE)
@@ -69,9 +69,10 @@ for(i in c(0,1)){
       
       # eastern
       
-      boot.trajectory.eastern <- boot(trajectory.eastern, 
+      boot.trajectory.eastern <- boot(impact, 
                                       MCEstBootTraj, 
                                       t0.eastern=t0,
+                                      eastern=outcomes.cbw.placebo$eastern,
                                       R=999,
                                       parallel = "multicore") 
       
@@ -80,9 +81,10 @@ for(i in c(0,1)){
       
       # swiss
       
-      boot.trajectory.swiss <- boot(trajectory.swiss, 
+      boot.trajectory.swiss <- boot(impact, 
                                     MCEstBootTraj, 
                                     t0.swiss=t0,
+                                    swiss=outcomes.cbw.placebo$swiss,
                                     R=999,
                                     parallel = "multicore") 
       
