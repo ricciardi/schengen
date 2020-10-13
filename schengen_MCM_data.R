@@ -18,7 +18,7 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-data <- read.dta13("FINAL.dta", generate.factors=T) # includes variables for 2 analyses + covariates 
+data <- read.dta13("Collapsed_05_19.dta", generate.factors=T)
 
 ## Outcomes:
 ## N_CBWbord: number of cross-border workers in the region
@@ -26,7 +26,7 @@ data <- read.dta13("FINAL.dta", generate.factors=T) # includes variables for 2 a
 ## CBWbordEMPL: share of residents working in another country, which shares the border with the region of residence, conditional on employment
 ## average total working hours (Thwusual)
 
-outcomes <- c("CBWbord","CBWbordEMPL","Thwusual")
+outcomes <- c("CBWbord","CBWbordEMPL")
 
 ## Covariates:
 
@@ -36,15 +36,14 @@ covariates <- c("AV_age_22","AV_age_27","AV_age_32","AV_age_37","AV_age_42","AV_
                 "AV_migr",
                 "HHincome_COUNTRY",
                 "pop")
-#covariates.cbw <- c("GDPcapitaR","R_GDPcapitaR","density", "R_HHincome_COUNTRY2","R_HHincome_COUNTRY","XCGvsEURO_05") # analysis specific covars
 covariates.cbw <- c("GDPcapitaR","R_GDPcapitaR") # analysis specific covars
 
 # Analyses: 
 ## ST vs AT (retrospective, X=CBW) 
 cbw <- unique(data$REGION[which(data$treated_CBW!=-1)])
 
-always.treated.cbw <- unique(data$REGION[which(data$treated_CBW=="Controls (always-treated)")])
-switch.treated.cbw <- unique(data$REGION[which(data$treated_CBW %in% c("2008: Schengen; 2011: FoM", "2007: FoM; 2009: Schengen"))])
+always.treated.cbw <- unique(data$REGION[which(data$treated_CBW==0)]) # "Controls (always-treated)"
+switch.treated.cbw <- unique(data$REGION[which(data$treated_CBW %in% c(1:2))]) # "2008: Schengen; 2011: FoM", "2007: FoM; 2009: Schengen"
 length(always.treated.cbw[!always.treated.cbw%in%switch.treated.cbw]) == length(always.treated.cbw) # ensure these groups don't overlap
 
 # Clusters
@@ -54,9 +53,9 @@ length(always.treated.cbw[!always.treated.cbw%in%switch.treated.cbw]) == length(
 ## Swiss cluster (treated_X=2)
 ### FoM_X=1 from 2007Q2 and SCHENGEN_X=1 from 2009Q1
 
-eastern.cluster.cbw <- unique(data$REGION[which(data$treated_CBW %in% c("2008: Schengen; 2011: FoM"))])
+eastern.cluster.cbw <- unique(data$REGION[which(data$treated_CBW==1)]) # "2008: Schengen; 2011: FoM"
 
-swiss.cluster.cbw <- unique(data$REGION[which(data$treated_CBW %in% c("2007: FoM; 2009: Schengen"))])
+swiss.cluster.cbw <- unique(data$REGION[which(data$treated_CBW==2)]) #"2007: FoM; 2009: Schengen"
 
 # create yearquarter
 data$quarter <-NA
@@ -113,11 +112,11 @@ for(o in outcomes){
 
    ## Elapsed time Weights (future and past)
    
-   z.cbw.eastern <- c(rev(SSlogis(1:which(colnames(mask.cbw)=="20111"), Asym = 1, xmid = 0.85, scal = 1)),
-                      SSlogis(1:(ncol(mask.cbw)-which(colnames(mask.cbw)=="20111")), Asym = 1, xmid = 0, scal = 1))
+   z.cbw.eastern <- c(rev(SSlogis(1:which(colnames(mask.cbw)=="20111"), Asym = 1, xmid = 0.85, scal = 8)),
+                      SSlogis(1:(ncol(mask.cbw)-which(colnames(mask.cbw)=="20111")), Asym = 1, xmid = 0.85, scal = 8))
    
-   z.cbw.swiss <- c(rev(SSlogis(1:which(colnames(mask.cbw)=="20091"), Asym = 1, xmid = 0.85, scal = 1)),
-                    SSlogis(1:(ncol(mask.cbw)-which(colnames(mask.cbw)=="20091")), Asym = 1, xmid = 0, scal = 1))
+   z.cbw.swiss <- c(rev(SSlogis(1:which(colnames(mask.cbw)=="20091"), Asym = 1, xmid = 0.85, scal = 8)),
+                    SSlogis(1:(ncol(mask.cbw)-which(colnames(mask.cbw)=="20091")), Asym = 1, xmid = 0.85, scal = 8))
    
    ## Impute missing & endogenous values of covariates
    
@@ -136,24 +135,29 @@ for(o in outcomes){
    mask.cbw.missing[which(is.na(best.var.outcome.cbw.m))] <- 1
    best.var.outcome.cbw.m[is.na(best.var.outcome.cbw.m)] <- 0 # NA's are 0 in outcome matrix
    
+   p.weights.cbw.equal <- matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
+                                 dimnames = list(rownames(mask.cbw), colnames(mask.cbw)))
+   
    outcomes.impute.cbw <- list("M"=best.var.outcome.cbw.m, 
                                "mask"=mask.cbw.missing, 
-                               "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
-                                           dimnames = list(rownames(mask.cbw), colnames(mask.cbw))), # weights are equal 
+                               "W"= p.weights.cbw.equal, # weights are equal 
                                "z.cbw.eastern"=z.cbw.eastern,
-                               "z.cbw.swiss"= z.cbw.swiss)
+                               "z.cbw.swiss"= z.cbw.swiss,
+                               "eastern"=eastern.cluster.cbw, 
+                               "swiss"=swiss.cluster.cbw)
    
-   impute.best.var.outcome.cbw <- MCEst(outcomes.impute.cbw, rev=TRUE, covars=FALSE, fe=TRUE)
+   impute.best.var.outcome.cbw <- MCEst(outcomes.impute.cbw, rev=TRUE, covars=FALSE)
    best.var.outcome.cbw.m.imputed <- best.var.outcome.cbw.m*(1-mask.cbw.missing) + impute.best.var.outcome.cbw$Mhat*mask.cbw.missing # only missing values imputed
    
    outcomes.impute.endog.cbw <- list("M"=best.var.outcome.cbw.m.imputed, # imputed data
                                "mask"=mask.cbw, 
-                               "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
-                                           dimnames = list(rownames(mask.cbw), colnames(mask.cbw))), # weights are equal 
+                               "W"= p.weights.cbw.equal, # weights are equal 
                                "z.cbw.eastern"=z.cbw.eastern,
-                               "z.cbw.swiss"= z.cbw.swiss)
+                               "z.cbw.swiss"= z.cbw.swiss,
+                               "eastern"=eastern.cluster.cbw, 
+                               "swiss"=swiss.cluster.cbw)
    
-   impute.endog.best.var.outcome.cbw <- MCEst(outcomes.impute.endog.cbw, rev=TRUE, covars=FALSE, fe=TRUE)
+   impute.endog.best.var.outcome.cbw <- MCEst(outcomes.impute.endog.cbw, rev=TRUE, covars=FALSE)
    best.var.outcome.cbw.hat <- best.var.outcome.cbw.m.imputed*(1-mask.cbw) + impute.endog.best.var.outcome.cbw$Mhat*mask.cbw  # only endogenous values imputed
    
    colnames(best.var.outcome.cbw.hat) <- colnames(mask.cbw)
@@ -168,10 +172,11 @@ for(o in outcomes){
                                                      dimnames = list(rownames(mask.cbw), colnames(mask.cbw))), # no missing entries
                                      "z.cbw.eastern"=z.cbw.eastern,
                                      "z.cbw.swiss"=z.cbw.swiss,
-                                     "W"= matrix(0.5, nrow(mask.cbw),ncol(mask.cbw),
-                                                 dimnames = list(rownames(mask.cbw), colnames(mask.cbw)))) 
+                                     "W"= p.weights.cbw.equal,
+                                     "eastern"=eastern.cluster.cbw, 
+                                     "swiss"=swiss.cluster.cbw) 
    
-   propensity.model.cbw <- MCEst(propensity.model.cbw.data, rev=TRUE, covars=TRUE, fe=TRUE) 
+   propensity.model.cbw <- MCEst(propensity.model.cbw.data, rev=TRUE, covars=TRUE, prop.model=TRUE) 
    
    propensity.model.cbw.values <- propensity.model.cbw$Mhat # L + X_hat*B + u + v
    
@@ -184,9 +189,10 @@ for(o in outcomes){
                           dimnames = list(rownames(data.cbw), colnames(data.cbw)), byrow = TRUE) # (N x T)
   # Save
   
-  outcomes.cbw <- list("M"=data.cbw, "mask"=mask.cbw, "W"= p.weights.cbw,"z.cbw.eastern"= z.cbw.eastern, 
-                       "z.cbw.swiss"= z.cbw.swiss,
-                       "X"=best.var.outcome.cbw.m.imputed, "X.hat"=best.var.outcome.cbw.hat,
+  outcomes.cbw <- list("M"=data.cbw, "mask"=mask.cbw, 
+                       "W"= p.weights.cbw, "W.equal"=p.weights.cbw.equal,
+                       "z.cbw.eastern"= z.cbw.eastern, "z.cbw.swiss"= z.cbw.swiss,
+                       "X"=best.var.outcome.cbw.m.imputed, "X.hat"=best.var.outcome.cbw.hat, "X.missing" = best.var.outcome.cbw.m,
                        "mc.outcome"=impute.best.var.outcome.cbw, "mc.propensity"=propensity.model.cbw,
                                "treated"=rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],
                                "control"=rownames(mask.cbw)[rownames(mask.cbw)%in%always.treated.cbw],

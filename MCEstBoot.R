@@ -1,4 +1,4 @@
-MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, z.cbw.eastern, z.cbw.swiss, eastern=NULL, swiss=NULL, est_eastern=FALSE, est_swiss=FALSE, covars=TRUE, rev=TRUE, fe=TRUE, best_L, best_B) {
+MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, z.cbw.eastern, z.cbw.swiss, eastern=NULL, swiss=NULL, est_eastern=FALSE, est_swiss=FALSE, covars=TRUE, rev=TRUE, best_L, best_B) {
   
   Y <- t(tseries) # NxT 
   
@@ -16,7 +16,7 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, z.cbw.eastern, 
   W <- W[row.names(Y),]  # reorder
   
   weights <- matrix(NA, nrow=nrow(W), ncol=ncol(W), dimnames = list(rownames(W), colnames(W)))
-  weights <- treat*(1-W) + (1-treat)*(W) 
+  weights <- treat + (1-treat)*((1-W)/(W))  
   weights[rownames(weights) %in% eastern,] <- weights[rownames(weights) %in% eastern,] %*%diag(z.cbw.eastern)
   weights[rownames(weights) %in% swiss,] <- weights[rownames(weights) %in% swiss,] %*%diag(z.cbw.swiss)
   
@@ -26,17 +26,10 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, z.cbw.eastern, 
     ## MC-NNM-W
     ## ------
     
-    if(fe){
-      est_model_MCPanel_w <- mcnnm_wc(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, lambda_L=best_L, lambda_B = best_B, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]] 
+    est_model_MCPanel_w <- mcnnm_wc(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, lambda_L=best_L, lambda_B = best_B, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]] 
       
-      est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v)) # use X with imputed endogenous values
-      
-    }else{
-      est_model_MCPanel_w <- mcnnm_wc(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 0, to_estimate_v = 0, lambda_L=best_L, lambda_B = best_B, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]]
-      
-      est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) # use X with imputed endogenous values
-      
-    }
+    est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v)) # use X with imputed endogenous values
+
     if(rev){
       est_model_MCPanel_w$impact <- (est_model_MCPanel_w$Mhat-Y)
       

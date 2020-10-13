@@ -75,15 +75,15 @@ SchengenSim <- function(outcome,sim,covars){
       
       Y_obs <- Y * treat_mat # treated are 0 
       
-      z.cbw.eastern <- c(rev(SSlogis(1:t0, Asym = 1, xmid = 0.85, scal = 1)),
-                         SSlogis(1:(ncol(treat_mat)-t0), Asym = 1, xmid = 0, scal = 1))
+      z.cbw.eastern <- c(rev(SSlogis(1:t0, Asym = 1, xmid = 0.85, scal = 8)),
+                         SSlogis(1:(ncol(treat_mat)-t0), Asym = 1, xmid = 0.85, scal = 8))
       
       z.cbw.swiss <- z.cbw.eastern
       
       treat <- 1-treat_mat # treated are 1
       
       weights <- matrix(NA, nrow=nrow(W), ncol=ncol(W), dimnames = list(rownames(W), colnames(W)))
-      weights <- treat*(1-W) + (1-treat)*(W) 
+      weights <- treat + (1-treat)*((1-W)/(W)) 
       weights[rownames(weights) %in% outcomes.cbw$eastern,] <- weights[rownames(weights) %in% outcomes.cbw.placebo$eastern,] %*%diag(z.cbw.eastern)
       weights[rownames(weights) %in% outcomes.cbw$swiss,] <- weights[rownames(weights) %in% outcomes.cbw.placebo$swiss,] %*%diag(z.cbw.swiss)
 
@@ -97,7 +97,7 @@ SchengenSim <- function(outcome,sim,covars){
       print(paste("ADH RMSE:", round(est_model_ADH_test_RMSE,3),"run",i))
       
       if(covars){
-        est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 10, num_lam_B = 5, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 2, is_quiet = 1) 
+        est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 30, num_lam_B = 30, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 3, is_quiet = 1) 
         est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat*mean(est_model_MCPanel_w$B) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v)) # use X with imputed endogenous values
         est_model_MCPanel_w$msk_err <- (est_model_MCPanel_w$Mhat - Y)*(1-treat_mat)
         est_model_MCPanel_w$test_RMSE <- sqrt((1/sum(1-treat_mat)) * sum(est_model_MCPanel_w$msk_err^2, na.rm = TRUE))
@@ -109,7 +109,7 @@ SchengenSim <- function(outcome,sim,covars){
         ## MC-NNM
         ## ------
         
-        est_model_MCPanel <- mcnnm_cv(M = Y_obs, mask = treat_mat, W = weights, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 10, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 2, is_quiet = 1) 
+        est_model_MCPanel <- mcnnm_cv(M = Y_obs, mask = treat_mat, W = weights, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 100, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 5, is_quiet = 1) 
         est_model_MCPanel$Mhat <- est_model_MCPanel$L  + replicate(T,est_model_MCPanel$u) + t(replicate(N,est_model_MCPanel$v)) # use X with imputed endogenous values
         est_model_MCPanel$msk_err <- (est_model_MCPanel$Mhat - Y)*(1-treat_mat)
         est_model_MCPanel$test_RMSE <- sqrt((1/sum(1-treat_mat)) * sum(est_model_MCPanel$msk_err^2, na.rm = TRUE))
@@ -178,7 +178,7 @@ SchengenSim <- function(outcome,sim,covars){
 }
 
 # Read data
-outcome.vars <- c("CBWbord","CBWbordEMPL","Thwusual")
+outcome.vars <- c("CBWbord","CBWbordEMPL")
 
 for(o in outcome.vars){
   for(i in c(0,1)){
