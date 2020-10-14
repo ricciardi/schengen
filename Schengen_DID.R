@@ -19,7 +19,7 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-outcome.vars <- c("CBWbord","CBWbordEMPL","Thwusual")
+outcome.vars <- c("CBWbord","CBWbordEMPL")
 
 for(o in outcome.vars){
   print(paste0("Outcome: ", o))
@@ -48,13 +48,11 @@ for(o in outcome.vars){
   t0.eastern <- which(colnames(outcomes.cbw$mask)==20111)
   t0.swiss <- which(colnames(outcomes.cbw$mask)==20091)
   
-  trajectory.eastern <- rowMeans(impact[,1:(t0.eastern-1)]) # Schengen + FoM
-  trajectory.swiss <- rowMeans(impact[,1:(t0.swiss-1)]) # Schengen + FoM
-
   # eastern
   
-  boot.trajectory.eastern <- boot(trajectory.eastern, 
+  boot.trajectory.eastern <- boot(impact, 
                                   MCEstBootTraj, 
+                                  t0.eastern=t0.eastern,
                                   eastern=outcomes.cbw$eastern,
                                   R=999,
                                   parallel = "multicore") 
@@ -64,8 +62,9 @@ for(o in outcome.vars){
   
   # swiss
   
-  boot.trajectory.swiss <- boot(trajectory.swiss, 
+  boot.trajectory.swiss <- boot(impact, 
                                 MCEstBootTraj, 
+                                t0.swiss=t0.swiss,
                                 swiss=outcomes.cbw$swiss,
                                 R=999,
                                 parallel = "multicore") 
