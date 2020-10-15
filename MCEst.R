@@ -14,6 +14,7 @@ MCEst <- function(outcomes,rev=TRUE,covars=TRUE,prop.model=FALSE) {
   W <- outcomes$W
   W <- W[rownames(W) %in% row.names(Y),]
   W <- W[row.names(Y),]  # ensure correct order
+  W[W<=0] <- min(W[W>0]) # set floor
   
   z.cbw.eastern <- outcomes$z.cbw.eastern
   z.cbw.swiss <- outcomes$z.cbw.eastern

@@ -14,6 +14,7 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, z.cbw.eastern, 
   W <- W
   W <- W[rownames(W) %in% row.names(Y),]
   W <- W[row.names(Y),]  # reorder
+  W[W<=0] <- min(W[W>0]) # set floor
   
   weights <- matrix(NA, nrow=nrow(W), ncol=ncol(W), dimnames = list(rownames(W), colnames(W)))
   weights <- (1-treat) + (treat)*((1-W)/(W))  
