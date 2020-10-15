@@ -19,7 +19,7 @@ MCEst <- function(outcomes,rev=TRUE,covars=TRUE,prop.model=FALSE) {
   z.cbw.swiss <- outcomes$z.cbw.eastern
   
   weights <- matrix(NA, nrow=nrow(W), ncol=ncol(W), dimnames = list(rownames(W), colnames(W)))
-  weights <- treat + (1-treat)*((1-W)/(W)) 
+  weights <- (1-treat) + (treat)*((1-W)/(W)) 
   weights[rownames(weights) %in% outcomes$eastern,] <- weights[rownames(weights) %in% outcomes$eastern,] %*%diag(z.cbw.eastern)
   weights[rownames(weights) %in% outcomes$swiss,] <- weights[rownames(weights) %in% outcomes$swiss,] %*%diag(z.cbw.swiss)
   

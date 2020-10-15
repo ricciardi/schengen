@@ -16,7 +16,7 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, z.cbw.eastern, 
   W <- W[row.names(Y),]  # reorder
   
   weights <- matrix(NA, nrow=nrow(W), ncol=ncol(W), dimnames = list(rownames(W), colnames(W)))
-  weights <- treat + (1-treat)*((1-W)/(W))  
+  weights <- (1-treat) + (treat)*((1-W)/(W))  
   weights[rownames(weights) %in% eastern,] <- weights[rownames(weights) %in% eastern,] %*%diag(z.cbw.eastern)
   weights[rownames(weights) %in% swiss,] <- weights[rownames(weights) %in% swiss,] %*%diag(z.cbw.swiss)
   

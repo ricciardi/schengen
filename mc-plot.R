@@ -97,7 +97,7 @@ PlotMCCapacity <- function(observed,main,y.title,mc_est,boot_result,treated,cont
 
 ## Plot time-series
 
-outcome.vars <- c("CBWbord","CBWbordEMPL","Thwusual")
+outcome.vars <- c("CBWbord","CBWbordEMPL")
 outcomes.labels <- c("% working in border region",
                      "% working in border region,\n conditional on employment",
                      "Average total working hours")
@@ -125,8 +125,8 @@ for(o in outcome.vars){
                               eastern =outcomes.cbw$eastern,
                               swiss= outcomes.cbw$swiss,
                               vline=20091,vline2=20111,
-                              breaks=c(20051,20072,20091,20111,20184),
-                              labels=c("2005Q1","2007Q2","2009Q1","2011Q1","2018Q4"),
+                              breaks=c(20051,20071,20091,20111,20131,20151,20171,20194),
+                              labels=c("2005Q1","2007Q1","2009Q1","2011Q1","2013Q1","2015Q1","2017Q1","2019Q4"),
                               att.label = TeX("$\\hat{\\tau}_{t}^{LT,pre}$"),
                               rev=TRUE)
     
