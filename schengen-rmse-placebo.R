@@ -37,6 +37,7 @@ SchengenSim <- function(outcome,sim,covars){
   W <- outcomes.cbw.placebo$W
   W <- W[rownames(W) %in% row.names(Y),]
   W <- W[row.names(Y),]  # ensure correct order
+  W[W<=0] <- min(W[W>0]) # set floor
   
   ## Setting up the configuration
   N <- nrow(treat)
