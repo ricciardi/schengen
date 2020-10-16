@@ -85,7 +85,7 @@ SchengenSim <- function(outcome,sim,covars){
       treat <- 1-treat_mat # treated are 1
       
       weights <- matrix(NA, nrow=nrow(W), ncol=ncol(W), dimnames = list(rownames(W), colnames(W)))
-      weights <- (1-treat) + (treat)*((1-W)/(W)) 
+      weights <- (1-treat_mat) + (treat_mat)*((1-W)/(W)) 
       weights[rownames(weights) %in% outcomes.cbw$eastern,] <- weights[rownames(weights) %in% outcomes.cbw.placebo$eastern,] %*%diag(z.cbw.eastern)
       weights[rownames(weights) %in% outcomes.cbw$swiss,] <- weights[rownames(weights) %in% outcomes.cbw.placebo$swiss,] %*%diag(z.cbw.swiss)
 
