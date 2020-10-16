@@ -38,6 +38,7 @@ SchengenSim <- function(outcome,sim,covars){
   W <- W[rownames(W) %in% row.names(Y),]
   W <- W[row.names(Y),]  # ensure correct order
   W[W<=0] <- min(W[W>0]) # set floor
+  W[W>=1] <- max(W[W<1]) # set ceiling
   
   ## Setting up the configuration
   N <- nrow(treat)
