@@ -43,4 +43,4 @@ Run order
 
 7. mc-placebo.R # placebo test of null hypothesis (model without covariates)
 
-8. Schengen_DID.R # DID estimates for comparison 
+8. Schengen_DID.R # DID, SCM, or SCM-L1 estimates for comparison 

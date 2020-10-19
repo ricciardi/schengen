@@ -20,55 +20,56 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
 outcome.vars <- c("CBWbord","CBWbordEMPL")
+estimators <- c("DID","ADH","ENT")
 
-for(o in outcome.vars){
-  print(paste0("Outcome: ", o))
-
-  print(paste0("No covariates + FEs, outcome:",o))
-  
-  outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
-  
-  
-  # Get optimal stationary bootstrap lengths
-  source("PolitisWhite.R")
-  
-  bopt <- b.star(t(outcomes.cbw$M),round=TRUE)[,1]
-  
-  # Bootstrap for per-period effects
-  source("DIDEstBoot.R")
-  
-  boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), DIDEstBoot, mask=outcomes.cbw$mask, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom") 
-  
-  # Bootstrap for trajectories
-  # Resample trajectories without time component, calculate ATTs for each cluster
-  source("MCEstBootTraj.R")
-  
-  impact <- boot$t0
-
-  t0.eastern <- which(colnames(outcomes.cbw$mask)==20111)
-  t0.swiss <- which(colnames(outcomes.cbw$mask)==20091)
-  
-  # eastern
-  
-  boot.trajectory.eastern <- boot(impact, 
+for(estimator in estimators){
+  for(o in outcome.vars){
+    print(paste0("Estimator: ", estimator))
+    print(paste0("Outcome: ", o))
+    
+    outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
+    
+    # Get optimal stationary bootstrap lengths
+    source("PolitisWhite.R")
+    
+    bopt <- b.star(t(outcomes.cbw$M),round=TRUE)[,1]
+    
+    # Bootstrap for per-period effects
+    source("DIDEstBoot.R")
+    
+    boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), DIDEstBoot, mask=outcomes.cbw$mask, rev=TRUE, estimator=estimator, R=999, parallel = "multicore", l=bopt, sim = "geom") 
+    
+    # Bootstrap for trajectories
+    # Resample trajectories without time component, calculate ATTs for each cluster
+    source("MCEstBootTraj.R")
+    
+    impact <- boot$t0
+    
+    t0.eastern <- which(colnames(outcomes.cbw$mask)==20111)
+    t0.swiss <- which(colnames(outcomes.cbw$mask)==20091)
+    
+    # eastern
+    
+    boot.trajectory.eastern <- boot(impact, 
+                                    MCEstBootTraj, 
+                                    t0.eastern=t0.eastern,
+                                    eastern=outcomes.cbw$eastern,
+                                    R=999,
+                                    parallel = "multicore") 
+    
+    print(paste0("Eastern: Combined treatment effect: ", boot.trajectory.eastern$t0))
+    print(boot.ci(boot.trajectory.eastern,type=c("norm","basic", "perc")))
+    
+    # swiss
+    
+    boot.trajectory.swiss <- boot(impact, 
                                   MCEstBootTraj, 
-                                  t0.eastern=t0.eastern,
-                                  eastern=outcomes.cbw$eastern,
+                                  t0.swiss=t0.swiss,
+                                  swiss=outcomes.cbw$swiss,
                                   R=999,
                                   parallel = "multicore") 
-  
-  print(paste0("Eastern: Combined treatment effect: ", boot.trajectory.eastern$t0))
-  print(boot.ci(boot.trajectory.eastern,type=c("norm","basic", "perc")))
-  
-  # swiss
-  
-  boot.trajectory.swiss <- boot(impact, 
-                                MCEstBootTraj, 
-                                t0.swiss=t0.swiss,
-                                swiss=outcomes.cbw$swiss,
-                                R=999,
-                                parallel = "multicore") 
-  
-  print(paste0("Swiss: Combined treatment effect: ", boot.trajectory.swiss$t0))
-  print(boot.ci(boot.trajectory.swiss,type=c("norm","basic", "perc")))
+    
+    print(paste0("Swiss: Combined treatment effect: ", boot.trajectory.swiss$t0))
+    print(boot.ci(boot.trajectory.swiss,type=c("norm","basic", "perc")))
+  }
 }

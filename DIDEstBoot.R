@@ -1,4 +1,4 @@
-DIDEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, eastern=NULL, swiss=NULL, covars=TRUE, rev=TRUE, fe=TRUE) {
+DIDEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, eastern=NULL, swiss=NULL, rev=TRUE, fe=TRUE, estimator="DID") {
   
   Y <- t(tseries) # NxT 
   
@@ -11,14 +11,20 @@ DIDEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, eastern=NULL, 
   
   Y_obs <- Y * treat_mat
   
-  ## ------
-  ##  DID
-  ## ------
-  
-  est_model_DID <- t(DID(t(Y_obs), t(1-outcomes.cbw$mask)))
+  if(estimator=="DID"){
+
+    est_model <- t(DID(t(Y_obs), t(treat_mat)))
+    
+  } if(estimator=="ADH"){
+    
+    est_model <- adh_mp_rows(Y_obs, treat_mat, rel_tol = 0.001)
+    
+  }if(estimator=="ENT"){
+    est_model <- t(en_mp_rows(t(Y_obs), t(treat_mat), num_folds = 3))
+  }
   
   if(rev){
-    impact <- (est_model_DID-Y)
+    impact <- (est_model-Y)
     
     if(!is.null(eastern)){
       att <- as.matrix(colMeans(impact[,1:(t0-1)][rownames(impact) %in% eastern,])) # get mean pre-period impact on treated
@@ -31,7 +37,7 @@ DIDEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, eastern=NULL, 
       return(impact)
     }
   }else{
-    impact <- (Y-est_model_DID)
+    impact <- (Y-est_model)
     if(!is.null(eastern)){
       att <- as.matrix(colMeans(impact[,t0:ncol(impact)][rownames(impact) %in% eastern,])) # get mean post-period impact on treated
       return(att)
