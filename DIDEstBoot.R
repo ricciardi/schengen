@@ -13,14 +13,19 @@ DIDEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, eastern=NULL, 
   
   if(estimator=="DID"){
 
-    est_model <- t(DID(t(Y_obs), t(treat_mat)))
+    est_model <- t(DID(t(Y_obs), t(1-outcomes.cbw$mask)))
     
-  } if(estimator=="ADH"){
+  }
+  
+  if(estimator=="ADH"){
     
-    est_model <- adh_mp_rows(Y_obs, treat_mat, rel_tol = 0.001)
+    est_model <- adh_mp_rows(Y_obs, 1-outcomes.cbw$mask, rel_tol = 0.001)
     
-  }if(estimator=="ENT"){
-    est_model <- t(en_mp_rows(t(Y_obs), t(treat_mat), num_folds = 3))
+  }
+  
+  if(estimator=="ENT"){
+    
+    est_model <- t(en_mp_rows(t(Y_obs), t(1-outcomes.cbw$mask), num_folds = 3))
   }
   
   if(rev){
