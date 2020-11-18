@@ -19,7 +19,7 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-outcome.vars <- c("CBWbord","CBWbordEMPL")
+outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 
 for(o in outcome.vars){
   print(paste0("Outcome: ", o))
@@ -31,47 +31,66 @@ for(o in outcome.vars){
   # Get treatment effect estimates
     
   source('MCEst.R')
-  mc.estimates.cbw <- MCEst(outcomes.cbw, rev=TRUE, covars=TRUE)
-  saveRDS(mc.estimates.cbw, paste0("results/mc-estimates-cbw-",o,"-covars.rds"))
+  mc.estimates.cbw.eastern <- MCEst(outcomes.cbw, cluster='eastern', rev=TRUE, covars=TRUE)
+  saveRDS(mc.estimates.cbw.eastern, paste0("results/mc-estimates-cbw-eastern-",o,"-covars.rds"))
   
-  print(paste0("Rank of L: ", mc.estimates.cbw$rankL))
+  mc.estimates.cbw.swiss <- MCEst(outcomes.cbw, cluster='swiss', rev=TRUE, covars=TRUE)
+  saveRDS(mc.estimates.cbw.swiss, paste0("results/mc-estimates-cbw-swiss-",o,"-covars.rds"))
+  
+  print(paste0("Rank of L (Eastern): ", mc.estimates.cbw.eastern$rankL))
+  print(paste0("Rank of L (Swiss): ", mc.estimates.cbw.swiss$rankL))
 
   # Get optimal stationary bootstrap lengths
   source("PolitisWhite.R")
   
-  bopt <- b.star(t(outcomes.cbw$M),round=TRUE)[,1]
+  bopt.eastern <- b.star(t(outcomes.cbw$M[!rownames(outcomes.cbw$M)%in%outcomes.cbw$swiss,]),round=TRUE)[,1]
+  bopt.swiss <- b.star(t(outcomes.cbw$M[!rownames(outcomes.cbw$M)%in%outcomes.cbw$eastern,]),round=TRUE)[,1]
   
   # Bootstrap for per-period effects
   source("MCEstBoot.R")
   
-  boot <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X, X.hat=outcomes.cbw$X.hat, 
-                 z.cbw.eastern =outcomes.cbw$z.cbw.eastern, z.cbw.swiss = outcomes.cbw$z.cbw.swiss, eastern=outcomes.cbw$eastern, swiss=outcomes.cbw$swiss, covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom", best_L=mc.estimates.cbw$best_lambda_L, best_B=mc.estimates.cbw$best_lambda_B) 
-  saveRDS(boot, paste0("results/boot-cbw-",o,"-covars.rds")) 
+  boot.eastern <- tsboot(tseries=t(outcomes.cbw$M), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X, X.hat=outcomes.cbw$X.hat, 
+                 z.cbw.eastern =outcomes.cbw$z.cbw.eastern, z.cbw.swiss = outcomes.cbw$z.cbw.swiss, eastern=outcomes.cbw$eastern, swiss=outcomes.cbw$swiss, est_eastern=TRUE, covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt.eastern, sim = "geom", best_L=mc.estimates.cbw.eastern$best_lambda_L, best_B=mc.estimates.cbw.eastern$best_lambda_B) 
+  saveRDS(boot.eastern, paste0("results/boot-cbw-eastern-",o,"-covars.rds")) 
+  
+  boot.swiss <- tsboot(tseries=t(outcomes.cbw$M), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X, X.hat=outcomes.cbw$X.hat, 
+                         z.cbw.eastern =outcomes.cbw$z.cbw.eastern, z.cbw.swiss = outcomes.cbw$z.cbw.swiss, eastern=outcomes.cbw$eastern, swiss=outcomes.cbw$swiss, est_swiss=TRUE, covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt.swiss, sim = "geom", best_L=mc.estimates.cbw.swiss$best_lambda_L, best_B=mc.estimates.cbw.swiss$best_lambda_B) 
+  saveRDS(boot.swiss, paste0("results/boot-cbw-swiss-",o,"-covars.rds")) 
   
   # Estimates with no propensity score weighting
   outcomes.cbw$W <- outcomes.cbw$W.equal # equal weighting
   
-  mc.estimates.cbw.equal <- MCEst(outcomes.cbw, rev=TRUE, covars=TRUE)
-  saveRDS(mc.estimates.cbw.equal, paste0("results/mc-estimates-cbw-equal-",o,"-covars.rds"))
+  mc.estimates.cbw.eastern.equal <- MCEst(outcomes.cbw, cluster='eastern', rev=TRUE, covars=TRUE)
+  saveRDS(mc.estimates.cbw.eastern.equal, paste0("results/mc-estimates-cbw-eastern-equal-",o,"-covars.rds"))
   
-  print(paste0("Rank of L: ", mc.estimates.cbw.equal$rankL))
+  print(paste0("Rank of L (Eastern) (No weighting): ", mc.estimates.cbw.eastern.equal$rankL))
   
-  boot.equal <- tsboot(tseries=ts(t(outcomes.cbw$M)), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X, X.hat=outcomes.cbw$X.hat, 
-                 z.cbw.eastern =outcomes.cbw$z.cbw.eastern, z.cbw.swiss = outcomes.cbw$z.cbw.swiss, eastern=outcomes.cbw$eastern, swiss=outcomes.cbw$swiss, covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt, sim = "geom", best_L=mc.estimates.cbw.equal$best_lambda_L, best_B=mc.estimates.cbw.equal$best_lambda_B) 
-  saveRDS(boot.equal, paste0("results/boot-cbw-equal-",o,"-covars.rds")) 
+  mc.estimates.cbw.swiss.equal <- MCEst(outcomes.cbw, cluster='swiss', rev=TRUE, covars=TRUE)
+  saveRDS(mc.estimates.cbw.swiss.equal, paste0("results/mc-estimates-cbw-swiss-equal-",o,"-covars.rds"))
+  
+  print(paste0("Rank of L (Swiss) (No weighting): ", mc.estimates.cbw.swiss.equal$rankL))
+  
+  boot.eastern.equal <- tsboot(tseries=t(outcomes.cbw$M), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X, X.hat=outcomes.cbw$X.hat, 
+                 z.cbw.eastern =outcomes.cbw$z.cbw.eastern, z.cbw.swiss = outcomes.cbw$z.cbw.swiss, eastern=outcomes.cbw$eastern, swiss=outcomes.cbw$swiss, est_eastern=TRUE, covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt.eastern, sim = "geom", best_L=mc.estimates.cbw.eastern.equal$best_lambda_L, best_B=mc.estimates.cbw.eastern.equal$best_lambda_B) 
+  saveRDS(boot.eastern.equal, paste0("results/boot-cbw-eastern-equal-",o,"-covars.rds")) 
+  
+  boot.swiss.equal <- tsboot(tseries=t(outcomes.cbw$M), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, X=outcomes.cbw$X, X.hat=outcomes.cbw$X.hat, 
+                               z.cbw.eastern =outcomes.cbw$z.cbw.eastern, z.cbw.swiss = outcomes.cbw$z.cbw.swiss, eastern=outcomes.cbw$eastern, swiss=outcomes.cbw$swiss, est_swiss=TRUE, covars=TRUE, rev=TRUE, R=999, parallel = "multicore", l=bopt.swiss, sim = "geom", best_L=mc.estimates.cbw.swiss.equal$best_lambda_L, best_B=mc.estimates.cbw.swiss.equal$best_lambda_B) 
+  saveRDS(boot.eastern.equal, paste0("results/boot-cbw-eastern-equal-",o,"-covars.rds")) 
   
   # Bootstrap for trajectories
   # Resample trajectories without time component, calculate ATTs for each cluster
   source("MCEstBootTraj.R")
   
-  impact <- mc.estimates.cbw$impact # = boot_result$t0
+  impact.eastern <- mc.estimates.cbw.eastern$impact 
+  impact.swiss <- mc.estimates.cbw.swiss$impact
 
   t0.eastern <- which(colnames(outcomes.cbw$mask)==20111)
   t0.swiss <- which(colnames(outcomes.cbw$mask)==20091)
 
   # eastern
   
-  boot.trajectory.eastern <- boot(impact, 
+  boot.trajectory.eastern <- boot(impact.eastern, 
                                   MCEstBootTraj, 
                                   R=999,
                                   t0.eastern=t0.eastern,
@@ -85,7 +104,7 @@ for(o in outcome.vars){
 
   # swiss
   
-  boot.trajectory.swiss <- boot(impact, 
+  boot.trajectory.swiss <- boot(impact.swiss, 
                                 MCEstBootTraj, 
                                 t0.swiss=t0.swiss,
                                 swiss=outcomes.cbw$swiss,
@@ -98,11 +117,12 @@ for(o in outcome.vars){
   saveRDS(boot.trajectory.swiss, paste0("results/boot-cbw-trajectory-swiss-",o,"-covars.rds")) 
   
   # Estimates without propensity weighting
-  impact.equal <- mc.estimates.cbw.equal$impact
+  impact.eastern.equal <- mc.estimates.cbw.eastern.equal$impact
+  impact.swiss.equal <- mc.estimates.cbw.swiss.equal$impact
   
   # eastern
   
-  boot.trajectory.eastern.equal <- boot(impact.equal, 
+  boot.trajectory.eastern.equal <- boot(impact.eastern.equal, 
                                         MCEstBootTraj, 
                                         t0.eastern=t0.eastern,
                                         eastern=outcomes.cbw$eastern,
@@ -116,7 +136,7 @@ for(o in outcome.vars){
   
   # swiss
   
-  boot.trajectory.swiss.equal <- boot(impact.equal, 
+  boot.trajectory.swiss.equal <- boot(impact.swiss.equal, 
                                       MCEstBootTraj, 
                                       t0.swiss=t0.swiss,
                                       swiss=outcomes.cbw$swiss, 

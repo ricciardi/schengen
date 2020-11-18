@@ -1,8 +1,13 @@
-MCEst <- function(outcomes,rev=TRUE,covars=TRUE,prop.model=FALSE) {
+MCEst <- function(outcomes,cluster=c('eastern','swiss'),rev=TRUE,covars=TRUE,prop.model=FALSE) {
   
-  Y <- outcomes$M # NxT 
+  if(cluster=='eastern'){
+    Y <- outcomes$M[!rownames(outcomes$M)%in%outcomes$swiss,] # NxT
+  }else{
+    Y <- outcomes$M[!rownames(outcomes$M)%in%outcomes$eastern,] # NxT
+  }
   
-  treat <- outcomes$mask # NxT masked matrix 
+  treat <- outcomes$mask
+  treat <- treat[rownames(treat) %in% row.names(Y),]
   
   N <- nrow(treat)
   T <- ncol(treat)
@@ -29,6 +34,9 @@ MCEst <- function(outcomes,rev=TRUE,covars=TRUE,prop.model=FALSE) {
     
     X <- outcomes$X # NxT
     X.hat <- outcomes$X.hat # imputed endogenous values
+    
+    X <- X[rownames(X) %in% row.names(Y),]
+    X.hat <- X.hat[rownames(X.hat) %in% row.names(Y),]
     ## ------
     ## MC-NNM-W
     ## ------

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name="schengen-data"
 #SBATCH -e schengen-data.err
-#SBATCH -p common
+#SBATCH -p scavenger
 #SBATCH -c 6
 #SBATCH --mem=25G
 

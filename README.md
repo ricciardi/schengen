@@ -27,12 +27,14 @@ Run order
 0. package-list.R # required **R** packages
 
 1. schengen_MCM_data.R # prepare data for analyses
+	* MCEst.R
 
 2. Schengen_MCM_covars.R # model with covariates 
 	* MCEst.R
 	* PolitisWhite.R
 	* MCEstBoot.R
 	* MCEstBootTraj.R
+	
 3. Schengen_MCM.R # model without covariates
 
 4. mc-plot.R # plot estimates
@@ -44,3 +46,4 @@ Run order
 7. mc-placebo.R # placebo test of null hypothesis (model without covariates)
 
 8. Schengen_DID.R # DID, SCM, or SCM-L1 estimates for comparison 
+	* DIDEstBoot.R
