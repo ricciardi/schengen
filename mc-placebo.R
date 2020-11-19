@@ -19,7 +19,7 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-outcome.vars <- c("CBWbord","CBWbordEMPL")
+outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 sim.labels <- c("Staggered adoption","Simultaneous adoption")
 
 for(i in c(0,1)){
@@ -42,7 +42,7 @@ for(i in c(0,1)){
     # Random staggered adoption among actual treated 
     T0 <- round(c(ncol(outcomes.cbw.placebo$mask)-1, ncol(outcomes.cbw.placebo$mask)/1.25, ncol(outcomes.cbw.placebo$mask)/1.5, ncol(outcomes.cbw.placebo$mask)/2))
     boot <- lapply(T0, function(t0){
-      treat_indices <- which(rownames(outcomes.cbw.placebo$mask) %in%outcomes.cbw.placebo$treated) # keep treated fixed to actual treated
+      treat_indices <- which(rownames(outcomes.cbw.placebo$M) %in%outcomes.cbw.placebo$treated) # keep treated fixed to actual treated
       if(i==1){
         treat_mat <- (1-stag_adapt(outcomes.cbw.placebo$M, length(treat_indices),t0, treat_indices)) # invert again in MCEst
       } else{
@@ -52,6 +52,7 @@ for(i in c(0,1)){
       rotate <- function(x) t(apply(x, 2, rev))
       
       outcomes.cbw.placebo$mask <- rotate(rotate(treat_mat)) # retrospective analysis
+      rownames(outcomes.cbw.placebo$mask) <- rownames(outcomes.cbw.placebo$M )
       
       z.cbw.eastern <- c(rev(SSlogis(1:t0, Asym = 1, xmid = 0.85, scal = 8)),
                          SSlogis(1:(ncol(outcomes.cbw.placebo$mask)-t0), Asym = 1, xmid = 0.85, scal = 8))
@@ -60,16 +61,18 @@ for(i in c(0,1)){
       outcomes.cbw.placebo$z.cbw.swiss <- z.cbw.eastern
       
       source('MCEst.R')
-      mc.estimates.cbw.placebo <- MCEst(outcomes.cbw.placebo, rev=TRUE, covars=FALSE)
+      mc.estimates.cbw.eastern.placebo <- MCEst(outcomes.cbw.placebo, cluster='eastern', rev=TRUE, covars=FALSE) 
+      mc.estimates.cbw.swiss.placebo <- MCEst(outcomes.cbw.placebo, cluster='swiss', rev=TRUE, covars=FALSE)
       
       # Resample trajectories without time component, calculate ATTs for each cluster
       source("MCEstBootTraj.R")
       
-      impact <- mc.estimates.cbw.placebo$impact # = boot_result$t0
+      impact.eastern <- mc.estimates.cbw.eastern.placebo$impact
+      impact.swiss <- mc.estimates.cbw.swiss.placebo$impact
       
       # eastern
       
-      boot.trajectory.eastern <- boot(impact, 
+      boot.trajectory.eastern <- boot(impact.eastern, 
                                       MCEstBootTraj, 
                                       t0.eastern=t0,
                                       eastern=outcomes.cbw.placebo$eastern,
@@ -81,7 +84,7 @@ for(i in c(0,1)){
       
       # swiss
       
-      boot.trajectory.swiss <- boot(impact, 
+      boot.trajectory.swiss <- boot(impact.swiss, 
                                     MCEstBootTraj, 
                                     t0.swiss=t0,
                                     swiss=outcomes.cbw.placebo$swiss,

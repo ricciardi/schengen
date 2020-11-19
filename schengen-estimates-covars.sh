@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name="schengen-estimates-covars"
 #SBATCH -e schengen-estimates-covars.err
-#SBATCH -p common
+#SBATCH -p scavenger
 #SBATCH -c 24
 #SBATCH --mem=50G
 

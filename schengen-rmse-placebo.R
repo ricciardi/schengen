@@ -4,7 +4,7 @@
 
 ## Loading Source files
 library(MCPanel)
-library(glmnet)
+library(NNLM)
 
 # Setup parallel processing 
 library(parallel)
@@ -45,7 +45,7 @@ SchengenSim <- function(outcome,sim,covars){
   T <- ncol(treat)
   T0 <- round(c(ncol(outcomes.cbw.placebo$mask)-1, ncol(outcomes.cbw.placebo$mask)/1.25, ncol(outcomes.cbw.placebo$mask)/1.5, ncol(outcomes.cbw.placebo$mask)/2))
   N_t <- ceiling(N*0.5) # no. treated units desired <=N
-  num_runs <- 200
+  num_runs <- 100
   is_simul <- sim ## Whether to simulate Simultaneus Adoption or Staggered Adoption
 
   ## Matrices for saving RMSE values
@@ -55,6 +55,7 @@ SchengenSim <- function(outcome,sim,covars){
   ADH_RMSE_test <- matrix(0L,num_runs,length(T0))
   EN_RMSE_test <- matrix(0L,num_runs,length(T0))
   ENT_RMSE_test <- matrix(0L,num_runs,length(T0))
+  NNMF_RMSE_test <- matrix(0L,num_runs,length(T0))
   
   ## Run different methods
   
@@ -74,20 +75,31 @@ SchengenSim <- function(outcome,sim,covars){
       rotate <- function(x) t(apply(x, 2, rev))
       
       treat_mat <- rotate(rotate(treat_mat)) # retrospective analysis
+      treat_mat_NA <- treat_mat
+      treat_mat_NA[treat_mat_NA==0] <- NA # zeros are NA
       
       Y_obs <- Y * treat_mat # treated are 0 
+      Y_obs_NA <- Y * treat_mat_NA # treated are NA
       
       z.cbw.eastern <- c(rev(SSlogis(1:t0, Asym = 1, xmid = 0.85, scal = 8)),
                          SSlogis(1:(ncol(treat_mat)-t0), Asym = 1, xmid = 0.85, scal = 8))
       
       z.cbw.swiss <- z.cbw.eastern
-      
-      treat <- 1-treat_mat # treated are 1
-      
+  
       weights <- matrix(NA, nrow=nrow(W), ncol=ncol(W), dimnames = list(rownames(W), colnames(W)))
       weights <- (1-treat_mat) + (treat_mat)*((1-W)/(W)) 
       weights[rownames(weights) %in% outcomes.cbw$eastern,] <- weights[rownames(weights) %in% outcomes.cbw.placebo$eastern,] %*%diag(z.cbw.eastern)
       weights[rownames(weights) %in% outcomes.cbw$swiss,] <- weights[rownames(weights) %in% outcomes.cbw.placebo$swiss,] %*%diag(z.cbw.swiss)
+      
+      ## -----
+      ## NNMF
+      ## -----
+      nnmf_fit <- nnmf(Y_obs_NA,1,verbose=0)
+      est_model_NNMF <- Y_obs + with(nnmf_fit, W %*% H)*treat # impute only missing
+      est_model_NNMF_msk_err <- (est_model_NNMF - Y)*(1-treat_mat)
+      est_model_NNMF_test_RMSE <- sqrt((1/sum(1-treat_mat)) * sum(est_model_NNMF_msk_err^2, na.rm = TRUE))
+      NNMF_RMSE_test[i,j] <- est_model_NNMF_test_RMSE
+      print(paste("NNMF RMSE:", round(est_model_NNMF_test_RMSE,3),"run",i))
 
       ## -----
       ## ADH
@@ -155,24 +167,30 @@ SchengenSim <- function(outcome,sim,covars){
   ENT_avg_RMSE <- apply(ENT_RMSE_test,2,mean)
   ENT_std_error <- apply(ENT_RMSE_test,2,sd)/sqrt(num_runs)
   
+  NNMF_avg_RMSE <- apply(NNMF_RMSE_test,2,mean)
+  NNMF_std_error <- apply(NNMF_RMSE_test,2,sd)/sqrt(num_runs)
+  
   ## Saving data
   
   df1 <-
     data.frame(
-      "y" =  c(DID_avg_RMSE,MCPanel_avg_RMSE,ADH_avg_RMSE,ENT_avg_RMSE),
+      "y" =  c(DID_avg_RMSE,MCPanel_avg_RMSE,NNMF_avg_RMSE, ADH_avg_RMSE,ENT_avg_RMSE),
       "lb" = c(DID_avg_RMSE - 1.96*DID_std_error,
                MCPanel_avg_RMSE - 1.96*MCPanel_std_error, 
+               NNMF_avg_RMSE - 1.96*NNMF_std_error, 
                ADH_avg_RMSE - 1.96*ADH_std_error,
                ENT_avg_RMSE - 1.96*ENT_std_error),
       "ub" = c(DID_avg_RMSE + 1.96*DID_std_error, 
                MCPanel_avg_RMSE + 1.96*MCPanel_std_error, 
+               NNMF_avg_RMSE + 1.96*NNMF_std_error, 
                ADH_avg_RMSE + 1.96*ADH_std_error,
                ENT_avg_RMSE + 1.96*ENT_std_error),
       "x" = T0/T,
       "Method" = c(replicate(length(T0),"DID"), 
                    replicate(length(T0),"MC-NNM"), 
+                   replicate(length(T0),"NNMF"), 
                    replicate(length(T0),"SCM"),
-                   replicate(length(T0),"Vertical")))
+                   replicate(length(T0),"SCM-L1")))
   
   filename<-paste0(paste0(paste0(paste0(paste0(paste0(gsub("\\.", "_", o),"_N_", N),"_T_", T),"_numruns_", num_runs), "_num_treated_", N_t), "_simultaneuous_", is_simul,"_covars_",covars),".rds")
   save(df1, file = paste0("results/",filename))
@@ -180,7 +198,7 @@ SchengenSim <- function(outcome,sim,covars){
 }
 
 # Read data
-outcome.vars <- c("CBWbord","CBWbordEMPL")
+outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 
 for(o in outcome.vars){
   for(i in c(0,1)){

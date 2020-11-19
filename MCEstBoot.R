@@ -29,6 +29,9 @@ MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, z.cbw.eastern, 
   
   if(covars){
     
+    X <- X[rownames(X) %in% row.names(Y),]
+    X.hat <- X.hat[rownames(X.hat) %in% row.names(Y),]
+    
     ## ------
     ## MC-NNM-W
     ## ------

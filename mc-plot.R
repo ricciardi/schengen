@@ -97,10 +97,16 @@ PlotMCCapacity <- function(observed,main,y.title,mc_est,boot_result,treated,cont
 
 ## Plot time-series
 
-outcome.vars <- c("CBWbord","CBWbordEMPL")
+outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 outcomes.labels <- c("% working in border region",
                      "% working in border region,\n conditional on employment",
-                     "Average total working hours")
+                     "Regional employment rate",
+                     "Average total working hours",
+                     "Unemployment rate",
+                     "Inactivity rate",
+                     "% unemployed for < 1 month",
+                     "% unemployed for < 1-2 months",
+                     "% unemployed for < 1 year")
 
 covarflag <- c("","-covars")
 

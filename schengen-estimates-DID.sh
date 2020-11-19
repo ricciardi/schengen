@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name="schengen-estimates-DID"
 #SBATCH -e schengen-estimates-DID.err
-#SBATCH -p common
-#SBATCH -c 12
+#SBATCH -p scavenger
+#SBATCH -c 6
 #SBATCH --mem=30G
 
 module load R/3.6.3

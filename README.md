@@ -6,11 +6,12 @@ Prerequsites
 
 * **R** >= 3.5.0 (tested on 3.6.0 and 3.6.1)
 
-Install the forked MCPanel repo:
+Install the forked MCPanel repo and NNLM:
 ```R
 install.packages("devtools")
 library(devtools) 
 install_github("jvpoulos/MCPanel")
+install_github('linxihui/NNLM')
 ```
 
 Create folders to store outputs:
