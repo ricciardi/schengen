@@ -1,4 +1,4 @@
-MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, z.cbw.eastern, z.cbw.swiss, eastern=NULL, swiss=NULL, est_eastern=FALSE, est_swiss=FALSE, covars=TRUE, rev=TRUE, best_L, best_B) {
+MCEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, z.cbw.eastern, z.cbw.swiss, eastern=NULL, swiss=NULL, est_eastern=FALSE, est_swiss=FALSE, covars=TRUE, rev=TRUE, best_L, best_B) {
   
   if(est_eastern){
     Y <- t(tseries)[!rownames(t(tseries))%in%swiss,] # NxT

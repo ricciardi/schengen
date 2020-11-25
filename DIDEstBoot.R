@@ -1,4 +1,4 @@
-DIDEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, t0=NULL, eastern=NULL, swiss=NULL, est_eastern=FALSE, est_swiss=FALSE, rev=TRUE, estimator="DID") {
+DIDEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, eastern=NULL, swiss=NULL, est_eastern=FALSE, est_swiss=FALSE, rev=TRUE, estimator="DID") {
   
   if(est_eastern){
     Y <- t(tseries)[!rownames(t(tseries))%in%swiss,] # NxT

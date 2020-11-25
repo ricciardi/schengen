@@ -14,7 +14,7 @@ library(boot)
 
 source("TsPlot.R")
 
-PlotMCCapacity <- function(observed,main,y.title,mc_est_eastern,mc_est_swiss,boot_result_eastern,boot_result_swiss,treated,control,eastern,swiss,vline,vline2,breaks,labels,att.label,rev){
+PlotMCCapacity <- function(observed,main,y.title,mc_est_eastern,mc_est_swiss,boot_result_eastern,boot_result_swiss,treated,control,eastern,swiss,vline,vline2,breaks,labels,att.label,rev,censor=FALSE){
   ## Create time series data
   
   predicted.eastern <- mc_est_eastern$Mhat
@@ -93,25 +93,25 @@ PlotMCCapacity <- function(observed,main,y.title,mc_est_eastern,mc_est_swiss,boo
   # Labels
   
   ts.means.m$series <- NA
-  ts.means.m$series[grep("observed.", ts.means.m$variable)] <- "Timeseries"
-  ts.means.m$series[grep("predicted.", ts.means.m$variable)] <- "Timeseries"
+  ts.means.m$series[grep("observed.", ts.means.m$variable)] <- "Time-series"
+  ts.means.m$series[grep("predicted.", ts.means.m$variable)] <- "Time-series"
   ts.means.m$series[grep("pointwise.", ts.means.m$variable)] <- att.label
   
-  ts.means.m$series<- factor(ts.means.m$series, levels=c("Timeseries", att.label)) # reverse order
+  ts.means.m$series<- factor(ts.means.m$series, levels=c("Time-series", att.label)) # reverse order
   
   ts.means.m$hline <-NA
-  ts.means.m$hline[ts.means.m$series!="Timeseries"] <-0
+  ts.means.m$hline[ts.means.m$series!="Time-series"] <-0
   
-  # if(rev){
-  #   ts.means.m$value[ts.means.m$year > vline2 & (ts.means.m$variable=="pointwise.eastern" | ts.means.m$variable=="predicted.eastern")] <- NA # censor 
-  #   ts.means.m$value[ts.means.m$year > vline & (ts.means.m$variable=="pointwise.swiss" | ts.means.m$variable=="predicted.swiss")] <- NA
-  #   
-  #   ts.means.m$upper[ts.means.m$year > vline2 & (ts.means.m$variable=="pointwise.eastern" | ts.means.m$variable=="predicted.eastern")] <- NA 
-  #   ts.means.m$upper[ts.means.m$year > vline & (ts.means.m$variable=="pointwise.swiss" | ts.means.m$variable=="predicted.swiss")] <- NA
-  #   
-  #   ts.means.m$lower[ts.means.m$year > vline2 & ts.means.m$variable=="pointwise.eastern"] <- NA 
-  #   ts.means.m$lower[ts.means.m$year > vline & ts.means.m$variable=="pointwise.swiss"] <- NA
-  # }
+  if(censor & rev){
+    ts.means.m$value[ts.means.m$year > vline2 & (ts.means.m$variable=="pointwise.eastern" | ts.means.m$variable=="predicted.eastern")] <- NA # censor
+    ts.means.m$value[ts.means.m$year > vline & (ts.means.m$variable=="pointwise.swiss" | ts.means.m$variable=="predicted.swiss")] <- NA
+
+    ts.means.m$upper[ts.means.m$year > vline2 & (ts.means.m$variable=="pointwise.eastern" | ts.means.m$variable=="predicted.eastern")] <- NA
+    ts.means.m$upper[ts.means.m$year > vline & (ts.means.m$variable=="pointwise.swiss" | ts.means.m$variable=="predicted.swiss")] <- NA
+
+    ts.means.m$lower[ts.means.m$year > vline2 & ts.means.m$variable=="pointwise.eastern"] <- NA
+    ts.means.m$lower[ts.means.m$year > vline & ts.means.m$variable=="pointwise.swiss"] <- NA
+  }
   
   ts.plot <- TsPlot(df=ts.means.m,main=main, y.title=y.title,vline,vline2,breaks,labels,hline=ts.means.m$hline,rev)
   
@@ -122,7 +122,7 @@ PlotMCCapacity <- function(observed,main,y.title,mc_est_eastern,mc_est_swiss,boo
 
 outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
 outcomes.labels <- c("% working in border region",
-                     "% working in border region,\n conditional on employment",
+                     "% working in border region, conditional on employment",
                      "Regional employment rate",
                      "Average total working hours",
                      "Unemployment rate",
@@ -156,15 +156,15 @@ for(o in outcome.vars){
                               boot_result_swiss=boot.cbw.swiss,
                               treated=outcomes.cbw$treated, 
                               control=outcomes.cbw$control, 
-                              eastern =outcomes.cbw$eastern,
+                              eastern=outcomes.cbw$eastern,
                               swiss= outcomes.cbw$swiss,
-                              vline=20091,vline2=20111,
-                              breaks=c(20051,20071,20091,20111,20131,20151,20171,20194),
-                              labels=c("2005Q1","2007Q1","2009Q1","2011Q1","2013Q1","2015Q1","2017Q1","2019Q4"),
+                              vline=20084,vline2=20104,
+                              breaks=c(20054,20074,20094,20114,20134,20154,20174,20194),
+                              labels=c("2005Q4","2007Q4","2009Q4","2011Q4","2013Q4","2015Q4","2017Q4","2019Q4"),
                               att.label = TeX("$\\hat{\\tau}_{t}^{LT,pre}$"),
                               rev=TRUE)
     
-    ggsave(paste0("plots/mc-estimates-cbw-",o,cf,".png"), mc.plot, width=8.5, height=11)
+    ggsave(paste0("plots/mc-estimates-cbw-",o,cf,".png"), mc.plot + theme(legend.position = "none"), scale=2)
     ggsave(paste0("plots/mc-estimates-cbw-",o,cf,"-slides.png"), mc.plot + ggtitle("Matrix completion estimates of the effect of Schengen and FoM") + theme(plot.title = element_text(family="serif", size=16, hjust = 0.5)), scale=2) 
   }
 } 

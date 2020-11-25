@@ -19,7 +19,7 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcome.vars <- c("CBWbord","CBWbordEMPL")
 
 for(o in outcome.vars){
   print(paste0("Outcome: ", o))
@@ -57,27 +57,6 @@ for(o in outcome.vars){
                          z.cbw.eastern=outcomes.cbw$z.cbw.eastern, z.cbw.swiss = outcomes.cbw$z.cbw.swiss, eastern=outcomes.cbw$eastern, swiss=outcomes.cbw$swiss, est_swiss=TRUE, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt.swiss, sim = "geom", best_L=mc.estimates.cbw.swiss$best_lambda) 
   saveRDS(boot.swiss, paste0("results/boot-cbw-swiss-",o,".rds")) 
   
-  # Estimates with no propensity score weighting
-  outcomes.cbw$W <- outcomes.cbw$W.equal # equal weighting
-  
-  mc.estimates.cbw.eastern.equal <- MCEst(outcomes.cbw, cluster='eastern', rev=TRUE, covars=FALSE)
-  saveRDS(mc.estimates.cbw.eastern.equal, paste0("results/mc-estimates-cbw-eastern-equal-",o,".rds"))
-  
-  print(paste0("Rank of L (Eastern) (No weighting): ", mc.estimates.cbw.eastern.equal$rankL))
-  
-  mc.estimates.cbw.swiss.equal <- MCEst(outcomes.cbw, cluster='swiss', rev=TRUE, covars=FALSE)
-  saveRDS(mc.estimates.cbw.swiss.equal, paste0("results/mc-estimates-cbw-swiss-equal-",o,".rds"))
-  
-  print(paste0("Rank of L (Swiss) (No weighting): ", mc.estimates.cbw.swiss.equal$rankL))
-  
-  boot.eastern.equal <- tsboot(tseries=t(outcomes.cbw$M), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, 
-                 z.cbw.eastern=outcomes.cbw$z.cbw.eastern, z.cbw.swiss = outcomes.cbw$z.cbw.swiss, eastern=outcomes.cbw$eastern, swiss=outcomes.cbw$swiss, est_eastern=TRUE, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt.eastern, sim = "geom", best_L=mc.estimates.cbw.eastern.equal$best_lambda) 
-  saveRDS(boot.eastern.equal, paste0("results/boot-cbw-eastern-equal-",o,".rds")) 
-  
-  boot.swiss.equal <- tsboot(tseries=t(outcomes.cbw$M), MCEstBoot, mask=outcomes.cbw$mask, W=outcomes.cbw$W, 
-                               z.cbw.eastern=outcomes.cbw$z.cbw.eastern, z.cbw.swiss = outcomes.cbw$z.cbw.swiss, eastern=outcomes.cbw$eastern, swiss=outcomes.cbw$swiss, est_swiss=TRUE, covars=FALSE, rev=TRUE, R=999, parallel = "multicore", l=bopt.swiss, sim = "geom", best_L=mc.estimates.cbw.swiss.equal$best_lambda) 
-  saveRDS(boot.swiss.equal, paste0("results/boot-cbw-swiss-equal-",o,".rds")) 
-  
   # Bootstrap for trajectories
   # Resample trajectories without time component, calculate ATTs for each cluster
   source("MCEstBootTraj.R")
@@ -85,8 +64,8 @@ for(o in outcome.vars){
   impact.eastern <- mc.estimates.cbw.eastern$impact 
   impact.swiss <- mc.estimates.cbw.swiss$impact
   
-  t0.eastern <- which(colnames(outcomes.cbw$mask)==20111)
-  t0.swiss <- which(colnames(outcomes.cbw$mask)==20091)
+  t0.eastern <- which(colnames(outcomes.cbw$mask)==20111) # t0-1 in MCEstBootTraj
+  t0.swiss <- which(colnames(outcomes.cbw$mask)==20091)   
   
   # eastern
   
@@ -97,7 +76,7 @@ for(o in outcome.vars){
                                   R=999,
                                   parallel = "multicore") 
   
-  print(paste0("Eastern: Combined treatment effect: ", boot.trajectory.eastern$t0))
+  print(paste0("Eastern: Combined treatment effect (20051-20104): ", boot.trajectory.eastern$t0))
   print(boot.ci(boot.trajectory.eastern,type=c("norm","basic", "perc")))
   
   saveRDS(boot.trajectory.eastern, paste0("results/boot-cbw-trajectory-eastern-",o,".rds")) 
@@ -111,41 +90,66 @@ for(o in outcome.vars){
                                 R=999,
                                 parallel = "multicore") 
   
-  print(paste0("Swiss: Combined treatment effect: ", boot.trajectory.swiss$t0))
+  print(paste0("Swiss: Combined treatment effect (20051-20084): ", boot.trajectory.swiss$t0))
   print(boot.ci(boot.trajectory.swiss,type=c("norm","basic", "perc")))
   
   saveRDS(boot.trajectory.swiss, paste0("results/boot-cbw-trajectory-swiss-",o,".rds")) 
   
-  # Estimates without propensity weighting
-  impact.eastern.equal <- mc.estimates.cbw.eastern.equal$impact
-  impact.swiss.equal <- mc.estimates.cbw.swiss.equal$impact
+  # eastern (1)
   
-  # eastern
+  boot.trajectory.eastern.1 <- boot(impact.eastern, 
+                                    MCEstBootTraj, 
+                                    R=999,
+                                    t0.eastern=which(colnames(outcomes.cbw$mask)==20081),
+                                    eastern=outcomes.cbw$eastern,
+                                    parallel = "multicore") 
   
-  boot.trajectory.eastern.equal <- boot(impact.eastern.equal, 
+  print(paste0("Eastern: partial treatment effect (20051-20074): ", boot.trajectory.eastern.1$t0))
+  print(boot.ci(boot.trajectory.eastern.1,type=c("norm","basic", "perc")))
+  
+  saveRDS(boot.trajectory.eastern.1, paste0("results/boot-cbw-trajectory-eastern-1-",o,".rds")) 
+  
+  # swiss (1)
+  
+  boot.trajectory.swiss.1 <- boot(impact.swiss, 
                                   MCEstBootTraj, 
-                                  t0.eastern=t0.eastern,
-                                  eastern=outcomes.cbw$eastern,
+                                  t0.swiss=which(colnames(outcomes.cbw$mask)==20071),
+                                  swiss=outcomes.cbw$swiss,
                                   R=999,
                                   parallel = "multicore") 
   
-  print(paste0("Eastern: Combined treatment effect: ", boot.trajectory.eastern.equal$t0))
-  print(boot.ci(boot.trajectory.eastern.equal,type=c("norm","basic", "perc")))
+  print(paste0("Swiss: partial treatment effect (20051-20072): ", boot.trajectory.swiss.1$t0))
+  print(boot.ci(boot.trajectory.swiss.1,type=c("norm","basic", "perc")))
   
-  saveRDS(boot.trajectory.eastern.equal, paste0("results/boot-cbw-trajectory-eastern-equal-",o,".rds")) 
+  saveRDS(boot.trajectory.swiss.1, paste0("results/boot-cbw-trajectory-swiss-1-",o,".rds"))
   
-  # swiss
+  # eastern (2)
   
-  boot.trajectory.swiss.equal <- boot(impact.swiss.equal, 
-                                MCEstBootTraj, 
-                                t0.swiss=t0.swiss,
-                                swiss=outcomes.cbw$swiss, 
-                                R=999,
-                                parallel = "multicore") 
+  boot.trajectory.eastern.2 <- boot(impact.eastern, 
+                                    MCEstBootTraj, 
+                                    R=999,
+                                    t0.eastern=t0.eastern,
+                                    eastern=outcomes.cbw$eastern,
+                                    start= which(colnames(outcomes.cbw$mask)==20081),
+                                    parallel = "multicore") 
   
-  print(paste0("Swiss: Combined treatment effect: ", boot.trajectory.swiss.equal$t0))
-  print(boot.ci(boot.trajectory.swiss.equal,type=c("norm","basic", "perc")))
+  print(paste0("Eastern: partial treatment effect (20081-20104): ", boot.trajectory.eastern.2$t0))
+  print(boot.ci(boot.trajectory.eastern.2,type=c("norm","basic", "perc")))
   
-  saveRDS(boot.trajectory.swiss.equal, paste0("results/boot-cbw-trajectory-swiss-equal-",o,".rds")) 
+  saveRDS(boot.trajectory.eastern.2, paste0("results/boot-cbw-trajectory-eastern-2-",o,".rds")) 
   
+  # swiss (2)
+  
+  boot.trajectory.swiss.2 <- boot(impact.swiss, 
+                                  MCEstBootTraj, 
+                                  t0.swiss=t0.swiss,
+                                  swiss=outcomes.cbw$swiss,
+                                  start= which(colnames(outcomes.cbw$mask)==20073),
+                                  R=999,
+                                  parallel = "multicore") 
+  
+  print(paste0("Swiss: partial treatment effect (20073-20084): ", boot.trajectory.swiss.2$t0))
+  print(boot.ci(boot.trajectory.swiss.2,type=c("norm","basic", "perc")))
+  
+  saveRDS(boot.trajectory.swiss.2, paste0("results/boot-cbw-trajectory-swiss-2-",o,".rds")) 
 }
