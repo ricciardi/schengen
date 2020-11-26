@@ -27,27 +27,6 @@ for(o in outcome.vars){
     if(o=="CBWbordEMPL"){
       load(paste0("results/CBWbordEMPL_N_53_T_36_numruns_100_num_treated_27_simultaneuous_",i,"_covars_FALSE.rds"))
     }
-    if(o=="empl"){
-      load(paste0("results/empl_N_53_T_36_numruns_100_num_treated_27_simultaneuous_",i,"_covars_FALSE.rds"))
-    }
-    if(o=="Thwusual"){
-      load(paste0("results/Thwusual_N_53_T_36_numruns_100_num_treated_27_simultaneuous_",i,"_covars_FALSE.rds"))
-    }
-    if(o=="unempl"){
-      load(paste0("results/unempl_N_53_T_36_numruns_100_num_treated_27_simultaneuous_",i,"_covars_FALSE.rds"))
-    }
-    if(o=="inact"){
-      load(paste0("results/inact_N_53_T_36_numruns_100_num_treated_27_simultaneuous_",i,"_covars_FALSE.rds"))
-    }
-    if(o=="seekdur_0"){
-      load(paste0("results/seekdur_0_N_53_T_36_numruns_100_num_treated_27_simultaneuous_",i,"_covars_FALSE.rds"))
-    }
-    if(o=="seekdur_1_2"){
-      load(paste0("results/seekdur_1_2_N_53_T_36_numruns_100_num_treated_27_simultaneuous_",i,"_covars_FALSE.rds"))
-    }
-    if(o=="seekdur_3more"){
-      load(paste0("results/seekdur_3more_N_53_T_36_numruns_100_num_treated_27_simultaneuous_",i,"_covars_FALSE.rds"))
-    }
     
     df1 <- df1 %>% group_by(x) %>% mutate(y = y,
                                           lb= lb,
