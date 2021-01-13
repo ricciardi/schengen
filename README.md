@@ -11,7 +11,6 @@ Install the forked MCPanel repo and NNLM:
 install.packages("devtools")
 library(devtools) 
 install_github("jvpoulos/MCPanel")
-install_github('linxihui/NNLM')
 ```
 
 Create folders to store outputs:
@@ -46,5 +45,5 @@ Run order
 
 7. mc-placebo.R # placebo test of null hypothesis (model without covariates)
 
-8. Schengen_DID.R # DID, NNMF, SCM, or SCM-L1 estimates for comparison 
+8. Schengen_DID.R # DID and SCM estimates for comparison 
 	* DIDEstBoot.R

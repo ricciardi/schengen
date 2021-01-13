@@ -156,9 +156,9 @@ for(o in outcome.vars){
                               vline=16,vline2=24,
                               breaks=c(4,12,20,28,36,44,52,60),
                               labels=c("2005Q4","2007Q4","2009Q4","2011Q4","2013Q4","2015Q4","2017Q4","2019Q4"),
-                              att.label = TeX("$\\hat{\\tau}_{t}^{LT,pre}$"))
+                              att.label = TeX("$\\hat{\\tau}_{t}^{LT}$"))
     
-    ggsave(paste0("plots/mc-estimates-cbw-",o,cf,".png"), mc.plot + theme(legend.position = "none"), scale=2)
-    ggsave(paste0("plots/mc-estimates-cbw-",o,cf,"-slides.png"), mc.plot + ggtitle("Matrix completion estimates of the effect of Schengen and FoM") + theme(legend.position = "none", plot.title = element_text(family="serif", size=16, hjust = 0.5)), scale=2) 
+    ggsave(paste0("plots/mc-estimates-cbw-",o,cf,".png"), mc.plot + theme(legend.position = "none"), scale=1.25)
+    ggsave(paste0("plots/mc-estimates-cbw-",o,cf,"-slides.png"), mc.plot + ggtitle("Matrix completion estimates of the effect of Schengen and FoM") + theme(legend.position = "none", plot.title = element_text(family="serif", size=16, hjust = 0.5)), scale=1.25) 
   }
 } 

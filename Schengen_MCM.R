@@ -77,7 +77,10 @@ for(o in outcome.vars){
                                   parallel = "multicore") 
   
   print(paste0("Eastern: Combined treatment effect (20051-20104): ", boot.trajectory.eastern$t0))
-  print(boot.ci(boot.trajectory.eastern,type=c("norm","basic", "perc")))
+  print(boot.ci(boot.trajectory.eastern,type="perc"))
+  
+  cvs.eastern <- quantile(boot.trajectory.eastern$t0 - boot.trajectory.eastern$t + 1, c(0.025, 0.975))
+  print(paste0("Eastern: Combined treatment effect (20051-20104): ", mean(boot.trajectory.eastern$t > cvs.eastern[1] & boot.trajectory.eastern$t < cvs.eastern[2]))) # p-val for percentile bootstrap
   
   saveRDS(boot.trajectory.eastern, paste0("results/boot-cbw-trajectory-eastern-",o,".rds")) 
   
@@ -91,7 +94,10 @@ for(o in outcome.vars){
                                 parallel = "multicore") 
   
   print(paste0("Swiss: Combined treatment effect (20051-20084): ", boot.trajectory.swiss$t0))
-  print(boot.ci(boot.trajectory.swiss,type=c("norm","basic", "perc")))
+  print(boot.ci(boot.trajectory.swiss,type="perc"))
+  
+  cvs.swiss <- quantile(boot.trajectory.swiss$t0 - boot.trajectory.swiss$t + 1, c(0.025, 0.975))
+  print(paste0("swiss: Combined treatment effect (20051-20084): ", mean(boot.trajectory.swiss$t > cvs.swiss[1] & boot.trajectory.swiss$t < cvs.swiss[2]))) # p-val for percentile bootstrap
   
   saveRDS(boot.trajectory.swiss, paste0("results/boot-cbw-trajectory-swiss-",o,".rds")) 
   
@@ -105,7 +111,10 @@ for(o in outcome.vars){
                                     parallel = "multicore") 
   
   print(paste0("Eastern: partial treatment effect (20051-20074): ", boot.trajectory.eastern.1$t0))
-  print(boot.ci(boot.trajectory.eastern.1,type=c("norm","basic", "perc")))
+  print(boot.ci(boot.trajectory.eastern.1,type="perc"))
+  
+  cvs.eastern.1 <- quantile(boot.trajectory.eastern.1$t0 - boot.trajectory.eastern.1$t + 1, c(0.025, 0.975))
+  print(paste0("Eastern: Combined treatment effect (20051-20074): ", mean(boot.trajectory.eastern.1$t > cvs.eastern.1[1] & boot.trajectory.eastern.1$t < cvs.eastern.1[2]))) # p-val for percentile bootstrap
   
   saveRDS(boot.trajectory.eastern.1, paste0("results/boot-cbw-trajectory-eastern-1-",o,".rds")) 
   
@@ -119,7 +128,10 @@ for(o in outcome.vars){
                                   parallel = "multicore") 
   
   print(paste0("Swiss: partial treatment effect (20051-20072): ", boot.trajectory.swiss.1$t0))
-  print(boot.ci(boot.trajectory.swiss.1,type=c("norm","basic", "perc")))
+  print(boot.ci(boot.trajectory.swiss.1,type="perc"))
+  
+  cvs.swiss.1 <- quantile(boot.trajectory.swiss.1$t0 - boot.trajectory.swiss.1$t + 1, c(0.025, 0.975))
+  print(paste0("Swiss: Combined treatment effect (20051-20072): ", mean(boot.trajectory.swiss.1$t > cvs.swiss.1[1] & boot.trajectory.swiss.1$t < cvs.swiss.1[2]))) # p-val for percentile bootstrap
   
   saveRDS(boot.trajectory.swiss.1, paste0("results/boot-cbw-trajectory-swiss-1-",o,".rds"))
   
@@ -134,7 +146,10 @@ for(o in outcome.vars){
                                     parallel = "multicore") 
   
   print(paste0("Eastern: partial treatment effect (20081-20104): ", boot.trajectory.eastern.2$t0))
-  print(boot.ci(boot.trajectory.eastern.2,type=c("norm","basic", "perc")))
+  print(boot.ci(boot.trajectory.eastern.2,type="perc"))
+  
+  cvs.eastern.2 <- quantile(boot.trajectory.eastern.2$t0 - boot.trajectory.eastern.2$t + 1, c(0.025, 0.975))
+  print(paste0("Eastern: Combined treatment effect (20081-20104): ", mean(boot.trajectory.eastern.2$t > cvs.eastern.2[1] & boot.trajectory.eastern.2$t < cvs.eastern.2[2]))) # p-val for percentile bootstrap
   
   saveRDS(boot.trajectory.eastern.2, paste0("results/boot-cbw-trajectory-eastern-2-",o,".rds")) 
   
@@ -149,7 +164,10 @@ for(o in outcome.vars){
                                   parallel = "multicore") 
   
   print(paste0("Swiss: partial treatment effect (20073-20084): ", boot.trajectory.swiss.2$t0))
-  print(boot.ci(boot.trajectory.swiss.2,type=c("norm","basic", "perc")))
+  print(boot.ci(boot.trajectory.swiss.2,type="perc"))
+  
+  cvs.swiss.2 <- quantile(boot.trajectory.swiss.2$t0 - boot.trajectory.swiss.2$t + 1, c(0.025, 0.975))
+  print(paste0("Swiss: Combined treatment effect (20073-20084): ", mean(boot.trajectory.swiss.2$t > cvs.swiss.2[1] & boot.trajectory.swiss.2$t < cvs.swiss.2[2]))) # p-val for percentile bootstrap
   
   saveRDS(boot.trajectory.swiss.2, paste0("results/boot-cbw-trajectory-swiss-2-",o,".rds")) 
 }
