@@ -34,16 +34,14 @@ Run order
 	* PolitisWhite.R
 	* MCEstBoot.R
 	* MCEstBootTraj.R
-	
-3. Schengen_MCM.R # model without covariates
 
-4. mc-plot.R # plot estimates
+3. mc-plot.R # plot estimates
 	* TsPlot.R
 
-5. schengen-rmse-placebo.R # placebo tests: compare different estimators in terms of RMSE (model without covariates)
-6. schengen-rmse-placebo-plot.R  # plot placebo test results
+4. schengen-rmse-placebo.R # placebo tests: compare different estimators in terms of RMSE (model without covariates)
+5. schengen-rmse-placebo-plot.R  # plot placebo test results
 
-7. mc-placebo.R # placebo test of null hypothesis (model without covariates)
+6. mc-placebo.R # placebo test of null hypothesis (model without covariates)
 
-8. Schengen_DID.R # DID and SCM estimates for comparison 
+7. Schengen_DID.R # DID and SCM estimates for comparison 
 	* DIDEstBoot.R

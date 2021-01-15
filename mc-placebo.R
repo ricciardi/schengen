@@ -79,8 +79,14 @@ for(i in c(0,1)){
                                       R=999,
                                       parallel = "multicore") 
       
-      print(boot.trajectory.eastern$t0)
+      print(paste0("Eastern t-stat:", boot.trajectory.eastern$t0))
       print(boot.ci(boot.trajectory.eastern,type=c("norm","basic", "perc")))
+      
+      boot.t.eastern.null <- boot.trajectory.eastern$t - mean(boot.trajectory.eastern$t,na.rm = TRUE) # center around zero
+      
+      boot.trajectory.eastern.pval <- (1+sum( abs(boot.t.eastern.null) > abs(boot.trajectory.eastern$t0)))/(999+1)
+      
+      print(paste0("Eastern p-val:", boot.trajectory.eastern.pval))
       
       # swiss
       
@@ -91,8 +97,14 @@ for(i in c(0,1)){
                                     R=999,
                                     parallel = "multicore") 
       
-      print(boot.trajectory.swiss$t0)
+      print(paste0("Swiss t-stat:",boot.trajectory.swiss$t0))
       print(boot.ci(boot.trajectory.swiss,type=c("norm","basic", "perc")))
+      
+      boot.t.swiss.null <- boot.trajectory.swiss$t - mean(boot.trajectory.swiss$t,na.rm = TRUE) # center around zero
+      
+      boot.trajectory.swiss.pval <- (1+sum( abs(boot.t.swiss.null) > abs(boot.trajectory.swiss$t0)))/(999+1)
+      
+      print(paste0("Swiss p-val:", boot.trajectory.swiss.pval)) # p-val for percentile bootstrap
       
       return(list("eastern"=boot.trajectory.eastern,"swiss"=boot.trajectory.swiss))
       
