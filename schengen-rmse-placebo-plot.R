@@ -3,16 +3,9 @@ library(latex2exp)
 library(dplyr)
 library(scales)
 
-outcome.vars <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcome.vars <- c("CBWbord","CBWbordEMPL")
 outcomes.labels <- c("% working in border region",
-                     "% working in border region,\n conditional on employment",
-                     "Regional employment rate",
-                     "Average total working hours",
-                     "Unemployment rate",
-                     "Inactivity rate",
-                     "% unemployed for < 1 month",
-                     "% unemployed for < 1-2 months",
-                     "% unemployed for < 1 year")
+                     "% working in border region,\n conditional on employment")
 
 sim.labels <- c("Staggered adoption","Simultaneous adoption")
 
@@ -32,7 +25,7 @@ for(o in outcome.vars){
                                           lb= lb,
                                           ub = ub)
     df1$x <- round(df1$x,2)
-    levels(df1$Method) <- c("DID", "MC-NNM", "NNMF", "SCM", "SCM-L1")
+    levels(df1$Method) <- c("DID", "MC-NNM", "SCM")
     
     schengen <- ggplot(data = df1, aes(x, y, color = Method, shape = Method)) +
       geom_point(size = 5, position=position_dodge(width=0.1)) +
@@ -41,7 +34,7 @@ for(o in outcome.vars){
         width = 0.1,
         linetype = "solid",
         position=position_dodge(width=0.1)) +
-      scale_shape_manual(values=c(1:7)) +
+      scale_shape_manual(values=c(1:3)) +
       scale_x_continuous(breaks=c(unique(df1$x)[1],unique(df1$x)[2],unique(df1$x)[3],unique(df1$x)[4],unique(df1$x)[5])) +
       scale_y_continuous(breaks= pretty_breaks()) +
       theme_bw() +
@@ -66,4 +59,4 @@ gg_color_hue <- function(n) {
   hcl(h = hues, l = 65, c = 100)[1:n]
 }
 
-gg_color_hue(5)
+gg_color_hue(3)

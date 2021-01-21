@@ -1,6 +1,6 @@
-###################################
-# Plot Time-series and causal impacts #
-###################################
+######################################################################
+# Plot Time-series and causal impacts, and estimated time fixed effects #
+######################################################################
 
 require(reshape2)
 require(dplyr)
@@ -13,6 +13,7 @@ library(wesanderson)
 library(boot)
 
 source("TsPlot.R")
+source("TsPlotTrends.R")
 
 PlotMCCapacity <- function(observed,main,y.title,mc_est_eastern,mc_est_swiss,boot_result_eastern,boot_result_swiss,treated,control,eastern,swiss,vline,vline2,breaks,labels,att.label,censor=FALSE){
   ## Create Timeseries data
@@ -126,12 +127,10 @@ outcome.vars <- c("CBWbord","CBWbordEMPL")
 outcomes.labels <- c("% working in border region",
                      "% working in border region, conditional on employment")
 
-covarflag <- c("","-covars")
+covarflag <- c("-covars")
 
 for(o in outcome.vars){
   for(cf in covarflag){
-    
-    ## Analysis 1: ST vs AT (retrospective, X=CBW) 
     
     outcomes.cbw <- readRDS(paste0("data/outcomes-cbw-",o,".rds"))
     
@@ -160,5 +159,29 @@ for(o in outcome.vars){
     
     ggsave(paste0("plots/mc-estimates-cbw-",o,cf,".png"), mc.plot + theme(legend.position = "none"), scale=1.25)
     ggsave(paste0("plots/mc-estimates-cbw-",o,cf,"-slides.png"), mc.plot + ggtitle("Matrix completion estimates of the effect of Schengen and FoM") + theme(legend.position = "none", plot.title = element_text(family="serif", size=16, hjust = 0.5)), scale=1.25) 
-  }
+  
+    # Plot estimated time fixed effects of the Swiss and Eastern blocks
+    
+    trend.eastern <- mc.estimates.cbw.eastern$v
+    trend.swiss <- mc.estimates.cbw.swiss$v
+    
+    trend.data <- data.frame("eastern"=trend.eastern,
+                             "swiss"=trend.swiss,
+                               "year"=colnames(outcomes.cbw$M))
+    
+    trend.data.m <- melt(trend.data,id="year")
+    
+    trend.data.m$quarter <- rep(1:nrow(trend.data), times=2) # for x axis
+      
+    trend.plot <- TsPlotTrends(df=trend.data.m,main="", 
+                               y.title=outcomes.labels[which(outcome.vars==o)],
+                               vline=16,
+                               vline2=24,
+                               breaks=c(4,12,20,28,36,44,52,60),
+                               labels=c("2005Q4","2007Q4","2009Q4","2011Q4","2013Q4","2015Q4","2017Q4","2019Q4"))
+    
+    
+    ggsave(paste0("plots/mc-trend-",o,cf,".png"), trend.plot + theme(legend.position = "none"), scale=1.25)
+    ggsave(paste0("plots/mc-trend-",o,cf,"-slides.png"), trend.plot + ggtitle("Matrix completion estimates: time fixed effects") + theme(legend.position = "none", plot.title = element_text(family="serif", size=16, hjust = 0.5)), scale=1.25) 
+    }
 } 

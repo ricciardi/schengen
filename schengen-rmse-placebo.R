@@ -53,9 +53,6 @@ SchengenSim <- function(outcome,sim,covars){
   MCPanel_RMSE_test <- matrix(0L,num_runs,length(T0))
   DID_RMSE_test <- matrix(0L,num_runs,length(T0))
   ADH_RMSE_test <- matrix(0L,num_runs,length(T0))
-  EN_RMSE_test <- matrix(0L,num_runs,length(T0))
-  ENT_RMSE_test <- matrix(0L,num_runs,length(T0))
-  NNMF_RMSE_test <- matrix(0L,num_runs,length(T0))
   
   ## Run different methods
   
@@ -91,16 +88,6 @@ SchengenSim <- function(outcome,sim,covars){
       weights[rownames(weights) %in% outcomes.cbw$eastern,] <- weights[rownames(weights) %in% outcomes.cbw.placebo$eastern,] %*%diag(z.cbw.eastern)
       weights[rownames(weights) %in% outcomes.cbw$swiss,] <- weights[rownames(weights) %in% outcomes.cbw.placebo$swiss,] %*%diag(z.cbw.swiss)
       
-      ## -----
-      ## NNMF
-      ## -----
-      nnmf_fit <- nnmf(Y_obs_NA,1,verbose=0)
-      est_model_NNMF <- Y_obs + with(nnmf_fit, W %*% H)*treat # impute only missing
-      est_model_NNMF_msk_err <- (est_model_NNMF - Y)*(1-treat_mat)
-      est_model_NNMF_test_RMSE <- sqrt((1/sum(1-treat_mat)) * sum(est_model_NNMF_msk_err^2, na.rm = TRUE))
-      NNMF_RMSE_test[i,j] <- est_model_NNMF_test_RMSE
-      print(paste("NNMF RMSE:", round(est_model_NNMF_test_RMSE,3),"run",i))
-
       ## -----
       ## ADH
       ## -----
@@ -140,16 +127,6 @@ SchengenSim <- function(outcome,sim,covars){
       est_model_DID_test_RMSE <- sqrt((1/sum(1-treat_mat)) * sum(est_model_DID_msk_err^2, na.rm = TRUE))
       DID_RMSE_test[i,j] <- est_model_DID_test_RMSE
       print(paste("DID RMSE:", round(est_model_DID_test_RMSE,3),"run",i))
-      
-      ## -----
-      ## VT-EN 
-      ## -----
-      
-      est_model_ENT <- t(en_mp_rows(t(Y_obs), t(treat_mat), num_folds = 3))
-      est_model_ENT_msk_err <- (est_model_ENT - Y)*(1-treat_mat)
-      est_model_ENT_test_RMSE <- sqrt((1/sum(1-treat_mat)) * sum(est_model_ENT_msk_err^2, na.rm = TRUE))
-      ENT_RMSE_test[i,j] <- est_model_ENT_test_RMSE
-      print(paste("VT-EN RMSE:", round(est_model_ENT_test_RMSE,3),"run",i))
     }
   }
   
@@ -164,33 +141,21 @@ SchengenSim <- function(outcome,sim,covars){
   ADH_avg_RMSE <- apply(ADH_RMSE_test,2,mean)
   ADH_std_error <- apply(ADH_RMSE_test,2,sd)/sqrt(num_runs)
   
-  ENT_avg_RMSE <- apply(ENT_RMSE_test,2,mean)
-  ENT_std_error <- apply(ENT_RMSE_test,2,sd)/sqrt(num_runs)
-  
-  NNMF_avg_RMSE <- apply(NNMF_RMSE_test,2,mean)
-  NNMF_std_error <- apply(NNMF_RMSE_test,2,sd)/sqrt(num_runs)
-  
   ## Saving data
   
   df1 <-
     data.frame(
-      "y" =  c(DID_avg_RMSE,MCPanel_avg_RMSE,NNMF_avg_RMSE, ADH_avg_RMSE,ENT_avg_RMSE),
+      "y" =  c(DID_avg_RMSE,MCPanel_avg_RMSE,ADH_avg_RMSE),
       "lb" = c(DID_avg_RMSE - 1.96*DID_std_error,
                MCPanel_avg_RMSE - 1.96*MCPanel_std_error, 
-               NNMF_avg_RMSE - 1.96*NNMF_std_error, 
-               ADH_avg_RMSE - 1.96*ADH_std_error,
-               ENT_avg_RMSE - 1.96*ENT_std_error),
+               ADH_avg_RMSE - 1.96*ADH_std_error),
       "ub" = c(DID_avg_RMSE + 1.96*DID_std_error, 
                MCPanel_avg_RMSE + 1.96*MCPanel_std_error, 
-               NNMF_avg_RMSE + 1.96*NNMF_std_error, 
-               ADH_avg_RMSE + 1.96*ADH_std_error,
-               ENT_avg_RMSE + 1.96*ENT_std_error),
+               ADH_avg_RMSE + 1.96*ADH_std_error),
       "x" = T0/T,
       "Method" = c(replicate(length(T0),"DID"), 
                    replicate(length(T0),"MC-NNM"), 
-                   replicate(length(T0),"NNMF"), 
-                   replicate(length(T0),"SCM"),
-                   replicate(length(T0),"SCM-L1")))
+                   replicate(length(T0),"SCM")))
   
   filename<-paste0(paste0(paste0(paste0(paste0(paste0(gsub("\\.", "_", o),"_N_", N),"_T_", T),"_numruns_", num_runs), "_num_treated_", N_t), "_simultaneuous_", is_simul,"_covars_",covars),".rds")
   save(df1, file = paste0("results/",filename))

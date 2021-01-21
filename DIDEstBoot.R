@@ -31,16 +31,6 @@ DIDEstBoot <- function(tseries,mask,W,X=NULL,X.hat=NULL, eastern=NULL, swiss=NUL
     
   }
   
-  if(estimator=="ENT"){
-    
-    est_model <- t(en_mp_rows(t(Y_obs), t(treat_mat), num_folds = 3))
-  }
-  
-  if(estimator=="NNMF"){
-    nnmf_fit <- nnmf(Y_obs_NA,1,verbose=0)
-    est_model <- Y_obs + with(nnmf_fit, W %*% H)*treat # impute only missing
-  }
-  
   if(rev){
     impact <- (est_model-Y)
     return(impact)

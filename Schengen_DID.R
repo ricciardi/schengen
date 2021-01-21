@@ -1,5 +1,5 @@
 ###################################
-#  DID and other benchmark estimates #
+#  DID and SCM estimates #
 ###################################
 
 ## Libraries
@@ -21,7 +21,7 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
 outcome.vars <- c("CBWbord","CBWbordEMPL")
-estimators <- c("DID","ADH","ENT","NNMF")
+estimators <- c("DID","ADH")
 
 for(estimator in estimators){
   for(o in outcome.vars){
@@ -64,6 +64,12 @@ for(estimator in estimators){
     print(paste0("Eastern: Combined treatment effect: ", boot.trajectory.eastern$t0))
     print(boot.ci(boot.trajectory.eastern,type=c("norm","basic", "perc")))
     
+    boot.t.eastern.null <- boot.trajectory.eastern$t - mean(boot.trajectory.eastern$t,na.rm = TRUE) # center around zero
+    
+    boot.trajectory.eastern.pval <- (1+sum( abs(boot.t.eastern.null) > abs(boot.trajectory.eastern$t0)))/(999+1)
+    
+    print(paste0("Eastern p-val: Combined treatment effect (20051-20104): ", boot.trajectory.eastern.pval))
+    
     # swiss
     
     boot.trajectory.swiss <- boot(impact.swiss, 
@@ -75,5 +81,11 @@ for(estimator in estimators){
     
     print(paste0("Swiss: Combined treatment effect: ", boot.trajectory.swiss$t0))
     print(boot.ci(boot.trajectory.swiss,type=c("norm","basic", "perc")))
+    
+    boot.t.swiss.null <- boot.trajectory.swiss$t - mean(boot.trajectory.swiss$t,na.rm = TRUE) # center around zero
+    
+    boot.trajectory.swiss.pval <- (1+sum( abs(boot.t.swiss.null) > abs(boot.trajectory.swiss$t0)))/(999+1)
+    
+    print(paste0("Swiss p-val: Combined treatment effect (20051-20084): ", boot.trajectory.swiss.pval)) # p-val for percentile bootstrap
   }
 }

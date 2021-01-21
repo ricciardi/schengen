@@ -18,20 +18,15 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-data <- read.dta13("Collapsed_05_19.dta", generate.factors=T)
+data <- read.dta13("FINAL_21.dta", generate.factors=T)
 
 ## Outcomes:
 
-outcomes <- c("CBWbord","CBWbordEMPL","empl","Thwusual","unempl","inact","seekdur_0","seekdur_1_2","seekdur_3more")
+outcomes <- c("CBWbord","CBWbordEMPL")
 
 ## Covariates:
 
-covariates <- c("AV_age_22","AV_age_27","AV_age_32","AV_age_37","AV_age_42","AV_age_47","AV_age_52","AV_age_57", # avail for all analyses
-                "AV_women",
-                "AV_lowEDU","AV_mediumEDU","AV_highEDU",
-                "AV_migr",
-                "HHincome_COUNTRY",
-                "pop")
+covariates <- c("pop")
 covariates.cbw <- c("GDPcapitaR","R_GDPcapitaR") # analysis specific covars
 
 # Analyses: 

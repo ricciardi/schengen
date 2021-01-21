@@ -12,19 +12,19 @@ TsPlot <- function(df, main = "",y.title,vline,vline2,breaks,labels,hline) {
     theme(strip.text= element_text(size = 16, family = "serif", face='bold'), strip.background = element_blank()) +
     
     # line colours
-    geom_line(data = subset(df, variable == "observed.eastern"), aes(y = value, colour = "observed.eastern", linetype="observed.eastern"), show.legend = TRUE, size=1) +
-    geom_point(data = subset(df, variable == "predicted.eastern"), aes(y = value, colour = "predicted.eastern", shape="predicted.eastern"), show.legend = FALSE, alpha=0.8, size=2.5) +
-    geom_line(data = subset(df, variable == "pointwise.eastern"), aes(y = value, colour = "predicted.eastern", linetype="predicted.eastern"), show.legend = FALSE, size=1, na.rm=TRUE) +
+    geom_line(data = subset(df, variable == "observed.eastern"), aes(y = value, colour = "observed.eastern", linetype="observed.eastern"), show.legend = TRUE, alpha=0.7, size=2) +
+    geom_point(data = subset(df, variable == "predicted.eastern"), aes(y = value, colour = "predicted.eastern", shape="predicted.eastern"), show.legend = FALSE, alpha=0.7, size=2.5) +
+    geom_line(data = subset(df, variable == "pointwise.eastern"), aes(y = value, colour = "predicted.eastern", linetype="predicted.eastern"), show.legend = FALSE, alpha=0.7, size=1, na.rm=TRUE) +
     
-    geom_line(data = subset(df, variable == "observed.swiss"), aes(y = value, colour = "observed.swiss", linetype="observed.swiss"), show.legend = TRUE, size=1) +
-    geom_point(data = subset(df, variable == "predicted.swiss"), aes(y = value, colour = "predicted.swiss", shape="predicted.swiss"), show.legend = FALSE, alpha=0.8, size=2.5) +
-    geom_line(data = subset(df, variable == "pointwise.swiss"), aes(y = value, colour = "predicted.swiss", linetype="predicted.swiss"), show.legend = FALSE, size=1, na.rm = TRUE) +
+    geom_line(data = subset(df, variable == "observed.swiss"), aes(y = value, colour = "observed.swiss", linetype="observed.swiss"), show.legend = TRUE, alpha=0.7, size=0.5) +
+    geom_point(data = subset(df, variable == "predicted.swiss"), aes(y = value, colour = "predicted.swiss", shape="predicted.swiss"), show.legend = FALSE, alpha=0.7, size=2.5) +
+    geom_line(data = subset(df, variable == "pointwise.swiss"), aes(y = value, colour = "predicted.swiss", linetype="predicted.swiss"), show.legend = FALSE, alpha=0.7, size=1, na.rm = TRUE) +
     
-    geom_line(data = subset(df, variable == "observed.control"), aes(y = value, colour = "observed.control", linetype="observed.control"), show.legend = TRUE, size=1) +
+    geom_line(data = subset(df, variable == "observed.control"), aes(y = value, colour = "observed.control", linetype="observed.control"), show.legend = TRUE, alpha=0.7, size=1) +
     
     # intervals
-    geom_ribbon(data = subset(df, variable == "pointwise.eastern"), aes(ymin = lower, ymax=upper, colour="predicted.eastern"), alpha=.1, size=0.2, show.legend = FALSE) +
-    geom_ribbon(data = subset(df, variable == "pointwise.swiss"), aes(ymin = lower, ymax=upper, colour="predicted.swiss"), alpha=.1, size=0.2, show.legend = FALSE) +
+    geom_ribbon(data = subset(df, variable == "pointwise.eastern"), aes(ymin = lower, ymax=upper, colour="predicted.eastern"), alpha=.1, size=0, show.legend = FALSE) +
+    geom_ribbon(data = subset(df, variable == "pointwise.swiss"), aes(ymin = lower, ymax=upper, colour="predicted.swiss"), alpha=.1, size=0, show.legend = FALSE) +
     
     # horizontal line to indicate zero values
     geom_hline(aes(yintercept = hline), size = 0.5, colour = "black") +

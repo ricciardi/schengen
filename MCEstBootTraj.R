@@ -1,4 +1,4 @@
-MCEstBootTraj <- function(impact,indices,t0.eastern=NULL, t0.swiss=NULL,eastern=NULL,swiss=NULL,start=1) {
+MCEstBootTraj <- function(impact,indices,t0.eastern=NULL, t0.swiss=NULL,eastern=NULL,swiss=NULL,start) {
   if(!is.null(t0.eastern)){
     att.eastern <- rowMeans(impact[,start:(t0.eastern-1)])[indices] # Schengen + FoM
     return(mean(att.eastern[names(att.eastern) %in% eastern])) # avg over cluster
