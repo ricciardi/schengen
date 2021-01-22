@@ -47,6 +47,7 @@ Run order
 3. mc-plot.R # plot estimates
 	* TsPlot.R
 	* TsPlotTrends.R
+	* getTrends.R
 
 4. schengen-rmse-placebo.R # placebo tests: compare different estimators in terms of RMSE (model without covariates)
 5. schengen-rmse-placebo-plot.R  # plot placebo test results

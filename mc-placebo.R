@@ -40,7 +40,7 @@ for(i in c(0,1)){
     outcomes.cbw.placebo$X.hat <- outcomes.cbw$X.hat[,which(colnames(outcomes.cbw$mask)=="20111"):ncol(outcomes.cbw$mask)]
     
     # Random staggered adoption among actual treated 
-    T0 <- round(c(ncol(outcomes.cbw.placebo$mask)-1, ncol(outcomes.cbw.placebo$mask)/1.25, ncol(outcomes.cbw.placebo$mask)/1.5, ncol(outcomes.cbw.placebo$mask)/2))
+    T0 <- round(c(ncol(outcomes.cbw.placebo$mask)/2, ncol(outcomes.cbw.placebo$mask)/1.25, ncol(outcomes.cbw.placebo$mask)-1)) #0.5, 0.8. 0.97
     boot <- lapply(T0, function(t0){
       treat_indices <- which(rownames(outcomes.cbw.placebo$M) %in%outcomes.cbw.placebo$treated) # keep treated fixed to actual treated
       if(i==1){
@@ -79,14 +79,14 @@ for(i in c(0,1)){
                                       R=999,
                                       parallel = "multicore") 
       
-      print(paste0("Eastern t-stat:", boot.trajectory.eastern$t0))
+      print(paste0("Eastern t-stat:", boot.trajectory.eastern$t0, ", , t0:  ", t0))
       print(boot.ci(boot.trajectory.eastern,type=c("norm","basic", "perc")))
       
       boot.t.eastern.null <- boot.trajectory.eastern$t - mean(boot.trajectory.eastern$t,na.rm = TRUE) # center around zero
       
       boot.trajectory.eastern.pval <- (1+sum( abs(boot.t.eastern.null) > abs(boot.trajectory.eastern$t0)))/(999+1)
       
-      print(paste0("Eastern p-val:", boot.trajectory.eastern.pval))
+      print(paste0("Eastern p-val:", boot.trajectory.eastern.pval, ", t0: ", t0))
       
       # swiss
       
@@ -97,14 +97,14 @@ for(i in c(0,1)){
                                     R=999,
                                     parallel = "multicore") 
       
-      print(paste0("Swiss t-stat:",boot.trajectory.swiss$t0))
+      print(paste0("Swiss t-stat:",boot.trajectory.swiss$t0, ", t0: ", t0))
       print(boot.ci(boot.trajectory.swiss,type=c("norm","basic", "perc")))
       
       boot.t.swiss.null <- boot.trajectory.swiss$t - mean(boot.trajectory.swiss$t,na.rm = TRUE) # center around zero
       
       boot.trajectory.swiss.pval <- (1+sum( abs(boot.t.swiss.null) > abs(boot.trajectory.swiss$t0)))/(999+1)
       
-      print(paste0("Swiss p-val:", boot.trajectory.swiss.pval)) # p-val for percentile bootstrap
+      print(paste0("Swiss p-val:", boot.trajectory.swiss.pval, ", t0: ", t0)) # p-val for percentile bootstrap
       
       return(list("eastern"=boot.trajectory.eastern,"swiss"=boot.trajectory.swiss))
       

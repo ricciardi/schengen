@@ -1,5 +1,5 @@
 ######################################################################
-# Plot Time-series and causal impacts, and estimated time fixed effects #
+# Plot Time-series and causal impacts, and estimated latent trends #
 ######################################################################
 
 require(reshape2)
@@ -13,6 +13,7 @@ library(wesanderson)
 library(boot)
 
 source("TsPlot.R")
+source("getTrends.R")
 source("TsPlotTrends.R")
 
 PlotMCCapacity <- function(observed,main,y.title,mc_est_eastern,mc_est_swiss,boot_result_eastern,boot_result_swiss,treated,control,eastern,swiss,vline,vline2,breaks,labels,att.label,censor=FALSE){
@@ -160,20 +161,21 @@ for(o in outcome.vars){
     ggsave(paste0("plots/mc-estimates-cbw-",o,cf,".png"), mc.plot + theme(legend.position = "none"), scale=1.25)
     ggsave(paste0("plots/mc-estimates-cbw-",o,cf,"-slides.png"), mc.plot + ggtitle("Matrix completion estimates of the effect of Schengen and FoM") + theme(legend.position = "none", plot.title = element_text(family="serif", size=16, hjust = 0.5)), scale=1.25) 
   
-    # Plot estimated time fixed effects of the Swiss and Eastern blocks
+    # Plot estimated latent trends of the Swiss and Eastern blocks
     
-    trend.eastern <- mc.estimates.cbw.eastern$v
-    trend.swiss <- mc.estimates.cbw.swiss$v
+    trend.eastern <- getTrends(L=mc.estimates.cbw.eastern$L)
+    trend.swiss <- getTrends(L=mc.estimates.cbw.swiss$L)
     
-    trend.data <- data.frame("eastern"=trend.eastern,
-                             "swiss"=trend.swiss,
+    #Plot first trend
+    trend.first.data <- data.frame("eastern"=trend.eastern$first,
+                             "swiss"=trend.swiss$first,
                                "year"=colnames(outcomes.cbw$M))
     
-    trend.data.m <- melt(trend.data,id="year")
+    trend.first.data.m <- melt(trend.first.data,id="year")
     
-    trend.data.m$quarter <- rep(1:nrow(trend.data), times=2) # for x axis
+    trend.first.data.m$quarter <- rep(1:nrow(trend.first.data), times=2) # for x axis
       
-    trend.plot <- TsPlotTrends(df=trend.data.m,main="", 
+    trend.first.plot <- TsPlotTrends(df=trend.first.data.m,main="", 
                                y.title=outcomes.labels[which(outcome.vars==o)],
                                vline=16,
                                vline2=24,
@@ -181,7 +183,27 @@ for(o in outcome.vars){
                                labels=c("2005Q4","2007Q4","2009Q4","2011Q4","2013Q4","2015Q4","2017Q4","2019Q4"))
     
     
-    ggsave(paste0("plots/mc-trend-",o,cf,".png"), trend.plot + theme(legend.position = "none"), scale=1.25)
-    ggsave(paste0("plots/mc-trend-",o,cf,"-slides.png"), trend.plot + ggtitle("Matrix completion estimates: time fixed effects") + theme(legend.position = "none", plot.title = element_text(family="serif", size=16, hjust = 0.5)), scale=1.25) 
+    ggsave(paste0("plots/mc-trend-first-",o,cf,".png"), trend.first.plot + theme(legend.position = "none"), scale=1.25)
+    ggsave(paste0("plots/mc-trend-first-",o,cf,"-slides.png"), trend.first.plot + ggtitle("Matrix completion estimates: first latend trend") + theme(legend.position = "none", plot.title = element_text(family="serif", size=16, hjust = 0.5)), scale=1.25) 
+    
+    #Plot second trend
+    trend.second.data <- data.frame("eastern"=trend.eastern$second,
+                                   "swiss"=trend.swiss$second,
+                                   "year"=colnames(outcomes.cbw$M))
+    
+    trend.second.data.m <- melt(trend.second.data,id="year")
+    
+    trend.second.data.m$quarter <- rep(1:nrow(trend.second.data), times=2) # for x axis
+    
+    trend.second.plot <- TsPlotTrends(df=trend.second.data.m,main="", 
+                                     y.title=outcomes.labels[which(outcome.vars==o)],
+                                     vline=16,
+                                     vline2=24,
+                                     breaks=c(4,12,20,28,36,44,52,60),
+                                     labels=c("2005Q4","2007Q4","2009Q4","2011Q4","2013Q4","2015Q4","2017Q4","2019Q4"))
+    
+    
+    ggsave(paste0("plots/mc-trend-second-",o,cf,".png"), trend.second.plot + theme(legend.position = "none"), scale=1.25)
+    ggsave(paste0("plots/mc-trend-second-",o,cf,"-slides.png"), trend.second.plot + ggtitle("Matrix completion estimates: second latent trend") + theme(legend.position = "none", plot.title = element_text(family="serif", size=16, hjust = 0.5)), scale=1.25) 
     }
 } 

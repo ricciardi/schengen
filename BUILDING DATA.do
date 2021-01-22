@@ -1,8 +1,8 @@
-adopath + "U:\My Documents\PAPERS PUBLICATION\ADOPATH"
-sysdir set PLUS "U:\My Documents\PAPERS PUBLICATION\ADOPATH"
-global datain "S:\databases\1_Projets\Schengen_AAlbanese\LFS\LFS microdata full set 25sept2020\Quarterly Files_95_2019\Quarterly Files"
-global dataout "R:\CBW and Schengen\2. Datasets\quarterly"
-global gdp "R:\CBW and Schengen\COVARIATES EUROSTAT\selected\xls"
+adopath + "ADOPATH"
+sysdir set PLUS "ADOPATH"
+global datain "QUARTERLY_FILES"
+global dataout "DATA_OUT"
+global gdp "GDP_DIR"
 
  
  
@@ -30,11 +30,11 @@ local h=cond("`var'"=="nama_10_pc",  "GDPcapitaC"  , "GDPcapitaR" )
 rename j_  `h'
 compress
 sort country year
-save "R:\CBW and Schengen\COVARIATES EUROSTAT\selected/`var'", replace
+save "$gdp/`var'", replace
 }
 foreach var in    nama_10r_2gdp nama_10_pc {
 sort country year
-	merge  country year using "R:\CBW and Schengen\COVARIATES EUROSTAT\selected/`var'"
+	merge  country year using "$gdp/`var'"
 	drop _merge
 }
 rename country REGION
@@ -216,7 +216,7 @@ sort REGION year
 
 keep if country=="BE" |   country=="CZ" |   country=="DE" |   country=="DK" |   country=="ES" |   country=="FR" |   country=="HU" |   country=="IT" |   country=="LU" |   country=="NL" |   country=="PL" |   country=="SI" |   country=="SK" |   country=="UK"
 sort year REGION
-save  "R:\CBW and Schengen\COVARIATES EUROSTAT\selected\GDP_final.dta" , replace
+save  "$gdp\GDP_final.dta" , replace
 
 
 
@@ -536,7 +536,7 @@ replace pop=round(pop)
 collapse pop N_CBWbord CBWbord CBWbordEMPL  treated_CBW SCHENGEN_CBW FoM_CBW    tr_SCHENGEN   year  [pw=coef],  by(REGION tq)
 cap: drop _merge
 sort year REGION
-merge  year REGION using "R:\CBW and Schengen\COVARIATES EUROSTAT\selected\GDP_final.dta" 
+merge  year REGION using "$gdp\GDP_final.dta" 
 *fix missing country in 2019(from gdp dataset)
 replace country=substr(REGION, 1,2 ) if year==2019 & country==""
 drop _merge
@@ -545,7 +545,7 @@ sort  REGION tq year
 compress
 
 
-save "R:\CBW and Schengen\COVARIATES EUROSTAT\selected\FINAL_21.dta" , replace
+save "$gdp\FINAL_21.dta" , replace
 
 
 
