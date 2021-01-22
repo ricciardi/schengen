@@ -13,7 +13,7 @@ After obtaining the microdata, follow the commands in BUILDING DATA.do for const
 Prerequsites
 ------
 
-* **R** >= 3.5.0 (tested on 3.6.0 and 3.6.1)
+* **R** >= 3.5.0 (tested on 3.6.3)
 
 * package-list.R # required **R** packages
 
@@ -23,6 +23,7 @@ install.packages("devtools")
 library(devtools) 
 install_github("jvpoulos/MCPanel")
 ```
+**Note:** fitting the matrix completion model with covariates (*mcnnm_wc_cv*) is computationally expensive and will likely make a laptop crash. The code below is run on a high-performance compute cluster (384 GB RAM and 40 CPU-cores) with an allocated memory of 30G. 
 
 Create folders to store outputs:
 
