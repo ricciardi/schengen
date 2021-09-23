@@ -23,7 +23,7 @@ install.packages("devtools")
 library(devtools) 
 install_github("jvpoulos/MCPanel")
 ```
-**Note:** fitting the matrix completion model with covariates (*mcnnm_wc_cv*) is computationally expensive and will likely make a laptop crash. The code below is run on a high-performance compute cluster (384 GB RAM and 40 CPU-cores) with an allocated memory of 30G. 
+**Note:** fitting the matrix completion model with covariates (*mcnnm_wc_cv*) is computationally expensive and will likely make a laptop crash. The code below is run on a single node with 30G RAM and 6 CPU-cores on a high-performance compute cluster.  
 
 Create folders to store outputs:
 
@@ -53,7 +53,10 @@ Run order
 4. schengen-rmse-placebo.R # placebo tests: compare different estimators in terms of RMSE (model without covariates)
 5. schengen-rmse-placebo-plot.R  # plot placebo test results
 
-6. mc-placebo.R # placebo test of null hypothesis (model without covariates)
+5. mc-simulation.R # simulation study
+	* run with command line argument speficying each of the possible settings (1-81); e.g., `Rscript mc-simulation.R 1`
+
+6. mc-placebo.R # placebo test of null hypothesis
 
 7. Schengen_DID.R # DID and SCM estimates for comparison 
 	* DIDEstBoot.R
