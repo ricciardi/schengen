@@ -53,8 +53,9 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size){
   
   e <-1/(1+exp(C%*%D + X%*%replicate(T,as.vector(beta)) + replicate(T,delta) + t(replicate(N,gamma)) + noise)) #incl. noise
   
-  while(any(rowSums(treat_mat)<2 & rowSums(treat_mat)==T)){ # ensure all units treated for at least 2 periods and that there are AT units
-    treat_mat <- matrix(rbinom(N*T,1,e),N,T) # 0s missing and to be imputed (LT); 1s are observed (AT)
+  treat_mat <- matrix(rbinom(N*T,1,e),N,T) # 0s missing and to be imputed (LT); 1s are observed (AT) 
+  while(any(rowSums(treat_mat)<2) || max(rowSums(treat_mat))<T){ # generate new treat_mat to ensure all units treated for at least 2 periods and that there are AT units
+    treat_mat <- matrix(rbinom(N*T,1,e),N,T)  
     
     # block structure (fill forwards)
     for (i in 1:N){ 
