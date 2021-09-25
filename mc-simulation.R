@@ -47,23 +47,33 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size){
   noisy_mat <- true_mat_1 + noise # we want to estimate p.o. under treatment in retrospective analysis
 
   # Assignment mechanism 
-  C <- replicate((N-1),rbinom(N,1,delta_sc))
-  D <- replicate(T,rbinom((T-1),1,gamma_sc)) 
   
-  e <-plogis(C%*%D + X%*%replicate(T,as.vector(beta)) + replicate(T,delta) + t(replicate(N,gamma)) + noise) #incl. noise
-  treat_mat <- matrix(rbinom(N*T,1,e),N,T)
+  C <- replicate(R,rbinom(N,1,0.5))
+  D <- replicate(T,rbinom(R,1,0.5))
   
-  # block structure (fill forwards)
-  for (i in 1:N){ 
-    for (j in 1:(T-1)) {
-      if (treat_mat[i,j]==1) {treat_mat[i,(j+1)]=1}
-      else {treat_mat[i,j]=treat_mat[i,j]}
+  e <-1/(1+exp(C%*%D + X%*%replicate(T,as.vector(beta)) + replicate(T,delta) + t(replicate(N,gamma)) + noise)) #incl. noise
+  
+  while(any(rowSums(treat_mat)<2 & rowSums(treat_mat)==T)){ # ensure all units treated for at least 2 periods and that there are AT units
+    treat_mat <- matrix(rbinom(N*T,1,e),N,T) # 0s missing and to be imputed (LT); 1s are observed (AT)
+    
+    # block structure (fill forwards)
+    for (i in 1:N){ 
+      for (j in 1:(T-1)) {
+        if (treat_mat[i,j]==1) {treat_mat[i,(j+1)]=1}
+        else {treat_mat[i,j]=treat_mat[i,j]}
+      }
     }
   }
-
+  
+  # Get vector of initial treatment periods
+  
+  T0 <- aggregate(col ~ row,
+                  data = which(treat_mat == 1, arr.ind = T),
+                  FUN = function(x) x[1])$col
+  
   # Observed outcome
 
-  mask <- treat_mat # 0s missing and to be imputed; 1s are observed
+  mask <- treat_mat 
   
   obs_mat <- noisy_mat * mask 
   
@@ -84,14 +94,22 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size){
   source('boundProbs.R')
   
   weights <- (1-boundProbs(est_model_pweights$Mhat))/boundProbs(est_model_pweights$Mhat)
-  z_weights <- c(rev(SSlogis(1:t0, Asym = 1, xmid = 0.85, scal = 8)),
-                 SSlogis(1:(ncol(mask)-t0), Asym = 1, xmid = 0.85, scal = 8))
-  weights <- weights%*%diag(z_weights) # elapsed-time weighting
+  
+  z_weights <- matrix(0,N,T,byrow = TRUE)
+  
+  for(i in 1:N){
+    z_weights[i,] <- c(plogis(T0[i]:1, scale=8),plogis(1:(ncol(mask)-T0[i]),scale=8))
+  }
+         
+  weights <- (1-diag(z_weights)*weights)/(diag(z_weights)*weights) # elapsed-time weighting
 
   # Function for bootstrap
-  BootTraj <- function(impact,indices,t0,treat_indices,start=1) {
-    att <- rowMeans(impact[,start:(t0-1)])[indices] 
-    return(mean(att[treat_indices])) # avg over treated units
+  BootTraj <- function(impact,indices,mask) {
+    nzmean <- function(x) {
+      if (all(x==0)) 0 else mean(x[x!=0])
+    }
+    att <- apply(impact*(1-mask),1,nzmean)[indices] 
+    return(mean(att[which(rowSums(mask)<ncol(mask))])) # avg over treated units
   }
   
   ## -----
@@ -108,8 +126,7 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size){
   
   est_model_ADH$boot <- boot(est_model_ADH$impact, 
                             BootTraj, 
-                            t0=t0,
-                            treat_indices=treat_indices,
+                            mask=mask,
                             R=999,
                             parallel = "multicore") 
   
@@ -132,8 +149,7 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size){
   
   est_model_DID$boot <- boot(est_model_DID$impact, 
                              BootTraj, 
-                             t0=t0,
-                             treat_indices=treat_indices,
+                             mask=mask,
                              R=999,
                              parallel = "multicore") 
   
@@ -157,8 +173,7 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size){
 
   est_mc_plain$boot <- boot(est_mc_plain$impact, 
                         BootTraj, 
-                        t0=t0,
-                        treat_indices=treat_indices,
+                        mask=mask,
                         R=999,
                         parallel = "multicore") 
   
@@ -182,8 +197,7 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size){
   
   est_mc_weights$boot <- boot(est_mc_weights$impact, 
                             BootTraj, 
-                            t0=t0,
-                            treat_indices=treat_indices,
+                            mask=mask,
                             R=999,
                             parallel = "multicore") 
   
@@ -207,8 +221,7 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size){
   
   est_mc_weights_covars$boot <- boot(est_mc_weights_covars$impact, 
                               BootTraj, 
-                              t0=t0,
-                              treat_indices=treat_indices,
+                              mask=mask,
                               R=999,
                               parallel = "multicore") 
   
@@ -217,7 +230,7 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size){
   est_mc_weights_covars$bias <- est_mc_weights_covars$boot_t0-effect_size
   est_mc_weights_covars$cp <- as.numeric((est_mc_weights_covars$boot_ci[1] < effect_size) & (est_mc_weights_covars$boot_ci[2] > effect_size))
     
-  return(list("setting"=setting, 
+  return(list("N"=N, "T"=T, "R"=R, "noise_sc"=noise_sc,"delta_sc"=delta_sc, "gamma_sc"=gamma_sc,"beta_sc"=beta_sc, "effect_size"=effect_size, 
               "est_mc_plain_RMSE"=est_mc_plain$test_RMSE,"est_mc_plain_bias"=est_mc_plain$bias,"est_mc_plain_cp"=est_mc_plain$cp,
               "est_mc_weights_RMSE"=est_mc_weights$test_RMSE,"est_mc_weights_bias"=est_mc_weights$bias,"est_mc_weights_cp"=est_mc_weights$cp,
               "est_mc_weights_covars_RMSE"=est_mc_weights_covars$test_RMSE,"est_mc_weights_covars_bias"=est_mc_weights_covars$bias,"est_mc_weights_covars_cp"=est_mc_weights_covars$cp,
@@ -232,13 +245,8 @@ set.seed(10)
 settings <- expand.grid("N"=c(50,100,500),
                         "T"=c(50,100,500),
                         "noise_sc"=c(0.001,0.01,0.1),
-                        "effect_size"=c(0.001,0.01,0.1))
+                        "effect_size"=c(0.001,0.005,0.01))
 
-settings$R <- NA
-settings[settings$N==50 | settings$T==50,]$R <- 15 
-settings[settings$N==100 | settings$T==100,]$R <- 25 
-settings[settings$N==500 & settings$T==500,]$R <- 50
-  
 args <- as.numeric(commandArgs(trailingOnly = TRUE)) # command line arguments
 thisrun <- settings[args,] 
 
@@ -246,18 +254,15 @@ N <- as.numeric(thisrun[1]) # Number of units
 T <- as.numeric(thisrun[2]) # Number of time-periods
 
 noise_sc <- as.numeric(thisrun[3]) # Noise scale 
-delta_sc <- 0.01 # delta scale
-gamma_sc <- 0.05 # gamma scale
-beta_sc <- 0.1 # beta scale
+delta_sc <- 0.1 # delta scale
+gamma_sc <- 0.3 # gamma scale
+beta_sc <- 0.3 # beta scale
 effect_size <- as.numeric(thisrun[4])
-R <- as.numeric(thisrun[5])
-
-number_T0 <- 4
-T0 <- ceiling(T*((1:number_T0)*2-1)/(2*number_T0))
+R.set <- c(5,10,20,40)
 
 n <- 1000 # Num. simulation runs
 
-results <- foreach(t0 =T0, .combine='rbind') %dopar% {
+results <- foreach(R = R.set, .combine='rbind') %dopar% {
   replicate(n,MCsim(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size))
 }
 results <- matrix(unlist(results), ncol = n, byrow = FALSE) # coerce into matrix
