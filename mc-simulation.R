@@ -23,13 +23,14 @@ doParallel::registerDoParallel(cores) # register cores (<p)
 
 RNGkind("L'Ecuyer-CMRG") # ensure random number generation
 
-## Set random seed
-set.seed(10)
-
-MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size){
+MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
+  
+  # set the seed
+  print(paste0("run number: ", n))
+  set.seed(10*n)
   
   setting <- paste0("N = ", N, ", T = ", T, ", R = ",R, ", noise_sc = ",noise_sc, ", delta_sc = ",delta_sc, ", gamma_sc = ",gamma_sc, ", beta_sc = ", beta_sc, ", effect_size = ", effect_size)
-  print(setting)
+  print(paste0("setting: ",setting))
   
   # Create Matrices
   A <- replicate(R,rnorm(N))
@@ -239,32 +240,29 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size){
               "est_model_DID_RMSE"=est_model_DID$test_RMSE,"est_model_DID_bias"=est_model_DID$bias,"est_model_DID_cp"=est_model_DID$cp))
 }
 
-# set the seed
-set.seed(10)
-
 # define settings for simulation
-settings <- expand.grid("N"=c(50,100,500),
-                        "T"=c(50,100,500),
-                        "noise_sc"=c(0.001,0.01,0.1),
-                        "effect_size"=c(0.001,0.005,0.01))
+settings <- expand.grid("NT"=c(1600,2500,3600),
+                        "noise_sc"=c(0.1,0.2,0.4),
+                        "effect_size"=c(0.001,0.005,0.01),
+                        "R" <- c(10,20,40))
 
 args <- as.numeric(commandArgs(trailingOnly = TRUE)) # command line arguments
 thisrun <- settings[args,] 
 
-N <- as.numeric(thisrun[1]) # Number of units
-T <- as.numeric(thisrun[2]) # Number of time-periods
+N <- sqrt(as.numeric(thisrun[1])) # Number of units
+T <- sqrt(as.numeric(thisrun[1]))  # Number of time-periods
 
-noise_sc <- as.numeric(thisrun[3]) # Noise scale 
+noise_sc <- as.numeric(thisrun[2]) # Noise scale 
 delta_sc <- 0.1 # delta scale
-gamma_sc <- 0.3 # gamma scale
+gamma_sc <- 0.2 # gamma scale
 beta_sc <- 0.3 # beta scale
-effect_size <- as.numeric(thisrun[4])
-R.set <- c(5,10,20,40)
+effect_size <- as.numeric(thisrun[3])
+R <- as.numeric(thisrun[4])
 
-n <- 1000 # Num. simulation runs
+n.runs <- 1000 # Num. simulation runs
 
-results <- foreach(R = R.set, .combine='rbind') %dopar% {
-  replicate(n,MCsim(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size))
+results <- foreach(i = 1:n.runs, .combine='rbind') %dopar% {
+  MCsim(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n=i)
 }
 results <- matrix(unlist(results), ncol = n, byrow = FALSE) # coerce into matrix
 saveRDS(results, paste0("results_","N_",N,"_T_",T,"_R_", R,"_noise_sc_",noise_sc,"_effect_size_",effect_size,"_n_",n,".rds"))
