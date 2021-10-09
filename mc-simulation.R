@@ -6,31 +6,25 @@ library(MCPanel)
 library(matrixStats)
 library(boot)
 library(Matrix)
+library(tictoc)
 
-library(ggplot2)
-library(latex2exp)
-library(dplyr)
-
-# Setup parallel processing
+# Setup parallel processing 
 library(parallel)
 library(doParallel)
+library(foreach)
 
-cores <- detectCores()
+cores <- parallel::detectCores()
 
 cl <- parallel::makeForkCluster(cores)
+clusterSetRNGStream(cl, 1001) 
 
-doParallel::registerDoParallel(cores) # register cores (<p)
-
-RNGkind("L'Ecuyer-CMRG") # ensure random number generation
+doParallel::registerDoParallel(cl) # register cluster
 
 MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
   
   # set the seed
   print(paste0("run number: ", n))
   set.seed(10*n)
-  
-  setting <- paste0("N = ", N, ", T = ", T, ", R = ",R, ", noise_sc = ",noise_sc, ", delta_sc = ",delta_sc, ", gamma_sc = ",gamma_sc, ", beta_sc = ", beta_sc, ", effect_size = ", effect_size)
-  print(paste0("setting: ",setting))
   
   # Create Matrices
   A <- replicate(R,rnorm(N))
@@ -114,52 +108,6 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
     return(mean(att[which(rowSums(mask)<ncol(mask))])) # avg over treated units
   }
   
-  ## -----
-  ## ADH
-  ## -----
-  est_model_ADH <- list()
-  est_model_ADH$Mhat <- adh_mp_rows(obs_mat, mask, niter=200, rel_tol = 0.001)
-  est_model_ADH$impact <- (est_model_ADH$Mhat-noisy_mat) # estimated treatment effect
-  est_model_ADH$err <- (est_model_ADH$Mhat - true_mat_1) # error (wrt to ground truth)
-
-  est_model_ADH$msk_err <- est_model_ADH$err*(1-mask) # masked error (wrt to ground truth)
-  est_model_ADH$test_RMSE <- sqrt((1/sum(1-mask)) * sum(est_model_ADH$msk_err^2)) # RMSE on test set (wrt to ground truth)
-  print(paste("DID RMSE:", round(est_model_ADH$test_RMSE,3)))
-  
-  est_model_ADH$boot <- boot(est_model_ADH$impact, 
-                            BootTraj, 
-                            mask=mask,
-                            R=999,
-                            parallel = "multicore") 
-  
-  est_model_ADH$boot_t0 <- est_model_ADH$boot$t0
-  est_model_ADH$boot_ci <- boot.ci(est_model_ADH$boot ,type=c("perc"))$percent[-c(1:3)] 
-  est_model_ADH$bias <- est_model_ADH$boot_t0-effect_size
-  est_model_ADH$cp <- as.numeric((est_model_ADH$boot_ci[1] < effect_size) & (est_model_ADH$boot_ci[2] > effect_size))
-  
-  ## -----
-  ## DID
-  ## -----
-  est_model_DID <- list()
-  est_model_DID$Mhat <- t(DID(t(obs_mat), t(mask)))
-  est_model_DID$impact <- (est_model_DID$Mhat-noisy_mat) # estimated treatment effect
-  est_model_DID$err <- (est_model_DID$Mhat - true_mat_1) # error (wrt to ground truth)
-
-  est_model_DID$msk_err <- est_model_DID$err*(1-mask) # masked error (wrt to ground truth)
-  est_model_DID$test_RMSE <- sqrt((1/sum(1-mask)) * sum(est_model_DID$msk_err^2)) # RMSE on test set (wrt to ground truth)
-  print(paste("DID RMSE:", round(est_model_DID$test_RMSE,3)))
-  
-  est_model_DID$boot <- boot(est_model_DID$impact, 
-                             BootTraj, 
-                             mask=mask,
-                             R=999,
-                             parallel = "multicore") 
-  
-  est_model_DID$boot_t0 <- est_model_DID$boot$t0
-  est_model_DID$boot_ci <- boot.ci(est_model_DID$boot ,type=c("perc"))$percent[-c(1:3)] 
-  est_model_DID$bias <- est_model_DID$boot_t0-effect_size
-  est_model_DID$cp <- as.numeric((est_model_DID$boot_ci[1] < effect_size) & (est_model_DID$boot_ci[2] > effect_size))
-  
   ## ------ ------ ------ ------ ------
   ## MC-NNM plain (no weighting, no covariates)
   ## ------ ------ ------ ------ ------
@@ -235,16 +183,14 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
   return(list("N"=N, "T"=T, "R"=R, "noise_sc"=noise_sc,"delta_sc"=delta_sc, "gamma_sc"=gamma_sc,"beta_sc"=beta_sc, "effect_size"=effect_size, 
               "est_mc_plain_RMSE"=est_mc_plain$test_RMSE,"est_mc_plain_bias"=est_mc_plain$bias,"est_mc_plain_cp"=est_mc_plain$cp,
               "est_mc_weights_RMSE"=est_mc_weights$test_RMSE,"est_mc_weights_bias"=est_mc_weights$bias,"est_mc_weights_cp"=est_mc_weights$cp,
-              "est_mc_weights_covars_RMSE"=est_mc_weights_covars$test_RMSE,"est_mc_weights_covars_bias"=est_mc_weights_covars$bias,"est_mc_weights_covars_cp"=est_mc_weights_covars$cp,
-              "est_model_ADH_RMSE"=est_model_ADH$test_RMSE,"est_model_ADH_bias"=est_model_ADH$bias,"est_model_ADH_cp"=est_model_ADH$cp,
-              "est_model_DID_RMSE"=est_model_DID$test_RMSE,"est_model_DID_bias"=est_model_DID$bias,"est_model_DID_cp"=est_model_DID$cp))
+              "est_mc_weights_covars_RMSE"=est_mc_weights_covars$test_RMSE,"est_mc_weights_covars_bias"=est_mc_weights_covars$bias,"est_mc_weights_covars_cp"=est_mc_weights_covars$cp))
 }
 
 # define settings for simulation
-settings <- expand.grid("NT"=c(1600,2500,3600),
-                        "noise_sc"=c(0.1,0.2,0.4),
-                        "effect_size"=c(0.001,0.005,0.01),
-                        "R" <- c(10,20,40))
+settings <- expand.grid("NT"=c(2500,3600),
+                        "noise_sc"=c(0.2,0.4),
+                        "effect_size"=c(0.005,0.01),
+                        "R" <- c(20,40))
 
 args <- as.numeric(commandArgs(trailingOnly = TRUE)) # command line arguments
 thisrun <- settings[args,] 
@@ -261,8 +207,14 @@ R <- as.numeric(thisrun[4])
 
 n.runs <- 1000 # Num. simulation runs
 
-results <- foreach(i = 1:n.runs, .combine='rbind') %dopar% {
+setting <- paste0("N = ", N, ", T = ", T, ", R = ",R, ", noise_sc = ",noise_sc, ", delta_sc = ",delta_sc, ", gamma_sc = ",gamma_sc, ", beta_sc = ", beta_sc, ", effect_size = ", effect_size)
+tic(print(paste0("setting: ",setting)))
+
+results <- foreach(i = 1:n.runs, .combine='cbind', .packages =c("MCPanel","matrixStats","boot","Matrix")) %dopar% {
   MCsim(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n=i)
 }
 results <- matrix(unlist(results), ncol = n, byrow = FALSE) # coerce into matrix
 saveRDS(results, paste0("results_","N_",N,"_T_",T,"_R_", R,"_noise_sc_",noise_sc,"_effect_size_",effect_size,"_n_",n,".rds"))
+
+stopCluster(cl)
+print(toc())
