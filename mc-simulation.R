@@ -61,8 +61,8 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
 
   # Assignment mechanism 
   
-  C <- replicate(R,rbinom(N,1,0.3))
-  D <- replicate(T,rbinom(R,1,0.3))
+  C <- replicate(R,rbinom(N,1,0.2))
+  D <- replicate(T,rbinom(R,1,0.2))
   
   e <-1/(1+exp(C%*%D + X%*%replicate(T,as.vector(beta)) + replicate(T,delta) + t(replicate(N,gamma)) + noise)) #incl. noise
   
@@ -210,10 +210,10 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
 }
 
 # define settings for simulation
-settings <- expand.grid("NT"=c(1600,2500,3600),
+settings <- expand.grid("NT"=c(1600,3600,6400),
                         "noise_sc"=c(0.1,0.2,0.3),
                         "effect_size"=c(0.001,0.005,0.01),
-                        "R" = c(10,20,40))
+                        "R" = c(20,30,40))
 
 args <- as.numeric(commandArgs(trailingOnly = TRUE)) # command line arguments
 thisrun <- settings[args,] 
@@ -233,11 +233,10 @@ n.runs <- 1000 # Num. simulation runs
 setting <- paste0("N = ", N, ", T = ", T, ", R = ",R, ", noise_sc = ",noise_sc, ", delta_sc = ",delta_sc, ", gamma_sc = ",gamma_sc, ", beta_sc = ", beta_sc, ", effect_size = ", effect_size)
 tic(print(paste0("setting: ",setting)))
 
-results <- foreach(i = 1:n.runs, .combine='cbind', .packages =c("MCPanel","matrixStats","boot","Matrix")) %dopar% {
+results <- foreach(i = 1:n.runs, .combine='rbind', .packages =c("MCPanel","matrixStats","boot","Matrix"), .inorder=FALSE) %dopar% {
   MCsim(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n=i)
 }
-results <- matrix(unlist(results), ncol = n, byrow = FALSE, .inorder=FALSE) # coerce into matrix
-saveRDS(results, paste0("results_","N_",N,"_T_",T,"_R_", R,"_noise_sc_",noise_sc,"_effect_size_",effect_size,"_n_",n,".rds"))
+saveRDS(results, paste0("results_","N_",N,"_T_",T,"_R_", R,"_noise_sc_",noise_sc,"_effect_size_",effect_size,"_n_",n.runs,".rds"))
 
 print(toc())
 
