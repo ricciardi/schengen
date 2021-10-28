@@ -61,14 +61,12 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
 
   # Assignment mechanism 
   
-  C <- replicate(R,rbinom(N,1,0.2))
-  D <- replicate(T,rbinom(R,1,0.2))
+  e <-1/(1+exp(X%*%replicate(T,as.vector(beta)) + replicate(T,delta) + t(replicate(N,gamma))))
   
-  e <-1/(1+exp(C%*%D + X%*%replicate(T,as.vector(beta)) + replicate(T,delta) + t(replicate(N,gamma)) + noise)) #incl. noise
-  
-  treat_mat <- matrix(rbinom(N*T,1,e),N,T) # 0s missing and to be imputed (LT); 1s are observed (AT) 
+  treat_mat <- matrix(0, nrow=N, ncol=T)
   while(any(rowSums(treat_mat)<2) || max(rowSums(treat_mat))<T){ # generate new treat_mat to ensure all units treated for at least 2 periods and that there are AT units
-    treat_mat <- matrix(rbinom(N*T,1,e),N,T)  
+    
+    treat_mat <- matrix(rbinom(N*T,1,e),N,T)  # 0s missing and to be imputed (LT); 1s are observed (AT) 
     
     # block structure (fill forwards)
     for (i in 1:N){ 
@@ -118,14 +116,6 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
   
   weights <- (1-boundProbs(est_model_pweights$Mhat))/boundProbs(est_model_pweights$Mhat)
   
-  z_weights <- matrix(0,N,T,byrow = TRUE)
-  
-  for(i in 1:N){
-    z_weights[i,] <- c(plogis(T0[i]:1, scale=8),plogis(1:(ncol(mask)-T0[i]),scale=8))
-  }
-         
-  weights <- (1-diag(z_weights)*weights)/(diag(z_weights)*weights) # elapsed-time weighting
-  
   ## ------ ------ ------ ------ ------
   ## MC-NNM plain (no weighting, no covariates)
   ## ------ ------ ------ ------ ------
@@ -149,6 +139,7 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
   est_mc_plain$boot_ci <- boot.ci(est_mc_plain$boot ,type=c("perc"))$percent[-c(1:3)] 
   est_mc_plain$bias <- est_mc_plain$boot_t0-effect_size
   est_mc_plain$cp <- as.numeric((est_mc_plain$boot_ci[1] < effect_size) & (est_mc_plain$boot_ci[2] > effect_size))
+  est_mc_plain$ciw <- as.numeric(est_mc_plain$boot_ci[2] -est_mc_plain$boot_ci[1])
   
   ## ------ ------ ------ ------ ------
   ## MC-NNM + weights (no covariates)
@@ -173,6 +164,7 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
   est_mc_weights$boot_ci <- boot.ci(est_mc_weights$boot ,type=c("perc"))$percent[-c(1:3)] 
   est_mc_weights$bias <- est_mc_weights$boot_t0-effect_size
   est_mc_weights$cp <- as.numeric((est_mc_weights$boot_ci[1] < effect_size) & (est_mc_weights$boot_ci[2] > effect_size))
+  est_mc_weights$ciw <- as.numeric(est_mc_weights$boot_ci[2] -est_mc_weights$boot_ci[1])
   
   ## ------ ------ ------ ------ ------
   ## MC-NNM + weights + covariates
@@ -197,23 +189,74 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
   est_mc_weights_covars$boot_ci <- boot.ci(est_mc_weights_covars$boot ,type=c("perc"))$percent[-c(1:3)] 
   est_mc_weights_covars$bias <- est_mc_weights_covars$boot_t0-effect_size
   est_mc_weights_covars$cp <- as.numeric((est_mc_weights_covars$boot_ci[1] < effect_size) & (est_mc_weights_covars$boot_ci[2] > effect_size))
+  est_mc_weights_covars$ciw <- as.numeric(est_mc_weights_covars$boot_ci[2] -est_mc_weights_covars$boot_ci[1])
+  
+  ## -----
+  ## ADH
+  ## -----
+  est_model_ADH <- list()
+  est_model_ADH$Mhat <- adh_mp_rows(obs_mat, mask, niter=200, rel_tol = 0.001)
+  est_model_ADH$impact <- (est_model_ADH$Mhat-noisy_mat) # estimated treatment effect
+  est_model_ADH$err <- (est_model_ADH$Mhat - true_mat_1) # error (wrt to ground truth)
+  
+  est_model_ADH$msk_err <- est_model_ADH$err*(1-mask) # masked error (wrt to ground truth)
+  est_model_ADH$test_RMSE <- sqrt((1/sum(1-mask)) * sum(est_model_ADH$msk_err^2)) # RMSE on test set (wrt to ground truth)
+  print(paste("ADH RMSE:", round(est_model_ADH$test_RMSE,3)))
+  
+  est_model_ADH$boot <- boot(est_model_ADH$impact,
+                             BootTraj,
+                             mask=mask,
+                             R=999,
+                             parallel = "multicore")
+  
+  est_model_ADH$boot_t0 <- est_model_ADH$boot$t0
+  est_model_ADH$boot_ci <- boot.ci(est_model_ADH$boot ,type=c("perc"))$percent[-c(1:3)]
+  est_model_ADH$bias <- est_model_ADH$boot_t0-effect_size
+  est_model_ADH$cp <- as.numeric((est_model_ADH$boot_ci[1] < effect_size) & (est_model_ADH$boot_ci[2] > effect_size))
+  est_model_ADH$ciw <- as.numeric(est_model_ADH$boot_ci[2] - est_model_ADH$boot_ci[1])
+  
+  ## -----
+  ## DID
+  ## -----
+  est_model_DID <- list()
+  est_model_DID$Mhat <- t(DID(t(obs_mat), t(mask)))
+  est_model_DID$impact <- (est_model_DID$Mhat-noisy_mat) # estimated treatment effect
+  est_model_DID$err <- (est_model_DID$Mhat - true_mat_1) # error (wrt to ground truth)
+  
+  est_model_DID$msk_err <- est_model_DID$err*(1-mask) # masked error (wrt to ground truth)
+  est_model_DID$test_RMSE <- sqrt((1/sum(1-mask)) * sum(est_model_DID$msk_err^2)) # RMSE on test set (wrt to ground truth)
+  print(paste("DID RMSE:", round(est_model_DID$test_RMSE,3)))
+  
+  est_model_DID$boot <- boot(est_model_DID$impact,
+                             BootTraj,
+                             mask=mask,
+                             R=999,
+                             parallel = "multicore")
+  
+  est_model_DID$boot_t0 <- est_model_DID$boot$t0
+  est_model_DID$boot_ci <- boot.ci(est_model_DID$boot ,type=c("perc"))$percent[-c(1:3)]
+  est_model_DID$bias <- est_model_DID$boot_t0-effect_size
+  est_model_DID$cp <- as.numeric((est_model_DID$boot_ci[1] < effect_size) & (est_model_DID$boot_ci[2] > effect_size))
+  est_model_DID$ciw <- as.numeric(est_model_DID$boot_ci[2] - est_model_DID$boot_ci[1])
   
   # cleanup
-  rm(A,C,e,mask,noise,noisy_mat,obs_mat,treat_mat,true_mat_0,true_mat_1,X,X.hat,weights,z_weights)
+  rm(A,e,mask,noise,noisy_mat,obs_mat,treat_mat,true_mat_0,true_mat_1,X,X.hat,weights)
   gc()
   cat(paste("Done with simulation run number",n, "\n"))
     
   return(list("N"=N, "T"=T, "R"=R, "noise_sc"=noise_sc,"delta_sc"=delta_sc, "gamma_sc"=gamma_sc,"beta_sc"=beta_sc, "effect_size"=effect_size, "fr_obs"= fr_obs, 
-              "est_mc_plain_RMSE"=est_mc_plain$test_RMSE,"est_mc_plain_bias"=est_mc_plain$bias,"est_mc_plain_cp"=est_mc_plain$cp,
-              "est_mc_weights_RMSE"=est_mc_weights$test_RMSE,"est_mc_weights_bias"=est_mc_weights$bias,"est_mc_weights_cp"=est_mc_weights$cp,
-              "est_mc_weights_covars_RMSE"=est_mc_weights_covars$test_RMSE,"est_mc_weights_covars_bias"=est_mc_weights_covars$bias,"est_mc_weights_covars_cp"=est_mc_weights_covars$cp))
+              "est_mc_plain_RMSE"=est_mc_plain$test_RMSE,"est_mc_plain_bias"=est_mc_plain$bias,"est_mc_plain_cp"=est_mc_plain$cp,"est_mc_plain_ciw"=est_mc_plain$ciw,
+              "est_mc_weights_RMSE"=est_mc_weights$test_RMSE,"est_mc_weights_bias"=est_mc_weights$bias,"est_mc_weights_cp"=est_mc_weights$cp,"est_mc_weights_ciw"=est_mc_weights$ciw,
+              "est_mc_weights_covars_RMSE"=est_mc_weights_covars$test_RMSE,"est_mc_weights_covars_bias"=est_mc_weights_covars$bias,"est_mc_weights_covars_cp"=est_mc_weights_covars$cp,"est_mc_weights_covars_ciw"=est_mc_weights_covars$ciw,
+              "est_model_ADH_RMSE"=est_model_ADH$test_RMSE,"est_model_ADH_bias"=est_model_ADH$bias,"est_model_ADH_cp"=est_model_ADH$cp,"est_model_ADH_ciw"=est_model_ADH$ciw,
+              "est_model_DID_RMSE"=est_model_DID$test_RMSE,"est_model_DID_bias"=est_model_DID$bias,"est_model_DID_cp"=est_model_DID$cp,"est_model_DID_ciw"=est_model_DID$ciw))
 }
 
 # define settings for simulation
-settings <- expand.grid("NT"=c(1600,3600,6400),
-                        "noise_sc"=c(0.1,0.2,0.3),
-                        "effect_size"=c(0.001,0.005,0.01),
-                        "R" = c(20,30,40))
+settings <- expand.grid("NT"=c(1600,3600),
+                        "noise_sc"=c(0.2,0.4,0.6),
+                        "effect_size"=c(0,0.05,0.1),
+                        "R" = c(10,20,30))
 
 args <- as.numeric(commandArgs(trailingOnly = TRUE)) # command line arguments
 thisrun <- settings[args,] 
@@ -224,8 +267,8 @@ T <- sqrt(as.numeric(thisrun[1]))  # Number of time-periods
 noise_sc <- as.numeric(thisrun[2]) # Noise scale 
 delta_sc <- 0.1 # delta scale
 gamma_sc <- 0.2 # gamma scale
-beta_sc <- 0.3 # beta scale
-effect_size <- as.numeric(thisrun[3])
+beta_sc <- 0.4 # beta scale
+effect_size <- as.numeric(thisrun[3]) 
 R <- as.numeric(thisrun[4])
 
 n.runs <- 1000 # Num. simulation runs
