@@ -10,130 +10,146 @@ library(dplyr)
 library(grid)
 library(gtable)
 
+n.estimators <- 5
+
 # Load results data
 
-filenames <- c(list.files(path="results/simulation", pattern = ".rds", full.names = TRUE))
+filenames <- c(list.files(path="results/simulation/archive", pattern = ".rds", full.names = TRUE))
+filenames <- filenames[grep("2000",filenames)]
+
+bias.vars <- c('est_mc_plain_bias','est_mc_weights_bias','est_mc_weights_covars_bias','est_model_ADH_bias','est_model_DID_bias')
+cp.vars <- c('est_mc_plain_cp','est_mc_weights_cp','est_mc_weights_covars_cp','est_model_ADH_cp','est_model_DID_cp')
+RMSE.vars <- c('est_mc_plain_RMSE','est_mc_weights_RMSE','est_mc_weights_covars_RMSE','est_model_ADH_RMSE','est_model_DID_RMSE')
+ciw.vars <- c('est_mc_plain_ciw','est_mc_weights_ciw','est_mc_weights_covars_ciw','est_model_ADH_ciw','est_model_DID_ciw')
 
 results <- list() # structure is: [[filename]][[metric]]
 for(f in filenames){
   print(f)
   result.matrix <- readRDS(f)
   n <- nrow(result.matrix )
-  bias <- matrix(NA, n, 3)
-  CP <- matrix(NA, n, 3)
-  RMSE <- matrix(NA, n, 3)
-  for(i in c('est_mc_plain_bias','est_mc_weights_bias','est_mc_weights_covars_bias')){
-    bias[,which(c('est_mc_plain_bias','est_mc_weights_bias','est_mc_weights_covars_bias')==i)] <- unlist(result.matrix[,i])
+  bias <- matrix(NA, n, n.estimators)
+  CP <- matrix(NA, n, n.estimators)
+  RMSE <- matrix(NA, n, n.estimators)
+  CIW <- matrix(NA, n, n.estimators)
+  for(i in bias.vars){
+    bias[,which(bias.vars==i)] <- unlist(result.matrix[,i])
   }
-  for(i in c('est_mc_plain_cp','est_mc_weights_cp','est_mc_weights_covars_cp')){
-    CP[,which(c('est_mc_plain_cp','est_mc_weights_cp','est_mc_weights_covars_cp')==i)] <- unlist(result.matrix[,i])
+  for(i in cp.vars){
+    CP[,which(cp.vars==i)] <- unlist(result.matrix[,i])
   }
-  for(i in c('est_mc_plain_RMSE','est_mc_weights_RMSE','est_mc_weights_covars_RMSE')){
-    RMSE[,which(c('est_mc_plain_RMSE','est_mc_weights_RMSE','est_mc_weights_covars_RMSE')==i)] <- unlist(result.matrix[,i])
+  for(i in RMSE.vars){
+    RMSE[,which(RMSE.vars==i)] <- unlist(result.matrix[,i])
+  }
+  for(i in ciw.vars){
+    CIW[,which(ciw.vars==i)] <- unlist(result.matrix[,i])
   }
   fr_obs <- unlist(result.matrix[,"fr_obs"])
-  results[[f]] <- list("bias"=bias,"CP"=CP,"RMSE"=RMSE,"fr_obs"=fr_obs,"n"=n)
+  results[[f]] <- list("bias"=bias,"CP"=CP,"RMSE"=RMSE,"CIW"=CIW,"fr_obs"=fr_obs,"n"=n)
 }
 
 # Create New lists
 # structure is: [[estimator]][[filename]]
 
 bias <- list()
-for(i in 1:length(c('est_mc_plain_bias','est_mc_weights_bias','est_mc_weights_covars_bias'))){
+for(i in 1:length(bias.vars)){
   bias[[i]] <- lapply(1:length(filenames), function(f) results[[f]]$bias[,i])
 }
 
 CP <- list()
-for(i in 1:length(c('est_mc_plain_cp','est_mc_weights_cp','est_mc_weights_covars_cp'))){
+for(i in 1:length(cp.vars)){
   CP[[i]] <- lapply(1:length(filenames), function(f) results[[f]]$CP[,i])
 }
 
 RMSE <- list()
-for(i in 1:length(c('est_mc_plain_RMSE','est_mc_weights_RMSE','est_mc_weights_covars_RMSE'))){
+for(i in 1:length(RMSE.vars)){
   RMSE[[i]] <- lapply(1:length(filenames), function(f) results[[f]]$RMSE[,i])
 }
 
-RMSE <- list()
-for(i in 1:length(c('est_mc_plain_RMSE','est_mc_weights_RMSE','est_mc_weights_covars_RMSE'))){
-  RMSE[[i]] <- lapply(1:length(filenames), function(f) results[[f]]$RMSE[,i])
+CIW <- list()
+for(i in 1:length(ciw.vars)){
+  CIW[[i]] <- lapply(1:length(filenames), function(f) results[[f]]$CIW[,i])
 }
-
-#fr_obs <- sapply(1:length(filenames), function(f) results[[f]]$fr_obs)
-
 
 # Create dataframe for plot
 results.df <- data.frame("abs.bias"=abs(unlist(bias)),
                          "Coverage"=unlist(CP),
                          "RMSE"=unlist(RMSE),
-                         "fr_obs"= rep(sapply(1:length(filenames), function(f) results[[f]]$fr_obs), 3),
-                         "Estimator"=c(rep("MC (Athey et al.)",length.out=length(c(unlist(CP[[1]])))), rep("MC (weighted loss)",length.out=length(c(unlist(CP[[2]])))),
-                         rep("MC (weighted loss + covariates)",length.out=length(c(unlist(CP[[3]]))))),
-                         "filename"=c(rep(unlist(sapply(1:length(filenames), function(i) rep(filenames[i], length.out=n))), 3)))
+                         "CIW"=unlist(CIW),
+                         "fr_obs"= rep(sapply(1:length(filenames), function(f) results[[f]]$fr_obs), n.estimators),
+                         "Estimator"=c(rep("MC (Athey et al.)",length.out=length(c(unlist(CP[[1]])))), 
+                                       rep("MC (weighted)",length.out=length(c(unlist(CP[[2]])))),
+                         rep("MC (weighted + covars.)",length.out=length(c(unlist(CP[[3]])))),
+                         rep("SCM",length.out=length(c(unlist(CP[[4]])))),
+                         rep("DID",length.out=length(c(unlist(CP[[5]]))))),
+                         "filename"=c(rep(unlist(sapply(1:length(filenames), function(i) rep(filenames[i], length.out=n))), n.estimators)))
 
 results.df$NT <- NA
 results.df$R <- NA
 results.df$noise_sc <- NA
 results.df$effect_size <- NA
   
-for(s in c("N_40_T_40","N_50_T_50","N_60_T_60")){
+for(s in c("N_40_T_40","N_60_T_60","N_80_T_80")){
   if(length(grep(s, results.df$filename))>0){
     print(s)
     if(s=="N_40_T_40"){
-      NT <- 40**2
-    }
-    if(s=="N_50_T_50"){
-      NT <- 50**2
+      NT <- "1600"
     }
     if(s=="N_60_T_60"){
-      NT <- 60**2
+      NT <- "3600"
     }
-    results.df[grep(s, results.df$filename),]$NT <- as.numeric(NT)
+    if(s=="N_80_T_80"){
+      NT <- "6400"
+    }
+    results.df[grep(s, results.df$filename),]$NT <- NT
   }
 }
 
-for(s in c("R_20","R_30","R_40")){
+for(s in c("R_10","R_20","R_30","R_40")){
   if(length(grep(s, results.df$filename))>0){
     print(s)
+    if(s=="R_10"){
+      R <- "10"
+    }
     if(s=="R_20"){
-      R <- 20
+      R <- "20"
     }
     if(s=="R_30"){
-      R <- 30
+      R <- "30"
     }
     if(s=="R_40"){
-      R <- 40
+      R <- "40"
     }
     results.df[grep(s, results.df$filename),]$R <- R
   }
 }
 
-for(s in c("noise_sc_0.1","noise_sc_0.2","noise_sc_0.3")){
+for(s in c("noise_sc_0.2","noise_sc_0.4","noise_sc_0.6")){
   if(length(grep(s, results.df$filename))>0){
     print(s)
-    if(s=="noise_sc_0.1"){
-      noise_sc <- 0.1
-    }
     if(s=="noise_sc_0.2"){
-      noise_sc <- 0.2
+      noise_sc <- "0.2"
     }
-    if(s=="noise_sc_0.3"){
-      noise_sc <- 0.3
+    if(s=="noise_sc_0.4"){
+      noise_sc <- "0.4"
+    }
+    if(s=="noise_sc_0.6"){
+      noise_sc <- "0.6"
     }
     results.df[grep(s, results.df$filename),]$noise_sc  <- noise_sc
   }
 }
 
-for(s in c("effect_size_0.001","effect_size_0.005","effect_size_0.01")){
+for(s in c("effect_size_0","effect_size_0.05","effect_size_0.1")){
   if(length(grep(s, results.df$filename))>0){
     print(s)
-    if(s=="effect_size_0.001"){
-      effect_size <- 0.001
+    if(s=="effect_size_0"){
+      effect_size <- 0
     }
-    if(s=="effect_size_0.005"){
-      effect_size <- 0.005
+    if(s=="effect_size_0.05"){
+      effect_size <- 0.05
     }
-    if(s=="effect_size_0.01"){
-      effect_size <- 0.01
+    if(s=="effect_size_0.1"){
+      effect_size <- 0.1
     }
     results.df[grep(s, results.df$filename),]$effect_size  <- effect_size
   }
@@ -149,12 +165,23 @@ results.df <- results.df %>%
 results.df$id <- with(results.df, paste(NT,R,noise_sc,effect_size, sep = "_"))
 results_long <- reshape2::melt(results.df[!colnames(results.df) %in% c("id","filename")], id.vars=c("Estimator","NT","R","noise_sc","effect_size","fr_obs"))  # convert to long format
 
+
+variable_names <- list(
+  '1600'= TeX("$40 \\times 40"),
+  '3600'= TeX("$60 \\times 60"),
+  '0.2'= '0.2',
+  '0.4'= '0.4',
+  '0.6'= '0.6') 
+
+labeller <- function(variable,value){
+  return(variable_names[value])
+}
 # bias (NxT)
-sim.results.bias <- ggplot(data=results_long[results_long$variable=="abs.bias" & results_long$NT==1600,],
-                           aes(x=factor(R), y=value, fill=forcats::fct_rev(Estimator)))  + geom_boxplot(outlier.alpha = 0.6,outlier.size = 1.2, outlier.stroke = 0.2, lwd=0.25) +
-  facet_grid(factor(noise_sc) ~  factor(effect_size), scales = "fixed")  +  xlab("Rank (R)") + ylab("Absolute bias") + ggtitle(TeX("Absolute bias, $N \\times T = 1600$")) +
+sim.results.bias <- ggplot(data=results_long[results_long$variable=="abs.bias" & results_long$effect_size==0.05,],
+                           aes(x=factor(R), y=value, fill=Estimator))  + geom_boxplot(outlier.alpha = 0.6,outlier.size = 1.2, outlier.stroke = 0.2, lwd=0.25) +
+  facet_grid(noise_sc ~  NT, scales = "free", labeller=labeller)  +  xlab("Rank (R)") + ylab("Absolute bias") +
   scale_fill_discrete(name = "Estimator:") +
-  theme(legend.position="bottom") +   theme(plot.title = element_text(hjust = 0.5, family="serif", size=16)) +
+  theme(legend.position="right") +   theme(plot.title = element_text(hjust = 0.5, family="serif", size=16)) +
   theme(axis.title=element_text(family="serif", size=16)) +
   theme(axis.text.y=element_text(family="serif", size=14)) +
   theme(axis.text.x=element_text(family="serif", size=14)) +
@@ -170,8 +197,8 @@ sim.results.bias <- ggplot(data=results_long[results_long$variable=="abs.bias" &
 z.bias <- ggplotGrob(sim.results.bias)
 
 # Labels 
-labelR <- "Degree of confounding"
-labelT <- "Effect size"
+labelR <- "Noise scale"
+labelT <- TeX("$N \\times T")
 
 # Get the positions of the strips in the gtable: t = top, l = left, ...
 posR <- subset(z.bias$layout, grepl("strip-r", name), select = t:r)
@@ -209,12 +236,12 @@ grid.draw(z.bias)
 ggsave("plots/simulation_bias.png",plot = z.bias,scale=2)
 
 # coverage
-sim.results.coverage <- ggplot(data=results_long[results_long$variable=="CP" & results_long$NT==1600,],
-                           aes(x=factor(R), y=value, colour=forcats::fct_rev(Estimator), group=forcats::fct_rev(Estimator)))  +   geom_line()  +
-  facet_grid(factor(noise_sc) ~  factor(effect_size), scales = "fixed")  +  xlab("Rank (R)") + ylab("Coverage (%)") + ggtitle(TeX("Coverage, $N \\times T = 1600$")) + 
+sim.results.coverage <- ggplot(data=results_long[results_long$variable=="CP" & results_long$effect_size==0.05,],
+                           aes(x=factor(R), y=value, colour=Estimator, group=forcats::fct_rev(Estimator)))  +   geom_line()  +
+  facet_grid(noise_sc ~  NT, scales = "free", labeller=labeller)  +  xlab("Rank (R)") + ylab("Coverage probability (%)") +
   scale_colour_discrete(name = "Estimator:") +
   geom_hline(yintercept = 0.95, linetype="dotted")+
-  theme(legend.position="bottom") +   theme(plot.title = element_text(hjust = 0.5, family="serif", size=16)) +
+  theme(legend.position="right") +   theme(plot.title = element_text(hjust = 0.5, family="serif", size=16)) +
   theme(axis.title=element_text(family="serif", size=16)) +
   theme(axis.text.y=element_text(family="serif", size=14)) +
   theme(axis.text.x=element_text(family="serif", size=14)) +
@@ -257,11 +284,11 @@ ggsave("plots/simulation_coverage.png",plot = z.coverage,scale=2)
 
 # RMSE
   
-sim.results.RMSE <- ggplot(data=results_long[results_long$variable=="RMSE" & results_long$NT==1600,],
+sim.results.RMSE <- ggplot(data=results_long[results_long$variable=="RMSE" & results_long$effect_size==0.05,],
                            aes(x=factor(R), y=value, fill=forcats::fct_rev(Estimator)))  + geom_boxplot(outlier.alpha = 0.6,outlier.size = 1.2, outlier.stroke = 0.2, lwd=0.25) +
-  facet_grid(factor(noise_sc) ~  factor(effect_size), scales = "fixed")  +  xlab("Rank (R)")  + ylab("RMSE") + ggtitle(TeX("RMSE, $N \\times T = 1600$")) +
+  facet_grid(noise_sc ~  NT, scales = "free", labeller=labeller)  +  xlab("Rank (R)")  + ylab("RMSE") +
   scale_fill_discrete(name = "Estimator:") +
-  theme(legend.position="bottom") +   theme(plot.title = element_text(hjust = 0.5, family="serif", size=16)) +
+  theme(legend.position="right") +   theme(plot.title = element_text(hjust = 0.5, family="serif", size=16)) +
   theme(axis.title=element_text(family="serif", size=16)) +
   theme(axis.text.y=element_text(family="serif", size=14)) +
   theme(axis.text.x=element_text(family="serif", size=14)) +
@@ -301,3 +328,50 @@ grid.newpage()
 grid.draw(z.RMSE)
 
 ggsave("plots/simulation_RMSE.png",plot = z.RMSE,scale=2)
+
+# CIW
+
+sim.results.CIW <- ggplot(data=results_long[results_long$variable=="CIW" & results_long$effect_size==0.05,],
+                           aes(x=factor(R), y=value, fill=forcats::fct_rev(Estimator)))  + geom_boxplot(outlier.alpha = 0.6,outlier.size = 1.2, outlier.stroke = 0.2, lwd=0.25) +
+  facet_grid(noise_sc ~  NT, scales = "free", labeller=labeller)  +  xlab("Rank (R)")  + ylab("Confidence interval width") +
+  scale_fill_discrete(name = "Estimator:") +
+  theme(legend.position="right") +   theme(plot.title = element_text(hjust = 0.5, family="serif", size=16)) +
+  theme(axis.title=element_text(family="serif", size=16)) +
+  theme(axis.text.y=element_text(family="serif", size=14)) +
+  theme(axis.text.x=element_text(family="serif", size=14)) +
+  theme(legend.text=element_text(family="serif", size = 14)) +
+  theme(legend.title=element_text(family="serif", size = 14)) +
+  theme(strip.text.x = element_text(family="serif", size = 14)) +
+  theme(strip.text.y = element_text(family="serif", size = 14)) +
+  theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l =0))) +
+  theme(axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l =0))) +
+  theme(panel.spacing = unit(1, "lines"))
+
+# Get the ggplot grob
+z.CIW <- ggplotGrob(sim.results.CIW)
+
+# Get the positions of the strips in the gtable: t = top, l = left, ...
+posR <- subset(z.CIW$layout, grepl("strip-r", name), select = t:r)
+posT <- subset(z.CIW$layout, grepl("strip-t", name), select = t:r)
+
+# Add a new column to the right of current right strips, 
+# and a new row on top of current top strips
+width <- z.CIW$widths[max(posR$r)]    # width of current right strips
+height <- z.CIW$heights[min(posT$t)]  # height of current top strips
+
+z.CIW <- gtable_add_cols(z.CIW, width, max(posR$r))  
+z.CIW <- gtable_add_rows(z.CIW, height, min(posT$t)-1)
+
+# Position the grobs in the gtable
+z.CIW <- gtable_add_grob(z.CIW, stripR, t = min(posR$t)+1, l = max(posR$r) + 1, b = max(posR$b)+1, name = "strip-right")
+z.CIW <- gtable_add_grob(z.CIW, stripT, t = min(posT$t), l = min(posT$l), r = max(posT$r), name = "strip-top")
+
+# Add small gaps between strips
+z.CIW <- gtable_add_cols(z.CIW, unit(1/5, "line"), max(posR$r))
+z.CIW <- gtable_add_rows(z.CIW, unit(1/5, "line"), min(posT$t))
+
+# Draw it
+grid.newpage()
+grid.draw(z.CIW)
+
+ggsave("plots/simulation_CIW.png",plot = z.CIW,scale=2)

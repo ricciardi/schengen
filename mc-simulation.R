@@ -7,6 +7,7 @@ library(matrixStats)
 library(boot)
 library(Matrix)
 library(tictoc)
+library(MASS)
 
 source('boundProbs.R')
 source('bootTraj.R')
@@ -44,27 +45,32 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
   print(paste0("run number: ", n))
   set.seed(n, "L'Ecuyer-CMRG")
   
-  # Create Matrices
-  A <- replicate(R,rnorm(N))
-  B <- replicate(T,rnorm(R))
-  X <- replicate(T,rnorm(N))
-  delta <- delta_sc*rnorm(N)
-  gamma <- gamma_sc*rnorm(T)
-  beta <- beta_sc*rnorm(T)
-  noise <- noise_sc*replicate(T,rnorm(N))
-  
-  # True outcome model
-  true_mat_0 <- A %*% B + X%*%replicate(T,as.vector(beta)) + replicate(T,delta) + t(replicate(N,gamma)) # potential outcome under control
-  true_mat_1 <- true_mat_0 + effect_size # potential outcome under treatment
-  
-  noisy_mat <- true_mat_1 + noise # we want to estimate p.o. under treatment in retrospective analysis
-
-  # Assignment mechanism 
-  
-  e <-1/(1+exp(X%*%replicate(T,as.vector(beta)) + replicate(T,delta) + t(replicate(N,gamma))))
-  
   treat_mat <- matrix(0, nrow=N, ncol=T)
-  while(any(rowSums(treat_mat)<2) || max(rowSums(treat_mat))<T){ # generate new treat_mat to ensure all units treated for at least 2 periods and that there are AT units
+  while(max(rowSums(treat_mat))<T){ # generate new treat_mat to ensure that there are LT and AT units
+    
+    vars <- c(2, rep(1, T-1))
+    mu <- vars
+    
+    Sigma <- rWishart(1,T,diag(vars))[,,1]
+
+    # Create Matrices
+    A <- replicate(R,rnorm(N))
+    B <- replicate(T,rnorm(R))
+    X <- mvrnorm(N, mu=mu, Sigma=Sigma, empirical = FALSE)
+    delta <- delta_sc*rnorm(N)
+    gamma <- gamma_sc*rnorm(T)
+    beta <- beta_sc*rnorm(T)
+    noise <- noise_sc*replicate(T,rnorm(N))
+    
+    # True outcome model
+    true_mat_0 <- A %*% B + X%*%replicate(T,as.vector(beta)) + replicate(T,delta) + t(replicate(N,gamma)) # potential outcome under control
+    true_mat_1 <- true_mat_0 + effect_size # potential outcome under treatment
+    
+    noisy_mat <- true_mat_1 + noise # we want to estimate p.o. under treatment in retrospective analysis
+    
+    # Assignment mechanism 
+    
+    e <-1/(1+exp(A%*%B + X%*%replicate(T,as.vector(beta)) + replicate(T,delta) + t(replicate(N,gamma))))
     
     treat_mat <- matrix(rbinom(N*T,1,e),N,T)  # 0s missing and to be imputed (LT); 1s are observed (AT) 
     
@@ -74,6 +80,9 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
         if (treat_mat[i,j]==1) {treat_mat[i,(j+1)]=1}
         else {treat_mat[i,j]=treat_mat[i,j]}
       }
+    }
+    if(any(rowSums(treat_mat)<1)){ # ensure there are no NT units
+      treat_mat[which(rowSums(treat_mat)<1),][,T] <-1 
     }
   }
   
@@ -253,10 +262,9 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
 }
 
 # define settings for simulation
-settings <- expand.grid("NT"=c(1600,3600),
-                        "noise_sc"=c(0.2,0.4,0.6),
-                        "effect_size"=c(0,0.05,0.1),
-                        "R" = c(10,20,30))
+settings <- expand.grid("NT"=c(40**2,60**2,80**2),
+                        "noise_sc"=c(0.01,0.1,0.2),
+                        "R" = c(10,20,40))
 
 args <- as.numeric(commandArgs(trailingOnly = TRUE)) # command line arguments
 thisrun <- settings[args,] 
@@ -266,17 +274,17 @@ T <- sqrt(as.numeric(thisrun[1]))  # Number of time-periods
 
 noise_sc <- as.numeric(thisrun[2]) # Noise scale 
 delta_sc <- 0.1 # delta scale
-gamma_sc <- 0.2 # gamma scale
-beta_sc <- 0.4 # beta scale
-effect_size <- as.numeric(thisrun[3]) 
-R <- as.numeric(thisrun[4])
+gamma_sc <- 0.1 # gamma scale
+beta_sc <- 0.3 # beta scale
+effect_size <- 0.01
+R <- as.numeric(thisrun[3])
 
-n.runs <- 1000 # Num. simulation runs
+n.runs <- 2000 # Num. simulation runs
 
 setting <- paste0("N = ", N, ", T = ", T, ", R = ",R, ", noise_sc = ",noise_sc, ", delta_sc = ",delta_sc, ", gamma_sc = ",gamma_sc, ", beta_sc = ", beta_sc, ", effect_size = ", effect_size)
 tic(print(paste0("setting: ",setting)))
 
-results <- foreach(i = 1:n.runs, .combine='rbind', .packages =c("MCPanel","matrixStats","boot","Matrix"), .inorder=FALSE) %dopar% {
+results <- foreach(i = 1:n.runs, .combine='rbind', .packages =c("MCPanel","matrixStats","boot","Matrix","MASS"), .inorder=FALSE) %dopar% {
   MCsim(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n=i)
 }
 saveRDS(results, paste0("results_","N_",N,"_T_",T,"_R_", R,"_noise_sc_",noise_sc,"_effect_size_",effect_size,"_n_",n.runs,".rds"))
