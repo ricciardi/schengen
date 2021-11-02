@@ -14,7 +14,7 @@ n.estimators <- 5
 
 # Load results data
 
-filenames <- c(list.files(path="results/simulation/archive", pattern = ".rds", full.names = TRUE))
+filenames <- c(list.files(path="mc-simulations", pattern = ".rds", full.names = TRUE))
 filenames <- filenames[grep("2000",filenames)]
 
 bias.vars <- c('est_mc_plain_bias','est_mc_weights_bias','est_mc_weights_covars_bias','est_model_ADH_bias','est_model_DID_bias')
@@ -71,10 +71,10 @@ for(i in 1:length(ciw.vars)){
 }
 
 # Create dataframe for plot
-results.df <- data.frame("abs.bias"=abs(unlist(bias)),
-                         "Coverage"=unlist(CP),
-                         "RMSE"=unlist(RMSE),
-                         "CIW"=unlist(CIW),
+results.df <- data.frame("abs.bias"=abs(as.numeric(unlist(bias))),
+                         "Coverage"=as.numeric(unlist(CP)),
+                         "RMSE"=as.numeric(unlist(RMSE)),
+                         "CIW"=as.numeric(unlist(CIW)),
                          "fr_obs"= rep(sapply(1:length(filenames), function(f) results[[f]]$fr_obs), n.estimators),
                          "Estimator"=c(rep("MC (Athey et al.)",length.out=length(c(unlist(CP[[1]])))), 
                                        rep("MC (weighted)",length.out=length(c(unlist(CP[[2]])))),
@@ -86,7 +86,6 @@ results.df <- data.frame("abs.bias"=abs(unlist(bias)),
 results.df$NT <- NA
 results.df$R <- NA
 results.df$noise_sc <- NA
-results.df$effect_size <- NA
   
 for(s in c("N_40_T_40","N_60_T_60","N_80_T_80")){
   if(length(grep(s, results.df$filename))>0){
@@ -104,7 +103,7 @@ for(s in c("N_40_T_40","N_60_T_60","N_80_T_80")){
   }
 }
 
-for(s in c("R_10","R_20","R_30","R_40")){
+for(s in c("R_10","R_20","R_40")){
   if(length(grep(s, results.df$filename))>0){
     print(s)
     if(s=="R_10"){
@@ -113,9 +112,6 @@ for(s in c("R_10","R_20","R_30","R_40")){
     if(s=="R_20"){
       R <- "20"
     }
-    if(s=="R_30"){
-      R <- "30"
-    }
     if(s=="R_40"){
       R <- "40"
     }
@@ -123,62 +119,46 @@ for(s in c("R_10","R_20","R_30","R_40")){
   }
 }
 
-for(s in c("noise_sc_0.2","noise_sc_0.4","noise_sc_0.6")){
+for(s in c("noise_sc_0.01","noise_sc_0.1","noise_sc_0.2")){
   if(length(grep(s, results.df$filename))>0){
     print(s)
+    if(s=="noise_sc_0.01"){
+      noise_sc <- "0.01"
+    }
+    if(s=="noise_sc_0.1"){
+      noise_sc <- "0.1"
+    }
     if(s=="noise_sc_0.2"){
       noise_sc <- "0.2"
     }
-    if(s=="noise_sc_0.4"){
-      noise_sc <- "0.4"
-    }
-    if(s=="noise_sc_0.6"){
-      noise_sc <- "0.6"
-    }
     results.df[grep(s, results.df$filename),]$noise_sc  <- noise_sc
-  }
-}
-
-for(s in c("effect_size_0","effect_size_0.05","effect_size_0.1")){
-  if(length(grep(s, results.df$filename))>0){
-    print(s)
-    if(s=="effect_size_0"){
-      effect_size <- 0
-    }
-    if(s=="effect_size_0.05"){
-      effect_size <- 0.05
-    }
-    if(s=="effect_size_0.1"){
-      effect_size <- 0.1
-    }
-    results.df[grep(s, results.df$filename),]$effect_size  <- effect_size
   }
 }
 
 # create coverage rate variable
 
 results.df <- results.df %>% 
-  group_by(Estimator,NT,R,noise_sc,effect_size) %>% 
+  group_by(Estimator,NT,R,noise_sc) %>% 
   mutate(CP = mean(Coverage)) 
 
 # reshape and plot
-results.df$id <- with(results.df, paste(NT,R,noise_sc,effect_size, sep = "_"))
-results_long <- reshape2::melt(results.df[!colnames(results.df) %in% c("id","filename")], id.vars=c("Estimator","NT","R","noise_sc","effect_size","fr_obs"))  # convert to long format
-
+results.df$id <- with(results.df, paste(NT,R,noise_sc, sep = "_"))
+results_long <- reshape2::melt(results.df[!colnames(results.df) %in% c("id","filename")], id.vars=c("Estimator","NT","R","noise_sc","fr_obs"))  # convert to long format
 
 variable_names <- list(
   '1600'= TeX("$40 \\times 40"),
   '3600'= TeX("$60 \\times 60"),
-  '0.2'= '0.2',
-  '0.4'= '0.4',
-  '0.6'= '0.6') 
+  '6400'= TeX("$60 \\times 60"),
+  '0.01'= '0.01',
+  '0.1'= '0.1',
+  '0.2'= '0.2') 
 
 labeller <- function(variable,value){
   return(variable_names[value])
 }
 # bias (NxT)
-sim.results.bias <- ggplot(data=results_long[results_long$variable=="abs.bias" & results_long$effect_size==0.05,],
-                           aes(x=factor(R), y=value, fill=Estimator))  + geom_boxplot(outlier.alpha = 0.6,outlier.size = 1.2, outlier.stroke = 0.2, lwd=0.25) +
+sim.results.bias <- ggplot(data=results_long[results_long$variable=="abs.bias",],
+                           aes(x=factor(R), y=value, fill=Estimator))  + geom_boxplot(outlier.alpha = 0.3,outlier.size = 1, outlier.stroke = 0.1, lwd=0.25) +
   facet_grid(noise_sc ~  NT, scales = "free", labeller=labeller)  +  xlab("Rank (R)") + ylab("Absolute bias") +
   scale_fill_discrete(name = "Estimator:") +
   theme(legend.position="right") +   theme(plot.title = element_text(hjust = 0.5, family="serif", size=16)) +
@@ -236,7 +216,7 @@ grid.draw(z.bias)
 ggsave("plots/simulation_bias.png",plot = z.bias,scale=2)
 
 # coverage
-sim.results.coverage <- ggplot(data=results_long[results_long$variable=="CP" & results_long$effect_size==0.05,],
+sim.results.coverage <- ggplot(data=results_long[results_long$variable=="CP",],
                            aes(x=factor(R), y=value, colour=Estimator, group=forcats::fct_rev(Estimator)))  +   geom_line()  +
   facet_grid(noise_sc ~  NT, scales = "free", labeller=labeller)  +  xlab("Rank (R)") + ylab("Coverage probability (%)") +
   scale_colour_discrete(name = "Estimator:") +
@@ -284,8 +264,8 @@ ggsave("plots/simulation_coverage.png",plot = z.coverage,scale=2)
 
 # RMSE
   
-sim.results.RMSE <- ggplot(data=results_long[results_long$variable=="RMSE" & results_long$effect_size==0.05,],
-                           aes(x=factor(R), y=value, fill=forcats::fct_rev(Estimator)))  + geom_boxplot(outlier.alpha = 0.6,outlier.size = 1.2, outlier.stroke = 0.2, lwd=0.25) +
+sim.results.RMSE <- ggplot(data=results_long[results_long$variable=="RMSE",],
+                           aes(x=factor(R), y=value, fill=forcats::fct_rev(Estimator)))  + geom_boxplot(outlier.alpha = 0.3,outlier.size = 1, outlier.stroke = 0.1, lwd=0.25) +
   facet_grid(noise_sc ~  NT, scales = "free", labeller=labeller)  +  xlab("Rank (R)")  + ylab("RMSE") +
   scale_fill_discrete(name = "Estimator:") +
   theme(legend.position="right") +   theme(plot.title = element_text(hjust = 0.5, family="serif", size=16)) +
@@ -331,8 +311,8 @@ ggsave("plots/simulation_RMSE.png",plot = z.RMSE,scale=2)
 
 # CIW
 
-sim.results.CIW <- ggplot(data=results_long[results_long$variable=="CIW" & results_long$effect_size==0.05,],
-                           aes(x=factor(R), y=value, fill=forcats::fct_rev(Estimator)))  + geom_boxplot(outlier.alpha = 0.6,outlier.size = 1.2, outlier.stroke = 0.2, lwd=0.25) +
+sim.results.CIW <- ggplot(data=results_long[results_long$variable=="CIW",],
+                           aes(x=factor(R), y=value, fill=forcats::fct_rev(Estimator)))  + geom_boxplot(outlier.alpha = 0.3,outlier.size = 1, outlier.stroke = 0.1, lwd=0.25) +
   facet_grid(noise_sc ~  NT, scales = "free", labeller=labeller)  +  xlab("Rank (R)")  + ylab("Confidence interval width") +
   scale_fill_discrete(name = "Estimator:") +
   theme(legend.position="right") +   theme(plot.title = element_text(hjust = 0.5, family="serif", size=16)) +

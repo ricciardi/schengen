@@ -48,19 +48,28 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
   treat_mat <- matrix(0, nrow=N, ncol=T)
   while(max(rowSums(treat_mat))<T){ # generate new treat_mat to ensure that there are LT and AT units
     
+    if(N!=T){
+      stop("Matrix must be square, N=T")
+    }
+    
     vars <- c(2, rep(1, T-1))
-    mu <- vars
+    mu <- rep(0, T)
     
     Sigma <- rWishart(1,T,diag(vars))[,,1]
+    
+    vars.R <- c(2, rep(1, R-1))
+    mu.R <- rep(0, R)
+    
+    Sigma.R <- rWishart(1,R,diag(vars.R))[,,1]
 
     # Create Matrices
-    A <- replicate(R,rnorm(N))
-    B <- replicate(T,rnorm(R))
-    X <- mvrnorm(N, mu=mu, Sigma=Sigma, empirical = FALSE)
-    delta <- delta_sc*rnorm(N)
-    gamma <- gamma_sc*rnorm(T)
-    beta <- beta_sc*rnorm(T)
-    noise <- noise_sc*replicate(T,rnorm(N))
+    A <- mvrnorm(N, mu=mu.R, Sigma=Sigma.R, empirical = FALSE)  # replicate(R,rnorm(N))
+    B <- mvrnorm(R, mu=mu, Sigma=Sigma, empirical = FALSE)  #replicate(T,rnorm(R))
+    X <- mvrnorm(N, mu=mu, Sigma=Sigma, empirical = FALSE) # replicate(T,rnorm(N))
+    delta <- delta_sc*mvrnorm(mu=mu, Sigma=Sigma, empirical = FALSE) #delta_sc*rnorm(N)
+    gamma <- gamma_sc*mvrnorm(mu=mu, Sigma=Sigma, empirical = FALSE) #gamma_sc*rnorm(T)
+    beta <- beta_sc*mvrnorm(mu=mu, Sigma=Sigma, empirical = FALSE) #beta_sc*rnorm(T)
+    noise <- noise_sc*mvrnorm(N, mu=mu, Sigma=Sigma, empirical = FALSE) #noise_sc*replicate(T,rnorm(N))
     
     # True outcome model
     true_mat_0 <- A %*% B + X%*%replicate(T,as.vector(beta)) + replicate(T,delta) + t(replicate(N,gamma)) # potential outcome under control
@@ -228,7 +237,7 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
   ## DID
   ## -----
   est_model_DID <- list()
-  est_model_DID$Mhat <- t(DID(t(obs_mat), t(mask)))
+  est_model_DID$Mhat <- DID(obs_mat, mask)
   est_model_DID$impact <- (est_model_DID$Mhat-noisy_mat) # estimated treatment effect
   est_model_DID$err <- (est_model_DID$Mhat - true_mat_1) # error (wrt to ground truth)
   
@@ -279,7 +288,7 @@ beta_sc <- 0.3 # beta scale
 effect_size <- 0.01
 R <- as.numeric(thisrun[3])
 
-n.runs <- 2000 # Num. simulation runs
+n.runs <- 1000 # Num. simulation runs
 
 setting <- paste0("N = ", N, ", T = ", T, ", R = ",R, ", noise_sc = ",noise_sc, ", delta_sc = ",delta_sc, ", gamma_sc = ",gamma_sc, ", beta_sc = ", beta_sc, ", effect_size = ", effect_size)
 tic(print(paste0("setting: ",setting)))
