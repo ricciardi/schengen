@@ -133,7 +133,7 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
                                     W = matrix(1, nrow(mask),ncol(mask)), to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, lambda_L = median(lambda_L_pweights), lambda_B = median(lambda_B_pweights), niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]] # use X with imputed endogenous values
   est_model_pweights$Mhat <- est_model_pweights$L + X.hat%*%replicate(T,as.vector(est_model_pweights$B)) + replicate(T,est_model_pweights$u) + t(replicate(N,est_model_pweights$v)) # use X with imputed endogenous values
   
-  weights <- (1-boundProbs(est_model_pweights$Mhat))/boundProbs(est_model_pweights$Mhat
+  weights <- (1-boundProbs(est_model_pweights$Mhat))/boundProbs(est_model_pweights$Mhat)
                                                                 
   ## ------ ------ ------ ------ ------
   ## MC-NNM plain (no weighting, no covariates)
