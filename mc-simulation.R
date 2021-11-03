@@ -90,8 +90,9 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
         else {treat_mat[i,j]=treat_mat[i,j]}
       }
     }
-    if(any(rowSums(treat_mat)<1)){ # ensure there are no NT units
-      treat_mat[which(rowSums(treat_mat)<1),][,T] <-1 
+    
+    if(any(rowSums(treat_mat)<3)){ # ensure there are no NT units (treated at least 3 periods)
+      treat_mat[which(rowSums(treat_mat)<3),][c((T-2):T)] <-1 
     }
   }
   
@@ -132,8 +133,8 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
                                     W = matrix(1, nrow(mask),ncol(mask)), to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, lambda_L = median(lambda_L_pweights), lambda_B = median(lambda_B_pweights), niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]] # use X with imputed endogenous values
   est_model_pweights$Mhat <- est_model_pweights$L + X.hat%*%replicate(T,as.vector(est_model_pweights$B)) + replicate(T,est_model_pweights$u) + t(replicate(N,est_model_pweights$v)) # use X with imputed endogenous values
   
-  weights <- (1-boundProbs(est_model_pweights$Mhat))/boundProbs(est_model_pweights$Mhat)
-  
+  weights <- (1-boundProbs(est_model_pweights$Mhat))/boundProbs(est_model_pweights$Mhat
+                                                                
   ## ------ ------ ------ ------ ------
   ## MC-NNM plain (no weighting, no covariates)
   ## ------ ------ ------ ------ ------
@@ -213,7 +214,7 @@ MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
   ## ADH
   ## -----
   est_model_ADH <- list()
-  est_model_ADH$Mhat <- adh_mp_rows(obs_mat, mask, niter=200, rel_tol = 0.001)
+  est_model_ADH$Mhat <- adh_mp_rows(obs_mat, mask)
   est_model_ADH$impact <- (est_model_ADH$Mhat-noisy_mat) # estimated treatment effect
   est_model_ADH$err <- (est_model_ADH$Mhat - true_mat_1) # error (wrt to ground truth)
   
@@ -284,11 +285,11 @@ T <- sqrt(as.numeric(thisrun[1]))  # Number of time-periods
 noise_sc <- as.numeric(thisrun[2]) # Noise scale 
 delta_sc <- 0.1 # delta scale
 gamma_sc <- 0.1 # gamma scale
-beta_sc <- 0.3 # beta scale
-effect_size <- 0.01
+beta_sc <- 0.2 # beta scale
+effect_size <- 1
 R <- as.numeric(thisrun[3])
 
-n.runs <- 1000 # Num. simulation runs
+n.runs <- 10000 # Num. simulation runs
 
 setting <- paste0("N = ", N, ", T = ", T, ", R = ",R, ", noise_sc = ",noise_sc, ", delta_sc = ",delta_sc, ", gamma_sc = ",gamma_sc, ", beta_sc = ", beta_sc, ", effect_size = ", effect_size)
 tic(print(paste0("setting: ",setting)))
