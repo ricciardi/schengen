@@ -53,10 +53,11 @@ Run order
 4. schengen-rmse-placebo.R # placebo tests: compare different estimators in terms of RMSE (model without covariates)
 5. schengen-rmse-placebo-plot.R  # plot placebo test results
 
-5. mc-simulation.R # simulation study
-	* run with command line argument speficying each of the possible settings (1-81); e.g., `Rscript mc-simulation.R 1`
+6. mc-simulation.R # matrix completion simulation study
+	* run with command line argument  `Rscript mc-simulation.R [arg1]`, where `[arg1]` is a number specifying the simulation setting
+7. mc-simulation-plot.R # plot matrix completion simulation study results
 
-6. mc-placebo.R # placebo test of null hypothesis
+8. mc-placebo.R # placebo test of null hypothesis
 
-7. Schengen_DID.R # DID and SCM estimates for comparison 
+9. Schengen_DID.R # DID and SCM estimates for comparison 
 	* DIDEstBoot.R

@@ -8,9 +8,13 @@ library(boot)
 library(Matrix)
 library(tictoc)
 library(MASS)
+library(data.table)
+library(reshape)
+library(reshape2)
+library(emfactor)
 
-source('boundProbs.R')
-source('bootTraj.R')
+source('utils.R')
+source('IFE.R')
 
 # Setup parallel processing
 doMPI <- TRUE
@@ -39,265 +43,295 @@ if(doMPI){
   doParallel::registerDoParallel(cl) # register cluster
 }
 
-MCsim <- function(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n){
+MCsim <- function(N,T,R,T0,noise_sc,delta_sc,gamma_sc,beta_sc,shift_sc,n){
+  
+  # check inputs 
+  if(N!=T){
+    stop("Matrix must be square, N=T")
+  }
   
   # set the seed
   print(paste0("run number: ", n))
   set.seed(n, "L'Ecuyer-CMRG")
   
-  treat_mat <- matrix(0, nrow=N, ncol=T)
-  while(max(rowSums(treat_mat))<T){ # generate new treat_mat to ensure that there are LT and AT units
+  mask <- matrix(0, nrow=N, ncol=T) # treat matrix
+  
+  while(any(rowSums(mask)<1) || max(rowSums(mask))<T){ # ensure that there are LT and AT units
     
-    if(N!=T){
-      stop("Matrix must be square, N=T")
-    }
+    # make the mean and var of the potential outcomes matrix
     
-    vars <- c(2, rep(1, T-1))
-    mu <- rep(0, T)
+    mean_vec_0_N <- rep(0,N)
+    mean_vec_1_N <- rep(1,N)
     
-    Sigma <- rWishart(1,T,diag(vars))[,,1]
+    sigma_mat_N <- diag(N)
+    sigma_mat_N[sigma_mat_N==0] <- 0.2
     
-    vars.R <- c(2, rep(1, R-1))
-    mu.R <- rep(0, R)
+    mean_vec_1_R <- rep(1, R)
+    sigma_mat_R <- diag(R)
+    sigma_mat_R[sigma_mat_R==0] <- 0.2
     
-    Sigma.R <- rWishart(1,R,diag(vars.R))[,,1]
-
     # Create Matrices
-    A <- mvrnorm(N, mu=mu.R, Sigma=Sigma.R, empirical = FALSE)  # replicate(R,rnorm(N))
-    B <- mvrnorm(R, mu=mu, Sigma=Sigma, empirical = FALSE)  #replicate(T,rnorm(R))
-    X <- mvrnorm(N, mu=mu, Sigma=Sigma, empirical = FALSE) # replicate(T,rnorm(N))
-    delta <- delta_sc*mvrnorm(mu=mu, Sigma=Sigma, empirical = FALSE) #delta_sc*rnorm(N)
-    gamma <- gamma_sc*mvrnorm(mu=mu, Sigma=Sigma, empirical = FALSE) #gamma_sc*rnorm(T)
-    beta <- beta_sc*mvrnorm(mu=mu, Sigma=Sigma, empirical = FALSE) #beta_sc*rnorm(T)
-    noise <- noise_sc*mvrnorm(N, mu=mu, Sigma=Sigma, empirical = FALSE) #noise_sc*replicate(T,rnorm(N))
+    A <- mvrnorm(T, mu=mean_vec_1_R, Sigma=sigma_mat_R)  #replicate(T,rnorm(R))
+    B <- mvrnorm(R, mu=mean_vec_1_N, Sigma=sigma_mat_N)  # replicate(R,rnorm(N))
+    X <- mvrnorm(T, mu=mean_vec_1_N, Sigma=sigma_mat_N) # replicate(T,rnorm(N))
+    delta <- delta_sc*mvrnorm(mu=mean_vec_0_N, Sigma=sigma_mat_N) #delta_sc*rnorm(N)
+    gamma <- gamma_sc*mvrnorm(mu=mean_vec_0_N, Sigma=sigma_mat_N) #gamma_sc*rnorm(T)
+    beta <- beta_sc*mvrnorm(mu=mean_vec_0_N, Sigma=sigma_mat_N) #beta_sc*rnorm(T)
+    noise <- noise_sc*mvrnorm(T, mean_vec_0_N, Sigma=sigma_mat_N) # noise_sc*replicate(T,rnorm(N))
     
     # True outcome model
-    true_mat_0 <- A %*% B + X%*%replicate(T,as.vector(beta)) + replicate(T,delta) + t(replicate(N,gamma)) # potential outcome under control
-    true_mat_1 <- true_mat_0 + effect_size # potential outcome under treatment
+    true_mat <- A%*%B + X%*%replicate(T,as.vector(beta)) + replicate(T,delta) + t(replicate(N,gamma)) # potential outcomes under AT
     
-    noisy_mat <- true_mat_1 + noise # we want to estimate p.o. under treatment in retrospective analysis
+    # True treatment model
     
-    # Assignment mechanism 
+    mean_vec_0_R <- rep(0,R)
     
-    e <-1/(1+exp(A%*%B + X%*%replicate(T,as.vector(beta)) + replicate(T,delta) + t(replicate(N,gamma))))
+    sigma_mat_N_treat <- diag(N)
+    sigma_mat_N_treat[sigma_mat_N_treat==0] <- 0.3
     
-    treat_mat <- matrix(rbinom(N*T,1,e),N,T)  # 0s missing and to be imputed (LT); 1s are observed (AT) 
+    sigma_mat_R_treat <- diag(R)
+    sigma_mat_R[sigma_mat_R_treat==0] <- 0.3
     
-    # block structure (fill forwards)
-    for (i in 1:N){ 
-      for (j in 1:(T-1)) {
-        if (treat_mat[i,j]==1) {treat_mat[i,(j+1)]=1}
-        else {treat_mat[i,j]=treat_mat[i,j]}
-      }
-    }
+    C <-  mvrnorm(T, mu=mean_vec_0_R, Sigma=sigma_mat_R_treat)  #replicate(T,rnorm(R))
+    D <- mvrnorm(R, mu=mean_vec_0_N, Sigma=sigma_mat_N_treat)  # replicate(R,rnorm(N))
+    xi <- delta_sc*mvrnorm(mu=mean_vec_0_N, Sigma=sigma_mat_N) 
+    psi <- gamma_sc*mvrnorm(mu=mean_vec_0_N, Sigma=sigma_mat_N) 
+    phi <- beta_sc*mvrnorm(mu=mean_vec_0_N, Sigma=sigma_mat_N) 
     
-    if(any(rowSums(treat_mat)<3)){ # ensure there are no NT units (treated at least 3 periods)
-      treat_mat[which(rowSums(treat_mat)<3),][c((T-2):T)] <-1 
-    }
+    e <-plogis(C%*%D + X%*%replicate(T,as.vector(phi)) + replicate(T,xi) + t(replicate(N,psi))) # prob of being 0 (ST in pre-treatment)
+    treat_mat <- stag_adapt(M = matrix(1, nrow=N, ncol=T) , N_t = ceiling(N*0.5), T0=T0, treat_indices = 0, weights = e[,T0]) # 0s missing and to be imputed (LT); 1s are observed (AT)
+    
+    mask <- treat_mat[,c(T:1)] # retrospective analysis
   }
   
-  fr_obs <- sum(treat_mat)/(N*T) # store fraction observed entries
+  fr_obs <- sum(mask)/(N*T) # store fraction observed entries
+  print(paste0("fraction observed: ", fr_obs))
   
-  # Get vector of initial treatment periods
+  # get vector of initial treatment periods
   
-  T0 <- aggregate(col ~ row,
-                  data = which(treat_mat == 1, arr.ind = T),
+  A <- aggregate(col ~ row,
+                  data = which(mask == 1, arr.ind = T),
                   FUN = function(x) x[1])$col
+  A[which(A==1)] <- Inf
   
-  # Observed outcome
-
-  mask <- treat_mat 
+  ST <- which(!is.infinite(A)) # switch treated indices
+  
+  # Elapsed time weighted treatment
+  
+  z_weights <- matrix(0,N,T,byrow = TRUE)
+  
+  for(i in ST){
+    z_weights[i,] <- c(plogis(A[i]:1, scale=8),plogis(1:(ncol(mask)-A[i]),scale=8))
+  }
+  
+  shift <- z_weights*shift_sc*(1-mask) 
+  
+  shifted_mat <- true_mat - shift*true_mat # Y(AT) - Y(ST)
+  
+  # Calc. real ATT on the ST
+  
+  att.true <- mean(apply(shift*true_mat,1,nzmean)[ST]) # the avg. of ATTs (unit-level)
+  
+  # Observed outcome matrix (+ noise)
+  
+  noisy_mat <- shifted_mat + noise # add noise
+  
   obs_mat <- noisy_mat * mask 
-  
-  # CV lambda values
-  
-  lambda_L_endog <- as.numeric(sort(c(0.0201769,0.0202961,0.0258464,0.0239927,0.0202191,0.0216138,0.021132,0.0216067,0.0232151,0.021332,0.0201098,0.0203622,0.0248053,0.0219271,0.0196738,0.0237891)))
-  lambda_L_pweights <- as.numeric(sort(c(0,8.69584e-05,9.64993e-05,0.000886265,8.71857e-05,9.21348e-05,0.000839902,9.90469e-05,0.000888573,0.000879063,9.11552e-05,8.59036e-05,9.29274e-05,9.0942e-05,9.83006e-05)))
-  lambda_B_pweights <- as.numeric(sort(c(0,0.00886265,0.00964993,0.000871857,0.00921348,8.39902e-06,0.000990469,0.00888573,0.000860964,0.000859036,0.00929274,0.0090942,0.00983006)))
-  lambda_L_plain <- as.numeric(sort(c(0,0.00149916,0.00153424,0.0090925,0.00344375,0.000557275,0.000584998,0.00331317,0.00146644,0.00391252,0.00407219,0.00133857,0.0038706,0.00133738,0.000108937,0.00141742)))
-  lambda_L_weights <- as.numeric(sort(c(0.00153424,0.00355506,0.0090925,0.00344375,0.00132151,0.00328972,0.00331313,0.00347747,0.00391252,0.0040722,0.00317424,0.00142967,0.00917863,0.00317143,0.0014527,0.00336123)))
-  lambda_L_covars <- as.numeric(sort(c(0,0.00115052,0.00112421,0.012125,0.00108901,0.0010477,0.00109967,0.000123725,0.00128774,0.00100378, 0.00122399,0.0010029,0.00106291)))
-  lambda_B_covars <- as.numeric(sort(c(0.0115052,0.112421,0.012125,0.108901,0.00990989,0.010403,0.10477,0.109967,0.0123725,0.128774,0.100378,0.010721,0.122399,0.10029,0.0108937,0.106291)))
   
   # Impute endogenous covariate values
   
   est_model_endogenous <- mcnnm(M = X, mask = mask, W = matrix(1, nrow(mask),ncol(mask)), to_estimate_u = 1, to_estimate_v = 1, 
-                                lambda_L = median(lambda_L_endog), niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]] # outcome is covariate, prop. weights are equal
+                                lambda_L = 0.02146935, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]] # outcome is covariate, prop. weights are equal
   est_model_endogenous$Mhat <- est_model_endogenous$L + replicate(T,est_model_endogenous$u) + t(replicate(N,est_model_endogenous$v))
-
+  
   X.hat <- X*mask + est_model_endogenous$Mhat*(1-mask) # only endogenous values imputed
   
   # Estimate propensity weights by matrix completion
-
+  
   est_model_pweights <- mcnnm_wc(M = (1-mask), C = X.hat, mask =  matrix(1, nrow(mask),ncol(mask)), # no missing entries
-                                    W = matrix(1, nrow(mask),ncol(mask)), to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, lambda_L = median(lambda_L_pweights), lambda_B = median(lambda_B_pweights), niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]] # use X with imputed endogenous values
-  est_model_pweights$Mhat <- est_model_pweights$L + X.hat%*%replicate(T,as.vector(est_model_pweights$B)) + replicate(T,est_model_pweights$u) + t(replicate(N,est_model_pweights$v)) # use X with imputed endogenous values
+                                 W = matrix(1, nrow(mask),ncol(mask)), to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, lambda_L = 9.29274e-05, lambda_B = 0.00886265, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]] # use X with imputed endogenous values
+  est_model_pweights$Mhat <- plogis(est_model_pweights$L + X.hat%*%replicate(T,as.vector(est_model_pweights$B)) + replicate(T,est_model_pweights$u) + t(replicate(N,est_model_pweights$v)))
   
-  weights <- (1-boundProbs(est_model_pweights$Mhat))/boundProbs(est_model_pweights$Mhat)
-                                                                
+  weights <- (1-diag(z_weights)*est_model_pweights$Mhat)/(diag(z_weights)*est_model_pweights$Mhat) # elapsed-time weighting
+  
   ## ------ ------ ------ ------ ------
-  ## MC-NNM plain (no weighting, no covariates)
+  ## MC-NNM plain (no weighting, no covariate)
   ## ------ ------ ------ ------ ------
   
-  est_mc_plain <- mcnnm(M = obs_mat, mask = mask, W = matrix(1, nrow(mask),ncol(mask)), to_estimate_u = 1, to_estimate_v = 1, lambda_L = median(lambda_L_plain), niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]]
+  est_mc_plain <- mcnnm(M = obs_mat, mask = mask, W = matrix(1, nrow(mask),ncol(mask)), to_estimate_u = 1, to_estimate_v = 1, lambda_L = 0.0014828, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]]
   est_mc_plain$Mhat <- est_mc_plain$L + replicate(T,est_mc_plain$u) + t(replicate(N,est_mc_plain$v))
-  est_mc_plain$impact <- (est_mc_plain$Mhat-noisy_mat) # estimated treatment effect
-  est_mc_plain$err <- (est_mc_plain$Mhat - true_mat_1) # error (wrt to ground truth)
-
-  est_mc_plain$msk_err <- est_mc_plain$err*(1-mask) # masked error (wrt to ground truth)
-  est_mc_plain$test_RMSE <- sqrt((1/sum(1-mask)) * sum(est_mc_plain$msk_err^2)) # RMSE on test set (wrt to ground truth)
-  print(paste("MC-NNM (Plain) RMSE:", round(est_mc_plain$test_RMSE,3)))
-
-  est_mc_plain$boot <- boot(est_mc_plain$impact, 
-                        BootTraj, 
-                        mask=mask,
-                        R=999,
-                        parallel = "multicore") 
+  est_mc_plain$tau <- (est_mc_plain$Mhat-noisy_mat) # estimated treatment effect
+  est_mc_plain$att <- apply(est_mc_plain$tau*(1-mask),1,nzmean)[ST]
+  est_mc_plain$att.bar <- mean(est_mc_plain$att)
+  est_mc_plain$abs.bias <- abs(est_mc_plain$att.bar-att.true)
+  est_mc_plain$rel.abs.bias <- est_mc_plain$abs.bias/att.true
   
-  est_mc_plain$boot_t0 <- est_mc_plain$boot$t0
-  est_mc_plain$boot_ci <- boot.ci(est_mc_plain$boot ,type=c("perc"))$percent[-c(1:3)] 
-  est_mc_plain$bias <- est_mc_plain$boot_t0-effect_size
-  est_mc_plain$cp <- as.numeric((est_mc_plain$boot_ci[1] < effect_size) & (est_mc_plain$boot_ci[2] > effect_size))
-  est_mc_plain$ciw <- as.numeric(est_mc_plain$boot_ci[2] -est_mc_plain$boot_ci[1])
+  # bootstrap variance estimation
+  df_mc_plain <- widetoLong(M= obs_mat, mask = mask, X = NULL, W =NULL)
+  est_mc_plain$boot_var <- clustered_bootstrap(current_data_realized_long=df_mc_plain, Y=noisy_mat, estimator="mc_plain", B = 999, z_weights = NULL)
   
+  est_mc_plain$cp <- CI_test(est_coefficent=est_mc_plain$att.bar, real_coefficent=att.true, est_var=est_mc_plain$boot_var)
+
   ## ------ ------ ------ ------ ------
-  ## MC-NNM + weights (no covariates)
+  ## MC-NNM covars (covariate, no weighting)
   ## ------ ------ ------ ------ ------
   
-  est_mc_weights <- mcnnm(M = obs_mat, mask = mask, W = weights, to_estimate_u = 1, to_estimate_v = 1, lambda_L = median(lambda_L_weights), niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]]
+  est_mc_covars <- mcnnm_wc(M = obs_mat, C = X, mask = mask, W = matrix(1, nrow(mask),ncol(mask)), to_estimate_u = 1, to_estimate_v = 1, lambda_L = 0.00108901, lambda_B = 0.100334, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]]
+  est_mc_covars$Mhat <- est_mc_covars$L + X.hat%*%replicate(T,as.vector(est_mc_covars$B)) + replicate(T,est_mc_covars$u) + t(replicate(N,est_mc_covars$v))
+  est_mc_covars$tau <- (est_mc_covars$Mhat-noisy_mat) # estimated treatment effect
+  est_mc_covars$att <- apply(est_mc_covars$tau*(1-mask),1,nzmean)[ST]
+  est_mc_covars$att.bar <- mean(est_mc_covars$att)
+  est_mc_covars$abs.bias <- abs(est_mc_covars$att.bar-att.true)
+  est_mc_covars$rel.abs.bias <- est_mc_covars$abs.bias/att.true
+  
+  # bootstrap variance estimation
+  df_mc_covars <- widetoLong(M= obs_mat, mask = mask, X = X, W =NULL)
+  est_mc_covars$boot_var <- clustered_bootstrap(current_data_realized_long=df_mc_covars, Y=noisy_mat, estimator="mc_covars", B = 999, z_weights = z_weights)
+  
+  est_mc_covars$cp <- CI_test(est_coefficent=est_mc_covars$att.bar, real_coefficent=att.true, est_var=est_mc_covars$boot_var)
+  
+  ## ------ ------ ------ ------ ------
+  ## MC-NNM + weights (no covariate)
+  ## ------ ------ ------ ------ ------
+  
+  est_mc_weights <- mcnnm(M = obs_mat, mask = mask, W = weights, to_estimate_u = 1, to_estimate_v = 1, lambda_L = 0.00333718, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]]
   est_mc_weights$Mhat <- est_mc_weights$L + replicate(T,est_mc_weights$u) + t(replicate(N,est_mc_weights$v))
-  est_mc_weights$impact <- (est_mc_weights$Mhat-noisy_mat) # estimated treatment effect
-  est_mc_weights$err <- (est_mc_weights$Mhat - true_mat_1) # error (wrt to ground truth)
-
-  est_mc_weights$msk_err <- est_mc_weights$err*(1-mask) # masked error (wrt to ground truth)
-  est_mc_weights$test_RMSE <- sqrt((1/sum(1-mask)) * sum(est_mc_weights$msk_err^2)) # RMSE on test set (wrt to ground truth)
-  print(paste("MC-NNM (weights) RMSE:", round(est_mc_weights$test_RMSE,3)))
+  est_mc_weights$tau <- (est_mc_weights$Mhat-noisy_mat) # estimated treatment effect
+  est_mc_weights$att <- apply(est_mc_weights$tau*(1-mask),1,nzmean)[ST]
+  est_mc_weights$att.bar <- mean(est_mc_weights$att)
+  est_mc_weights$abs.bias <- abs(est_mc_weights$att.bar-att.true)
+  est_mc_weights$rel.abs.bias <- est_mc_weights$abs.bias/att.true
   
-  est_mc_weights$boot <- boot(est_mc_weights$impact, 
-                            BootTraj, 
-                            mask=mask,
-                            R=999,
-                            parallel = "multicore") 
+  # bootstrap variance estimation
+  df_mc_weights <- widetoLong(M= obs_mat, mask = mask, X = X, W = weights)
+  est_mc_weights$boot_var <- clustered_bootstrap(current_data_realized_long=df_mc_weights, Y=noisy_mat, estimator="mc_weights", B = 999, z_weights = z_weights)
   
-  est_mc_weights$boot_t0 <- est_mc_weights$boot$t0
-  est_mc_weights$boot_ci <- boot.ci(est_mc_weights$boot ,type=c("perc"))$percent[-c(1:3)] 
-  est_mc_weights$bias <- est_mc_weights$boot_t0-effect_size
-  est_mc_weights$cp <- as.numeric((est_mc_weights$boot_ci[1] < effect_size) & (est_mc_weights$boot_ci[2] > effect_size))
-  est_mc_weights$ciw <- as.numeric(est_mc_weights$boot_ci[2] -est_mc_weights$boot_ci[1])
+  est_mc_weights$cp <- CI_test(est_coefficent=est_mc_weights$att.bar, real_coefficent=att.true, est_var=est_mc_weights$boot_var)
   
   ## ------ ------ ------ ------ ------
-  ## MC-NNM + weights + covariates
+  ## MC-NNM + weights + covariate
   ## ------ ------ ------ ------ ------
   
-  est_mc_weights_covars <- mcnnm_wc(M = obs_mat, C = X, mask = mask, W = weights, to_estimate_u = 1, to_estimate_v = 1, lambda_L = median(lambda_L_covars), lambda_B = median(lambda_B_covars), niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]]
+  est_mc_weights_covars <- mcnnm_wc(M = obs_mat, C = X, mask = mask, W = weights, to_estimate_u = 1, to_estimate_v = 1, lambda_L = 0.00108901, lambda_B = 0.100334, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]]
   est_mc_weights_covars$Mhat <- est_mc_weights_covars$L + X.hat%*%replicate(T,as.vector(est_mc_weights_covars$B)) + replicate(T,est_mc_weights_covars$u) + t(replicate(N,est_mc_weights_covars$v))
-  est_mc_weights_covars$impact <- (est_mc_weights_covars$Mhat-noisy_mat) # estimated treatment effect
-  est_mc_weights_covars$err <- (est_mc_weights_covars$Mhat - true_mat_1) # error (wrt to ground truth)
-
-  est_mc_weights_covars$msk_err <- est_mc_weights_covars$err*(1-mask) # masked error (wrt to ground truth)
-  est_mc_weights_covars$test_RMSE <- sqrt((1/sum(1-mask)) * sum(est_mc_weights_covars$msk_err^2)) # RMSE on test set (wrt to ground truth)
-  print(paste("MC-NNM (weights + covariates) RMSE:", round(est_mc_weights_covars$test_RMSE,3)))
+  est_mc_weights_covars$tau <- (est_mc_weights_covars$Mhat-noisy_mat) # estimated treatment effect
+  est_mc_weights_covars$att <- apply(est_mc_weights_covars$tau*(1-mask),1,nzmean)[ST]
+  est_mc_weights_covars$att.bar <- mean(est_mc_weights_covars$att)
+  est_mc_weights_covars$abs.bias <- abs(est_mc_weights_covars$att.bar-att.true)
+  est_mc_weights_covars$rel.abs.bias <- est_mc_weights_covars$abs.bias/att.true
   
-  est_mc_weights_covars$boot <- boot(est_mc_weights_covars$impact, 
-                              BootTraj, 
-                              mask=mask,
-                              R=999,
-                              parallel = "multicore") 
+  # bootstrap variance estimation
+  df_mc_weights_covars <- widetoLong(M= obs_mat, mask = mask, X = X, W = weights)
+  est_mc_weights_covars$boot_var <- clustered_bootstrap(current_data_realized_long=df_mc_weights_covars, Y=noisy_mat, estimator="mc_weights_covars", B = 999, z_weights = z_weights)
   
-  est_mc_weights_covars$boot_t0 <- est_mc_weights_covars$boot$t0
-  est_mc_weights_covars$boot_ci <- boot.ci(est_mc_weights_covars$boot ,type=c("perc"))$percent[-c(1:3)] 
-  est_mc_weights_covars$bias <- est_mc_weights_covars$boot_t0-effect_size
-  est_mc_weights_covars$cp <- as.numeric((est_mc_weights_covars$boot_ci[1] < effect_size) & (est_mc_weights_covars$boot_ci[2] > effect_size))
-  est_mc_weights_covars$ciw <- as.numeric(est_mc_weights_covars$boot_ci[2] -est_mc_weights_covars$boot_ci[1])
+  est_mc_weights_covars$cp <- CI_test(est_coefficent=est_mc_weights_covars$att.bar, real_coefficent=att.true, est_var=est_mc_weights_covars$boot_var)
   
   ## -----
   ## ADH
   ## -----
   est_model_ADH <- list()
   est_model_ADH$Mhat <- adh_mp_rows(obs_mat, mask)
-  est_model_ADH$impact <- (est_model_ADH$Mhat-noisy_mat) # estimated treatment effect
-  est_model_ADH$err <- (est_model_ADH$Mhat - true_mat_1) # error (wrt to ground truth)
+  est_model_ADH$tau <- (est_model_ADH$Mhat-noisy_mat) # estimated treatment effect
+  est_model_ADH$att <- apply(est_model_ADH$tau*(1-mask),1,nzmean)[ST]
+  est_model_ADH$att.bar <- mean(est_model_ADH$att)
+  est_model_ADH$abs.bias <- abs(est_model_ADH$att.bar-att.true)
+  est_model_ADH$rel.abs.bias <- est_model_ADH$abs.bias/att.true
   
-  est_model_ADH$msk_err <- est_model_ADH$err*(1-mask) # masked error (wrt to ground truth)
-  est_model_ADH$test_RMSE <- sqrt((1/sum(1-mask)) * sum(est_model_ADH$msk_err^2)) # RMSE on test set (wrt to ground truth)
-  print(paste("ADH RMSE:", round(est_model_ADH$test_RMSE,3)))
+  # bootstrap variance estimation
+  df_ADH <- widetoLong(M= obs_mat, mask = mask, X = NULL, W =NULL)
+  est_model_ADH$boot_var <- clustered_bootstrap(current_data_realized_long=df_ADH, Y=noisy_mat, estimator="ADH", B = 999, z_weights = NULL)
   
-  est_model_ADH$boot <- boot(est_model_ADH$impact,
-                             BootTraj,
-                             mask=mask,
-                             R=999,
-                             parallel = "multicore")
-  
-  est_model_ADH$boot_t0 <- est_model_ADH$boot$t0
-  est_model_ADH$boot_ci <- boot.ci(est_model_ADH$boot ,type=c("perc"))$percent[-c(1:3)]
-  est_model_ADH$bias <- est_model_ADH$boot_t0-effect_size
-  est_model_ADH$cp <- as.numeric((est_model_ADH$boot_ci[1] < effect_size) & (est_model_ADH$boot_ci[2] > effect_size))
-  est_model_ADH$ciw <- as.numeric(est_model_ADH$boot_ci[2] - est_model_ADH$boot_ci[1])
+  est_model_ADH$cp <- CI_test(est_coefficent=est_model_ADH$att.bar, real_coefficent=att.true, est_var=est_model_ADH$boot_var)
   
   ## -----
   ## DID
   ## -----
   est_model_DID <- list()
   est_model_DID$Mhat <- DID(obs_mat, mask)
-  est_model_DID$impact <- (est_model_DID$Mhat-noisy_mat) # estimated treatment effect
-  est_model_DID$err <- (est_model_DID$Mhat - true_mat_1) # error (wrt to ground truth)
+  est_model_DID$tau <- (est_model_DID$Mhat-noisy_mat) # estimated treatment effect
+  est_model_DID$att <- apply(est_model_DID$tau*(1-mask),1,nzmean)[ST]
+  est_model_DID$att.bar <- mean(est_model_DID$att)
+  est_model_DID$abs.bias <- abs(est_model_DID$att.bar-att.true)
+  est_model_DID$rel.abs.bias <- est_model_DID$abs.bias/att.true
   
-  est_model_DID$msk_err <- est_model_DID$err*(1-mask) # masked error (wrt to ground truth)
-  est_model_DID$test_RMSE <- sqrt((1/sum(1-mask)) * sum(est_model_DID$msk_err^2)) # RMSE on test set (wrt to ground truth)
-  print(paste("DID RMSE:", round(est_model_DID$test_RMSE,3)))
+  # bootstrap variance estimation
+  df_DID <- widetoLong(M= obs_mat, mask = mask, X = NULL, W =NULL)
+  est_model_DID$boot_var <- clustered_bootstrap(current_data_realized_long=df_DID, Y=noisy_mat, estimator="DID", B = 999, z_weights = NULL)
   
-  est_model_DID$boot <- boot(est_model_DID$impact,
-                             BootTraj,
-                             mask=mask,
-                             R=999,
-                             parallel = "multicore")
+  est_model_DID$cp <- CI_test(est_coefficent=est_model_DID$att.bar, real_coefficent=att.true, est_var=est_model_DID$boot_var)
   
-  est_model_DID$boot_t0 <- est_model_DID$boot$t0
-  est_model_DID$boot_ci <- boot.ci(est_model_DID$boot ,type=c("perc"))$percent[-c(1:3)]
-  est_model_DID$bias <- est_model_DID$boot_t0-effect_size
-  est_model_DID$cp <- as.numeric((est_model_DID$boot_ci[1] < effect_size) & (est_model_DID$boot_ci[2] > effect_size))
-  est_model_DID$ciw <- as.numeric(est_model_DID$boot_ci[2] - est_model_DID$boot_ci[1])
+  ## ---------------
+  ## IFEs
+  ## ---------------
+  
+  est_model_IFE <- list()
+  est_model_IFE$Mhat <- IFE(obs_mat, mask, k=2)
+  est_model_IFE$tau <- (est_model_IFE$Mhat-noisy_mat) # estimated treatment effect
+  est_model_IFE$att <- apply(est_model_IFE$tau*(1-mask),1,nzmean)[ST]
+  est_model_IFE$att.bar <- mean(est_model_IFE$att)
+  est_model_IFE$abs.bias <- abs(est_model_IFE$att.bar-att.true)
+  est_model_IFE$rel.abs.bias <- est_model_IFE$abs.bias/att.true
+  
+  # bootstrap variance estimation
+  df_IFE <- widetoLong(M= obs_mat, mask = mask, X = NULL, W =NULL)
+  est_model_IFE$boot_var <- clustered_bootstrap(current_data_realized_long=df_IFE, Y=noisy_mat, estimator="IFE", B = 999, z_weights = NULL)
+  
+  est_model_IFE$cp <- CI_test(est_coefficent=est_model_IFE$att.bar, real_coefficent=att.true, est_var=est_model_IFE$boot_var)
   
   # cleanup
-  rm(A,e,mask,noise,noisy_mat,obs_mat,treat_mat,true_mat_0,true_mat_1,X,X.hat,weights)
+  rm(A,B,C,D,e,mask,noise,noisy_mat,obs_mat,true_mat,shifted_mat,sigma_mat_N,sigma_mat_N_treat,sigma_mat_R,sigma_mat_R_treat,treat_mat,X,X.hat,weights,z_weights,df_DID,df_ADH,df_mc_weights_covars,df_mc_weights,df_mc_covars, df_mc_plain, df_IFE)
   gc()
   cat(paste("Done with simulation run number",n, "\n"))
-    
-  return(list("N"=N, "T"=T, "R"=R, "noise_sc"=noise_sc,"delta_sc"=delta_sc, "gamma_sc"=gamma_sc,"beta_sc"=beta_sc, "effect_size"=effect_size, "fr_obs"= fr_obs, 
-              "est_mc_plain_RMSE"=est_mc_plain$test_RMSE,"est_mc_plain_bias"=est_mc_plain$bias,"est_mc_plain_cp"=est_mc_plain$cp,"est_mc_plain_ciw"=est_mc_plain$ciw,
-              "est_mc_weights_RMSE"=est_mc_weights$test_RMSE,"est_mc_weights_bias"=est_mc_weights$bias,"est_mc_weights_cp"=est_mc_weights$cp,"est_mc_weights_ciw"=est_mc_weights$ciw,
-              "est_mc_weights_covars_RMSE"=est_mc_weights_covars$test_RMSE,"est_mc_weights_covars_bias"=est_mc_weights_covars$bias,"est_mc_weights_covars_cp"=est_mc_weights_covars$cp,"est_mc_weights_covars_ciw"=est_mc_weights_covars$ciw,
-              "est_model_ADH_RMSE"=est_model_ADH$test_RMSE,"est_model_ADH_bias"=est_model_ADH$bias,"est_model_ADH_cp"=est_model_ADH$cp,"est_model_ADH_ciw"=est_model_ADH$ciw,
-              "est_model_DID_RMSE"=est_model_DID$test_RMSE,"est_model_DID_bias"=est_model_DID$bias,"est_model_DID_cp"=est_model_DID$cp,"est_model_DID_ciw"=est_model_DID$ciw))
+  return(list("N"=N, "T"=T, "R"=R, "T0"=T0, "noise_sc"=noise_sc,"delta_sc"=delta_sc, "gamma_sc"=gamma_sc,"beta_sc"=beta_sc, "shift_sc"=shift_sc,"fr_obs"= fr_obs, 
+              "est_mc_plain_abs_bias"=est_mc_plain$abs.bias,"est_mc_plain_rel_abs_bias"=est_mc_plain$rel.abs.bias,"est_mc_plain_cp"=est_mc_plain$cp,"est_mc_plain_boot_var"=est_mc_plain$boot_var,
+              "est_mc_weights_abs_bias"=est_mc_weights$abs.bias,"est_mc_weights_rel_abs_bias"=est_mc_weights$rel.abs.bias,"est_mc_weights_cp"=est_mc_weights$cp,"est_mc_weights_boot_var"=est_mc_weights$boot_var,
+              "est_mc_covars_abs_bias"=est_mc_covars$abs.bias,"est_mc_covars_rel_abs_bias"=est_mc_covars$rel.abs.bias,"est_mc_covars_cp"=est_mc_covars$cp,"est_mc_covars_boot_var"=est_mc_covars$boot_var,
+              "est_mc_weights_covars_abs_bias"=est_mc_weights_covars$abs.bias,"est_mc_weights_covars_rel_abs_bias"=est_mc_weights_covars$rel.abs.bias,"est_mc_weights_covars_cp"=est_mc_weights_covars$cp,"est_mc_weights_covars_boot_var"=est_mc_weights_covars$boot_var,
+              "est_model_ADH_abs_bias"=est_model_ADH$abs.bias,"est_model_ADH_rel_abs_bias"=est_model_ADH$rel.abs.bias,"est_model_ADH_cp"=est_model_ADH$cp,"est_model_ADH_boot_var"=est_model_ADH$boot_var,
+              "est_model_DID_abs_bias"=est_model_DID$abs.bias,"est_model_DID_rel_abs_bias"=est_model_DID$rel.abs.bias,"est_model_DID_cp"=est_model_DID$cp,"est_model_DID_boot_var"=est_model_DID$boot_var,
+              "est_model_IFE_abs_bias"=est_model_IFE$abs.bias,"est_model_IFE_rel_abs_bias"=est_model_IFE$rel.abs.bias,"est_model_IFE_cp"=est_model_IFE$cp,"est_model_IFE_boot_var"=est_model_IFE$boot_var))
 }
 
 # define settings for simulation
 settings <- expand.grid("NT"=c(40**2,60**2,80**2),
-                        "noise_sc"=c(0.01,0.1,0.2),
-                        "R" = c(10,20,40))
+                        "T0" =c(2, 1.5, 1.25, 1.01))
 
-args <- as.numeric(commandArgs(trailingOnly = TRUE)) # command line arguments
-thisrun <- settings[args,] 
+args <- commandArgs(trailingOnly = TRUE) # command line arguments
+thisrun <- settings[as.numeric(args[1]),] 
 
 N <- sqrt(as.numeric(thisrun[1])) # Number of units
 T <- sqrt(as.numeric(thisrun[1]))  # Number of time-periods
+T0 <- floor(T/as.numeric(thisrun[2]))  # Number of time-periods
+R <- N/2
 
-noise_sc <- as.numeric(thisrun[2]) # Noise scale 
+noise_sc <- 0.1 # Noise scale 
 delta_sc <- 0.1 # delta scale
 gamma_sc <- 0.1 # gamma scale
-beta_sc <- 0.2 # beta scale
-effect_size <- 1
-R <- as.numeric(thisrun[3])
+beta_sc <- 0.1 # beta scale
+shift_sc <- 0.1 # shift scale
 
-n.runs <- 10000 # Num. simulation runs
+n.runs <- 1000 # Num. simulation runs
 
-setting <- paste0("N = ", N, ", T = ", T, ", R = ",R, ", noise_sc = ",noise_sc, ", delta_sc = ",delta_sc, ", gamma_sc = ",gamma_sc, ", beta_sc = ", beta_sc, ", effect_size = ", effect_size)
+output_dir <- './outputs/'
+simulation_version <- paste0(format(Sys.time(), "%Y%m%d"),"/")
+if(!dir.exists(output_dir)){
+  print(paste0('create folder for outputs at: ', output_dir))
+  dir.create(output_dir)
+}
+output_dir <- paste0(output_dir, simulation_version)
+if(!dir.exists(output_dir)){
+  print(paste0('create folder for outputs at: ', output_dir))
+  dir.create(output_dir)
+}
+
+setting <- paste0("N = ", N, ", T = ", T, ", R = ",R, "T0 = " ,T0, ", noise_sc = ",noise_sc, ", delta_sc = ",delta_sc, ", gamma_sc = ",gamma_sc, ", beta_sc = ", beta_sc, ", shift_sc = ", shift_sc)
 tic(print(paste0("setting: ",setting)))
 
-results <- foreach(i = 1:n.runs, .combine='rbind', .packages =c("MCPanel","matrixStats","boot","Matrix","MASS"), .inorder=FALSE) %dopar% {
-  MCsim(N,T,R,noise_sc,delta_sc,gamma_sc,beta_sc,effect_size,n=i)
+results <- foreach(i = 1:n.runs, .combine='rbind', .packages =c("MCPanel","matrixStats","boot","Matrix","MASS"), .verbose = FALSE) %dopar% {
+  MCsim(N,T,R,T0,noise_sc,delta_sc,gamma_sc,beta_sc,shift_sc,n=i)
 }
-saveRDS(results, paste0("results_","N_",N,"_T_",T,"_R_", R,"_noise_sc_",noise_sc,"_effect_size_",effect_size,"_n_",n.runs,".rds"))
+results
+saveRDS(results, paste0(output_dir,"results_","N_",N,"_T_",T,"_R_", R,"_T0_",T0, "_noise_sc_",noise_sc,"_shift_sc_",shift_sc,"_n_",n.runs,".rds"))
 
 print(toc())
 
