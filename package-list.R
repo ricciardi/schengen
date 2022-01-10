@@ -1,4 +1,4 @@
-packages <- c("dplyr", "readstata13", "glmnet", "caret", "ggplot2", "wesanderson", "reshape2", "zoo", "matrixStats", "tseries", "devtools", "Matrix", "tictoc", "MASS", "data.table", "reshape", "reshape2")
+packages <- c("dplyr", "readstata13", "glmnet", "caret", "ggplot2", "wesanderson", "reshape2", "zoo", "matrixStats", "tseries", "devtools", "Matrix", "tictoc", "MASS", "data.table", "reshape", "reshape2","scales")
 
 install.packages(packages, repos = "http://cran.us.r-project.org")
 
