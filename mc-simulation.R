@@ -331,8 +331,8 @@ MCsim <- function(N,T,R,T0,N_t,noise_sc,delta_sc,gamma_sc,beta_sc,shift_sc,n){
 }
 
 # define settings for simulation
-settings <- expand.grid("NT"=c(40**2,50**2),
-                        "N_t" =c(0.4,0.8),
+settings <- expand.grid("NT"=c(40**2),
+                        "N_t" =c(0.4,0.6,0.8),
                         "R"=c(10,20,30,40))
 
 args <- commandArgs(trailingOnly = TRUE) # command line arguments

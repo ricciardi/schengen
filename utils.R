@@ -45,7 +45,7 @@ longtoWide <- function(data.long){
 one_boot <- function(sim_num, current_data_realized_long, N, T,estimator, est_weights){
   boot_matrices <- list()
   boot_matrices$mask <- matrix(0, nrow=N, ncol=T) # treat matrix
-  while(any(rowSums(boot_matrices$mask)<1) || max(rowSums(boot_matrices$mask))<T){ # ensure that there are LT and AT units
+  while(any(rowSums(boot_matrices$mask)<=1) || max(rowSums(boot_matrices$mask))<T){ # ensure that there are LT (switch after at least 1 period) and AT units
     num_units <- data.table::uniqueN(current_data_realized_long$person_id)
     sample_units <- data.table::data.table((table(sample(1:num_units, replace =  TRUE))))
     sample_units[, person_id := as.numeric(V1)]
