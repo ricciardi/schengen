@@ -5,7 +5,7 @@
 
 IFE <- function(M, mask, k=2){
   M_NA <- t(M) # T x N
-  M_NA[which(M_NA==0)] <- NA
+  #M_NA[M_NA == 0] <- NA
   
   out_idx <- 1:nrow(M_NA)
   units_observed <- which(rowSums(mask) == T)

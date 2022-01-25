@@ -2,6 +2,11 @@
 # Utility fns.                  #
 ##################################
 
+DropVariance <- function(mat){ # Remove units with no variance
+  drop <- names(which(apply(t(mat), 2, var) == 0))
+  return(as.matrix(mat[!rownames(mat)%in%drop,]))
+}
+
 # mean exluding zero values (for calc. ATT)
 nzmean <- function(x) {
   if (all(x==0)) 0 else mean(x[x!=0])
@@ -42,10 +47,10 @@ longtoWide <- function(data.long){
 }
 
 #  one bootstrap sample
-one_boot <- function(sim_num, current_data_realized_long, N, T,estimator, est_weights){
+one_boot <- function(sim_num, current_data_realized_long, N, T,estimator, est_weights, return_per_period=FALSE, placebo=FALSE){
   boot_matrices <- list()
   boot_matrices$mask <- matrix(0, nrow=N, ncol=T) # treat matrix
-  while(any(rowSums(boot_matrices$mask)<=1) || max(rowSums(boot_matrices$mask))<T){ # ensure that there are LT (switch after at least 1 period) and AT units
+  while(any(rowSums(boot_matrices$mask)<=1) || max(rowSums(boot_matrices$mask))<T){ # ensure that there are ST (switch after at least 1 period) and AT units
     num_units <- data.table::uniqueN(current_data_realized_long$person_id)
     sample_units <- data.table::data.table((table(sample(1:num_units, replace =  TRUE))))
     sample_units[, person_id := as.numeric(V1)]
@@ -57,8 +62,8 @@ one_boot <- function(sim_num, current_data_realized_long, N, T,estimator, est_we
     boot_DT[, ID := .I]
     
     boot_DT <- boot_DT[rep(boot_DT$ID, boot_DT$N)]
-    boot_DT$pid_boot <- rep(1:N, each = N)
-    boot_DT$year_boot <- rep(1:T, times = T)
+    boot_DT$pid_boot <- rep(1:N, each = T)
+    boot_DT$year_boot <- rep(1:T, times = N)
     
     boot_matrices <- longtoWide(data.long=boot_DT) 
   }
@@ -146,18 +151,39 @@ one_boot <- function(sim_num, current_data_realized_long, N, T,estimator, est_we
   }
   
   # Calc. real ATT on the ST
-  att.boot <- mean(apply(tau.boot*(1-boot_matrices$mask),1,nzmean)[ST.boot])
-  return(att.boot)
+  att.boot <- apply(tau.boot*(1-boot_matrices$mask),1,nzmean)[ST.boot]
+  att.bar.boot <- mean(att.boot)
+  if(return_per_period){
+    return(list("att.bar.boot"=att.bar.boot, "att.boot"=att.boot))
+  }else{
+    return(att.bar.boot)
+  }
 }
 
-# bootstap with cluster
-clustered_bootstrap <- function(current_data_realized_long, N,T,estimator, B = 999, est_weights){
-  clustered_bootstrap_var <- var(unlist(lapply(c(1:B), one_boot, current_data_realized_long, N, T, estimator, est_weights)))
-  return(clustered_bootstrap_var)
+# bootstap with cluster (return att.bar variance)
+clustered_bootstrap <- function(current_data_realized_long, N,T,estimator, B = 999, est_weights, return_per_period=FALSE, return_replicates=FALSE){
+  if(return_per_period){
+    boot_stats <- lapply(c(1:B), one_boot, current_data_realized_long, N, T, estimator, est_weights, return_per_period=TRUE)
+    clustered_bootstrap_att_var <- colVars(as.matrix(plyr::ldply(sapply(boot_stats, function(x) rbind(x$att.boot)), rbind)), na.rm = TRUE)
+    clustered_bootstrap_att_bar_var <- var(unlist(sapply(boot_stats, function(x) c(x$att.bar.boot))))
+    return(list("att.bar.boot.var"=clustered_bootstrap_att_bar_var,"att.boot.var"=clustered_bootstrap_att_var))
+  }
+  if(return_replicates){
+    boot_stats <- unlist(lapply(c(1:B), one_boot, current_data_realized_long, N, T, estimator, est_weights, return_per_period=FALSE))
+    return(boot_stats)
+  }else{
+    clustered_bootstrap_var <- var(unlist(lapply(c(1:B), one_boot, current_data_realized_long, N, T, estimator, est_weights, return_per_period=FALSE)))
+    return(clustered_bootstrap_var)
+  }
 }
 
 # confidence interval
 CI_test <- function(est_coefficent, real_coefficent, est_var,alpha=0.05){
-  as.numeric(est_coefficent - qnorm(1 - alpha/2)*sqrt(est_var) <= real_coefficent &
-               est_coefficent + qnorm(1 - alpha/2)*sqrt(est_var) >= real_coefficent )
+  return(as.numeric(est_coefficent - qnorm(1 - alpha/2)*sqrt(est_var) <= real_coefficent &
+               est_coefficent + qnorm(1 - alpha/2)*sqrt(est_var) >= real_coefficent ))
+}
+
+boot_CI <- function(est_coefficent,est_var,alpha=0.05){
+  return(list("lb"=est_coefficent - qnorm(1 - alpha/2)*sqrt(est_var),
+               "ub"=est_coefficent + qnorm(1 - alpha/2)*sqrt(est_var) ))
 }

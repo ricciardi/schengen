@@ -5,7 +5,7 @@ library(scales)
 
 outcome.vars <- c("CBWbord","CBWbordEMPL")
 outcomes.labels <- c("% working in border region",
-                     "% working in border region,\n conditional on employment")
+                     "% working in border region, conditional on employment")
 
 sim.labels <- c("Staggered adoption","Simultaneous adoption")
 
@@ -38,7 +38,7 @@ for(o in outcome.vars){
       scale_x_continuous(breaks=c(unique(df1$x)[1],unique(df1$x)[2],unique(df1$x)[3],unique(df1$x)[4],unique(df1$x)[5])) +
       scale_y_continuous(breaks= pretty_breaks()) +
       theme_bw() +
-      xlab(TeX('Placebo $(T_0/T)$')) +
+      xlab(TeX('Placebo $(a_i^{\\prime}/T)$')) +
       ylab("Average RMSE") +
       theme(axis.title=element_text(family="serif", size=16)) +
       theme(axis.text=element_text(family="serif", size=14)) +
@@ -50,7 +50,7 @@ for(o in outcome.vars){
             panel.background = element_blank(), axis.line = element_line(colour = "black"))  # rm background
     
     ggsave(paste0("plots/",o,"-sim-",i,".png"), schengen + theme(legend.position = "none"), scale=1.25)
-    ggsave(paste0("plots/",o,"-sim-",i,"slides.png"), schengen + ggtitle(paste0("Placebo test in retrospective setting"),subtitle=outcomes.labels[which(outcome.vars==o)]) + theme(plot.title = element_text(family="serif", size=16, hjust = 0.5), plot.subtitle = element_text(family="serif", size=12, hjust = 0.5)), scale=1.25)
+    ggsave(paste0("plots/",o,"-sim-",i,"slides.png"), schengen + ggtitle(outcomes.labels[which(outcome.vars==o)]) + theme(plot.title = element_text(family="serif", size=16, hjust = 0.5), plot.subtitle = element_text(family="serif", size=12, hjust = 0.5)), scale=1.25)
   }
 }
 

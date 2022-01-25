@@ -16,7 +16,7 @@ source('utils.R')
 source('IFE.R')
 
 # Setup parallel processing
-doMPI <- TRUE
+doMPI <- FALSE
 if(doMPI){
   library(doMPI)
   
@@ -152,10 +152,10 @@ MCsim <- function(N,T,R,T0,N_t,noise_sc,delta_sc,gamma_sc,beta_sc,shift_sc,n){
                                  W = matrix(1, nrow(mask),ncol(mask)), to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, lambda_L = 9.29274e-05, lambda_B = 0.00886265, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]] # use X with imputed endogenous values
   est_model_pweights$Mhat <- plogis(est_model_pweights$L + X.hat%*%replicate(T,as.vector(est_model_pweights$B)) + replicate(T,est_model_pweights$u) + t(replicate(N,est_model_pweights$v)))
   
-  weights <-  matrix(0, nrow=N, ncol=T) # treat matrix
+  weights <-  matrix(0, nrow=N, ncol=T)
     
   weights[ST,] <- (1-diag(z_weights[ST,])*est_model_pweights$Mhat[ST,])/(diag(z_weights[ST,])*est_model_pweights$Mhat[ST,]) # elapsed-time weighting
-  weights[AT,] <- (1-est_model_pweights$Mhat[AT,])/(est_model_pweights$Mhat[AT,]) # elapsed-time weighting
+  weights[AT,] <- (1-est_model_pweights$Mhat[AT,])/(est_model_pweights$Mhat[AT,])
   
   ## ------ ------ ------ ------ ------
   ## MC-NNM plain (no weighting, no covariate)
@@ -371,7 +371,7 @@ results <- foreach(i = 1:n.runs, .combine='rbind', .packages =c("MCPanel","matri
   MCsim(N,T,R,T0,N_t,noise_sc,delta_sc,gamma_sc,beta_sc,shift_sc,n=i)
 }
 results
-saveRDS(results, paste0(output_dir,"results_","N_",N,"_T_",T,"_R_", R,"_T0_",T0, "_N_t", N_t, "_noise_sc_",noise_sc,"_shift_sc_",shift_sc,"_n_",n.runs,".rds"))
+saveRDS(results, paste0(output_dir,"results_","N_",N,"_T_",T,"_R_", R,"_T0_",T0, "_N_t_", N_t, "_noise_sc_",noise_sc,"_shift_sc_",shift_sc,"_n_",n.runs,".rds"))
 
 print(toc())
 

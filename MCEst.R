@@ -1,11 +1,12 @@
 MCEst <- function(outcomes,cluster=c('eastern','swiss'),rev=TRUE,covars=TRUE,prop.model=FALSE) {
   
   if(cluster=='eastern'){
-    Y <- outcomes$M[!rownames(outcomes$M)%in%outcomes$swiss,] # NxT
-  }else{
-    Y <- outcomes$M[!rownames(outcomes$M)%in%outcomes$eastern,] # NxT
+    Y <- outcomes$M[!rownames(outcomes$M)%in%outcomes$swiss,] # exclude Swiss regions
   }
-  
+  if(cluster=='swiss'){
+    Y <- outcomes$M[!rownames(outcomes$M)%in%outcomes$eastern,] # exclude eastern regions
+  }
+
   treat <- outcomes$mask
   treat <- treat[rownames(treat) %in% row.names(Y),]
   
@@ -19,16 +20,16 @@ MCEst <- function(outcomes,cluster=c('eastern','swiss'),rev=TRUE,covars=TRUE,pro
   W <- outcomes$W
   W <- W[rownames(W) %in% row.names(Y),]
   W <- W[row.names(Y),]  # ensure correct order
-  W[W<=0] <- min(W[W>0]) # set floor
-  W[W>=1] <- max(W[W<1]) # set ceiling
   
-  z.cbw.eastern <- outcomes$z.cbw.eastern
-  z.cbw.swiss <- outcomes$z.cbw.eastern
+  ST <- intersect(rownames(outcomes$M)[outcomes$ST], row.names(Y))
+  AT <- intersect(rownames(outcomes$M)[outcomes$AT], row.names(Y))
+  
+  z_weights <- outcomes$z_weights[rownames(outcomes$z_weights) %in% row.names(Y),]
   
   weights <- matrix(NA, nrow=nrow(W), ncol=ncol(W), dimnames = list(rownames(W), colnames(W)))
-  weights <- (1-treat_mat) + (treat_mat)*((1-W)/(W)) 
-  weights[rownames(weights) %in% outcomes$eastern,] <- weights[rownames(weights) %in% outcomes$eastern,] %*%diag(z.cbw.eastern)
-  weights[rownames(weights) %in% outcomes$swiss,] <- weights[rownames(weights) %in% outcomes$swiss,] %*%diag(z.cbw.swiss)
+
+  weights[ST,] <- (1-diag(z_weights[ST,])*W[ST,])/(diag(z_weights[ST,])*W[ST,]) # elapsed-time weighting
+  weights[AT,] <- (1-W[AT,])/(W[AT,]) # elapsed-time weighting
   
   if(covars){
     
@@ -37,16 +38,17 @@ MCEst <- function(outcomes,cluster=c('eastern','swiss'),rev=TRUE,covars=TRUE,pro
     
     X <- X[rownames(X) %in% row.names(Y),]
     X.hat <- X.hat[rownames(X.hat) %in% row.names(Y),]
+    
     ## ------
     ## MC-NNM-W
     ## ------
     
     if(prop.model){
-      est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X.hat, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 30, num_lam_B = 30, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 3, is_quiet = 1) # use X with imputed endogenous values
-      est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v)) # use X with imputed endogenous values
+      est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X.hat, mask = treat_mat, W = matrix(1, nrow(treat_mat),ncol(treat_mat)), to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 30, num_lam_B = 30, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 5, is_quiet = 1) # use X with imputed endogenous values # weights are equal
+      est_model_MCPanel_w$Mhat <- plogis(est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v))) # use X with imputed endogenous values
       est_model_MCPanel_w$rankL <- rankMatrix(t(est_model_MCPanel_w$L), method="qr.R")[1]
     }else{
-      est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 30, num_lam_B = 30, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 3, is_quiet = 1) 
+      est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 30, num_lam_B = 30, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 5, is_quiet = 1) 
       est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v)) # use X with imputed endogenous values
       est_model_MCPanel_w$rankL <- rankMatrix(t(est_model_MCPanel_w$L), method="qr.R")[1]
     }
@@ -63,7 +65,7 @@ MCEst <- function(outcomes,cluster=c('eastern','swiss'),rev=TRUE,covars=TRUE,pro
     ## MC-NNM
     ## ------
     
-    est_model_MCPanel <- mcnnm_cv(M = Y_obs, mask = treat_mat, W = weights, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 100, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 5, is_quiet = 1)
+    est_model_MCPanel <- mcnnm_cv(M = Y_obs, mask = treat_mat, W = weights, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 30, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 5, is_quiet = 1)
     est_model_MCPanel$Mhat <- est_model_MCPanel$L + replicate(T,est_model_MCPanel$u) + t(replicate(N,est_model_MCPanel$v))
     est_model_MCPanel$rankL <- rankMatrix(t(est_model_MCPanel$L), method="qr.R")[1]
     

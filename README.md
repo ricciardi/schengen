@@ -8,7 +8,7 @@ The data used for the paper is constructed from European Labour Force Survey (EL
 
 Instructions on how to gain access to the microdata is found [here](https://ec.europa.eu/eurostat/web/microdata/european-union-labour-force-survey).
 
-After obtaining the microdata, follow the commands in BUILDING DATA.do for constructing the dataset FINAL_21.dta.
+After obtaining the microdata, follow the commands in `BUILDING DATA.do` for constructing the dataset `FINAL_21.`.
 
 Prerequsites
 ------
@@ -33,31 +33,29 @@ mkdir results
 mkdir plots
 ```
 
+The file FINAL_21.dta is needed for steps 1-7 and should be in the `data/` directory. 
+
 Run order
 ------
+
+0. mc-simulation.R # matrix completion simulation study
+	* run with command line argument  `Rscript mc-simulation.R [arg1]`, where `[arg1]` is a number specifying the simulation setting
+	* mc-simulation-plot.R # plot matrix completion simulation study results
 
 1. schengen_MCM_data.R # prepare data for analyses
 	* MCEst.R
 
-2. Schengen_MCM_covars.R # model with covariates 
+2. mc-simulation-placebo.R # placebo tests: compare different estimators on actual data (placebo)
+	* run with command line argument  `Rscript mc-simulation-placebo.R [arg1]`, where `[arg1]` is a number specifying the simulation setting
+	* mc-simulation-placebo-plot.R  # plot placebo test results
+
+3. mc-placebo.R # placebo test of null hypothesis
+
+4. Schengen_MCM.R # fit model with covariates 
 	* MCEst.R
-	* PolitisWhite.R
-	* MCEstBoot.R
-	* MCEstBootTraj.R
+	* mc-plot.R # plot estimates
+	** TsPlot.R
+	** TsPlotTrends.R
+	** getTrends.R
 
-3. mc-plot.R # plot estimates
-	* TsPlot.R
-	* TsPlotTrends.R
-	* getTrends.R
-
-4. schengen-rmse-placebo.R # placebo tests: compare different estimators in terms of RMSE (model without covariates)
-5. schengen-rmse-placebo-plot.R  # plot placebo test results
-
-6. mc-simulation.R # matrix completion simulation study
-	* run with command line argument  `Rscript mc-simulation.R [arg1]`, where `[arg1]` is a number specifying the simulation setting
-7. mc-simulation-plot.R # plot matrix completion simulation study results
-
-8. mc-placebo.R # placebo test of null hypothesis
-
-9. Schengen_DID.R # DID and SCM estimates for comparison 
-	* DIDEstBoot.R
+5. Schengen_DID.R # DID, SCM, and IFE estimates for comparison 
