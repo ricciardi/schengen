@@ -43,7 +43,6 @@ Run order
 	* mc-simulation-plot.R # plot matrix completion simulation study results
 
 1. schengen_MCM_data.R # prepare data for analyses
-	* MCEst.R
 
 2. mc-simulation-placebo.R # placebo tests: compare different estimators on actual data (placebo)
 	* run with command line argument  `Rscript mc-simulation-placebo.R [arg1]`, where `[arg1]` is a number specifying the simulation setting
@@ -52,10 +51,6 @@ Run order
 3. mc-placebo.R # placebo test of null hypothesis
 
 4. Schengen_MCM.R # fit model with covariates 
-	* MCEst.R
 	* mc-plot.R # plot estimates
-	** TsPlot.R
-	** TsPlotTrends.R
-	** getTrends.R
 
-5. Schengen_DID.R # DID, SCM, and IFE estimates for comparison 
+5. Schengen_Compare.R # DID, SCM, and IFE estimates for comparison 

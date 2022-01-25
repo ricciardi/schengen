@@ -1,4 +1,4 @@
-MCEst <- function(outcomes,cluster=c('eastern','swiss'),rev=TRUE,covars=TRUE,prop.model=FALSE) {
+MCEst <- function(outcomes,cluster=c('eastern','swiss'),rev=TRUE,covars=TRUE,prop.model=FALSE,ADH=FALSE,DID=FALSE,IFE=FALSE) {
   
   if(cluster=='eastern'){
     Y <- outcomes$M[!rownames(outcomes$M)%in%outcomes$swiss,] # exclude Swiss regions
@@ -32,6 +32,7 @@ MCEst <- function(outcomes,cluster=c('eastern','swiss'),rev=TRUE,covars=TRUE,pro
   weights[AT,] <- (1-W[AT,])/(W[AT,]) # elapsed-time weighting
   
   if(covars){
+    print("MC-NNM (weights + covars)")
     
     X <- outcomes$X # NxT
     X.hat <- outcomes$X.hat # imputed endogenous values
@@ -60,7 +61,47 @@ MCEst <- function(outcomes,cluster=c('eastern','swiss'),rev=TRUE,covars=TRUE,pro
     }
     
     return(est_model_MCPanel_w)
+  } else if(ADH){
+    print("ADH")
+    
+    est_model_ADH <- list()
+    est_model_ADH$Mhat <- adh_mp_rows(M=Y_obs, mask=treat_mat)
+    
+    if(rev){
+      est_model_ADH$impact <- (est_model_ADH$Mhat-Y)
+    }else{
+      est_model_ADH$impact <- (Y-est_model_ADH$Mhat)
+    }
+    return(est_model_ADH)
+  } else if(DID){
+    print("DID")
+    
+    est_model_DID <- list()
+    est_model_DID$Mhat <- DID(M=Y_obs, mask=treat_mat)
+    
+    if(rev){
+      est_model_DID$impact <- (est_model_DID$Mhat-Y)
+    }else{
+      est_model_DID$impact <- (Y-est_model_DID$Mhat)
+    }
+    return(est_model_DID)
+    
+  } else if(IFE){
+    print("IFE")
+    
+    est_model_IFE <- list()
+    est_model_IFE$Mhat <- IFE(M=Y_obs, mask=treat_mat, k=2)
+    
+    if(rev){
+      est_model_IFE$impact <- (est_model_IFE$Mhat-Y)
+    }else{
+      est_model_IFE$impact <- (Y-est_model_IFE$Mhat)
+    }
+    return(est_model_IFE)
+    
   } else{
+    print("MC-NNM (weights)")
+    
     ## ------
     ## MC-NNM
     ## ------
