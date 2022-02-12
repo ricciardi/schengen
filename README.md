@@ -38,13 +38,13 @@ The file FINAL_21.dta is needed for steps 1-7 and should be in the `data/` direc
 Run order
 ------
 
-0. mc-simulation.R # matrix completion simulation study
+0. mc-simulation.R # simulated data experiments
 	* run with command line argument  `Rscript mc-simulation.R [arg1]`, where `[arg1]` is a number specifying the simulation setting
 	* mc-simulation-plot.R # plot matrix completion simulation study results
 
 1. schengen_MCM_data.R # prepare data for analyses
 
-2. mc-simulation-placebo.R # placebo tests: compare different estimators on actual data (placebo)
+2. mc-simulation-placebo.R # placebo tests experiments on cross-border worker data
 	* run with command line argument  `Rscript mc-simulation-placebo.R [arg1]`, where `[arg1]` is a number specifying the simulation setting
 	* mc-simulation-placebo-plot.R  # plot placebo test results
 

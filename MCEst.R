@@ -1,11 +1,6 @@
-MCEst <- function(outcomes,cluster=c('eastern','swiss'),rev=TRUE,covars=TRUE,prop.model=FALSE,ADH=FALSE,DID=FALSE,IFE=FALSE) {
+MCEst <- function(outcomes,rev=TRUE,covars=TRUE,prop.model=FALSE,ADH=FALSE,DID=FALSE,IFE=FALSE) {
   
-  if(cluster=='eastern'){
-    Y <- outcomes$M[!rownames(outcomes$M)%in%outcomes$swiss,] # exclude Swiss regions
-  }
-  if(cluster=='swiss'){
-    Y <- outcomes$M[!rownames(outcomes$M)%in%outcomes$eastern,] # exclude eastern regions
-  }
+  Y <- outcomes$M
 
   treat <- outcomes$mask
   treat <- treat[rownames(treat) %in% row.names(Y),]
@@ -46,7 +41,7 @@ MCEst <- function(outcomes,cluster=c('eastern','swiss'),rev=TRUE,covars=TRUE,pro
     
     if(prop.model){
       est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X.hat, mask = treat_mat, W = matrix(1, nrow(treat_mat),ncol(treat_mat)), to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 30, num_lam_B = 30, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 5, is_quiet = 1) # use X with imputed endogenous values # weights are equal
-      est_model_MCPanel_w$Mhat <- plogis(est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v))) # use X with imputed endogenous values
+      est_model_MCPanel_w$Mhat <- est_model_MCPanel_w$L + X.hat%*%replicate(T,as.vector(est_model_MCPanel_w$B)) + replicate(T,est_model_MCPanel_w$u) + t(replicate(N,est_model_MCPanel_w$v)) # use X with imputed endogenous values
       est_model_MCPanel_w$rankL <- rankMatrix(t(est_model_MCPanel_w$L), method="qr.R")[1]
     }else{
       est_model_MCPanel_w <- mcnnm_wc_cv(M = Y_obs, C = X, mask = treat_mat, W = weights, to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, num_lam_L = 30, num_lam_B = 30, niter = 1000, rel_tol = 1e-05, cv_ratio = 0.8, num_folds = 5, is_quiet = 1) 
@@ -115,7 +110,6 @@ MCEst <- function(outcomes,cluster=c('eastern','swiss'),rev=TRUE,covars=TRUE,pro
     }else{
       est_model_MCPanel$impact <- (Y-est_model_MCPanel$Mhat)
     }
-    
     return(est_model_MCPanel)
   }
 }

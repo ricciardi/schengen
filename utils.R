@@ -2,6 +2,13 @@
 # Utility fns.                  #
 ##################################
 
+# function to bound probabilities to be used when making predictions
+boundProbs <- function(x,bounds=c(0,1)){
+  x[x>max(bounds)] <- max(bounds)
+  x[x<min(bounds)] <- min(bounds)
+  return(x)
+}
+
 DropVariance <- function(mat){ # Remove units with no variance
   drop <- names(which(apply(t(mat), 2, var) == 0))
   return(as.matrix(mat[!rownames(mat)%in%drop,]))
@@ -103,8 +110,9 @@ one_boot <- function(sim_num, current_data_realized_long, N, T,estimator, est_we
     
     boot_model_pweights <- mcnnm_wc(M = (1-boot_matrices$mask), C = X.hat.boot, mask = matrix(1, nrow(boot_matrices$mask),ncol(boot_matrices$mask)), # no missing entries
                                     W = matrix(1, nrow(boot_matrices$mask),ncol(boot_matrices$mask)), to_normalize = 1, to_estimate_u = 1, to_estimate_v = 1, lambda_L = 9.29274e-05, lambda_B = 0.00886265, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]] # use X with imputed endogenous values
-    boot_model_pweights$Mhat <- plogis(boot_model_pweights$L + X.hat.boot%*%replicate(ncol(boot_matrices$mask),as.vector(boot_model_pweights$B)) + replicate(ncol(boot_matrices$mask),boot_model_pweights$u) + t(replicate(nrow(boot_matrices$mask), boot_model_pweights$v)))
-    
+    boot_model_pweights$Mhat <- boot_model_pweights$L + X.hat.boot%*%replicate(ncol(boot_matrices$mask),as.vector(boot_model_pweights$B)) + replicate(ncol(boot_matrices$mask),boot_model_pweights$u) + t(replicate(nrow(boot_matrices$mask), boot_model_pweights$v))
+    boot_model_pweights$Mhat <- boundProbs(boot_model_pweights$Mhat)
+      
     weights.boot <-  matrix(0, nrow=N, ncol=T) # treat matrix
     
     weights.boot[ST.boot,] <- (1-diag(boot_matrices$z_weights[ST.boot,])*boot_model_pweights$Mhat[ST.boot,])/(diag(boot_matrices$z_weights[ST.boot,])*boot_model_pweights$Mhat[ST.boot,]) # elapsed-time weighting
@@ -130,6 +138,9 @@ one_boot <- function(sim_num, current_data_realized_long, N, T,estimator, est_we
   }
   if(estimator=="mc_weights_covars"){
     boot_mc_weights_covars <- mcnnm_wc(M = boot_matrices$obs_mat, C = boot_matrices$X, mask = boot_matrices$mask, W = weights.boot, to_estimate_u = 1, to_estimate_v = 1, lambda_L = 0.00108901, lambda_B = 0.100334, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]]
+    while(any(is.na(boot_mc_weights_covars$B))){
+      boot_mc_weights_covars <- mcnnm_wc(M = boot_matrices$obs_mat, C = boot_matrices$X, mask = boot_matrices$mask, W = weights.boot, to_estimate_u = 1, to_estimate_v = 1, lambda_L = 0.00108901, lambda_B = 0.100334, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]]
+    }
     boot_mc_weights_covars$Mhat <- boot_mc_weights_covars$L + X.hat.boot%*%replicate(ncol(boot_matrices$mask),as.vector(boot_mc_weights_covars$B)) + replicate(ncol(boot_matrices$mask),boot_mc_weights_covars$u) + t(replicate(nrow(boot_matrices$mask),boot_mc_weights_covars$v))
     tau.boot <- (boot_mc_weights_covars$Mhat-boot_matrices$Y) # estimated treatment effect
   }
@@ -161,9 +172,13 @@ one_boot <- function(sim_num, current_data_realized_long, N, T,estimator, est_we
 }
 
 # bootstap with cluster (return att.bar variance)
-clustered_bootstrap <- function(current_data_realized_long, N,T,estimator, B = 999, est_weights, return_per_period=FALSE, return_replicates=FALSE){
+clustered_bootstrap <- function(current_data_realized_long, N,T,estimator, B = 999, est_weights, return_per_period=FALSE, return_replicates=FALSE, ncores=NULL){
   if(return_per_period){
-    boot_stats <- lapply(c(1:B), one_boot, current_data_realized_long, N, T, estimator, est_weights, return_per_period=TRUE)
+    if(!is.null(ncores)){
+      boot_stats <- mclapply(c(1:B), one_boot, current_data_realized_long, N, T, estimator, est_weights, return_per_period=TRUE, mc.cores=ncores)
+    }else{
+      boot_stats <- lapply(c(1:B), one_boot, current_data_realized_long, N, T, estimator, est_weights, return_per_period=TRUE)
+    }
     clustered_bootstrap_att_var <- colVars(as.matrix(plyr::ldply(sapply(boot_stats, function(x) rbind(x$att.boot)), rbind)), na.rm = TRUE)
     clustered_bootstrap_att_bar_var <- var(unlist(sapply(boot_stats, function(x) c(x$att.bar.boot))))
     return(list("att.bar.boot.var"=clustered_bootstrap_att_bar_var,"att.boot.var"=clustered_bootstrap_att_var))

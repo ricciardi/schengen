@@ -146,38 +146,26 @@ for(o in outcomes){
                                "W"= p.weights.cbw.equal, 
                                "z_weights"=z_weights,
                                "ST"=ST,
-                               "AT"=AT,
-                               "eastern"=eastern.cluster.cbw, 
-                               "swiss"=swiss.cluster.cbw)
+                               "AT"=AT)
    
-   impute.best.var.outcome.cbw.eastern <- MCEst(outcomes=outcomes.impute.cbw, cluster='eastern', rev=TRUE, covars=FALSE)
-   impute.best.var.outcome.cbw.swiss <- MCEst(outcomes=outcomes.impute.cbw, cluster='swiss', rev=TRUE, covars=FALSE)
+   impute.best.var.outcome.cbw <- MCEst(outcomes=outcomes.impute.cbw, rev=TRUE, covars=FALSE)
    best.var.outcome.cbw.m.imputed <- matrix(NA, nrow(mask.cbw),ncol(mask.cbw),
                                             dimnames = list(rownames(mask.cbw), colnames(mask.cbw)))
-   best.var.outcome.cbw.m.imputed[!rownames(best.var.outcome.cbw.m.imputed)%in%swiss.cluster.cbw,] <- best.var.outcome.cbw.m[!rownames(best.var.outcome.cbw.m)%in%swiss.cluster.cbw,]*(1-mask.cbw.missing[!rownames(mask.cbw.missing)%in%swiss.cluster.cbw,]) + 
-     impute.best.var.outcome.cbw.eastern$Mhat*mask.cbw.missing[!rownames(mask.cbw.missing)%in%swiss.cluster.cbw,] # only missing values imputed 
-   
-   best.var.outcome.cbw.m.imputed[rownames(best.var.outcome.cbw.m.imputed)%in%swiss.cluster.cbw,] <- (best.var.outcome.cbw.m[!rownames(best.var.outcome.cbw.m)%in%eastern.cluster.cbw,]*(1-mask.cbw.missing[!rownames(mask.cbw.missing)%in%eastern.cluster.cbw,]) + 
-     impute.best.var.outcome.cbw.swiss$Mhat*mask.cbw.missing[!rownames(mask.cbw.missing)%in%eastern.cluster.cbw,])[swiss.cluster.cbw,] 
-   
+   best.var.outcome.cbw.m.imputed <- best.var.outcome.cbw.m*(1-mask.cbw.missing) + 
+     impute.best.var.outcome.cbw$Mhat*mask.cbw.missing # only missing values imputed 
+
    outcomes.impute.endog.cbw <- list("M"=best.var.outcome.cbw.m.imputed, # imputed data
                                "mask"=mask.cbw, 
                                "W"= p.weights.cbw.equal, # weights are equal 
                                "z_weights"=z_weights,
                                "ST"=ST,
-                               "AT"=AT,
-                               "eastern"=eastern.cluster.cbw, 
-                               "swiss"=swiss.cluster.cbw)
+                               "AT"=AT)
    
-   impute.endog.best.var.outcome.cbw.eastern <- MCEst(outcomes=outcomes.impute.endog.cbw, cluster='eastern', rev=TRUE, covars=FALSE)
-   impute.endog.best.var.outcome.cbw.swiss <- MCEst(outcomes=outcomes.impute.endog.cbw, cluster='swiss', rev=TRUE, covars=FALSE)
+   impute.endog.best.var.outcome.cbw<- MCEst(outcomes=outcomes.impute.endog.cbw, rev=TRUE, covars=FALSE)
    best.var.outcome.cbw.hat <- matrix(NA, nrow(mask.cbw),ncol(mask.cbw),
                                             dimnames = list(rownames(mask.cbw), colnames(mask.cbw)))
-   best.var.outcome.cbw.hat[!rownames(best.var.outcome.cbw.hat)%in% swiss.cluster.cbw,] <- best.var.outcome.cbw.m.imputed[!rownames(best.var.outcome.cbw.m.imputed)%in% swiss.cluster.cbw,]*(1-mask.cbw[!rownames(mask.cbw)%in% swiss.cluster.cbw,]) + 
-     impute.endog.best.var.outcome.cbw.eastern$Mhat*mask.cbw[!rownames(mask.cbw)%in% swiss.cluster.cbw,]  # only endogenous values imputed
-   
-   best.var.outcome.cbw.hat[rownames(best.var.outcome.cbw.hat)%in% swiss.cluster.cbw,] <- (best.var.outcome.cbw.m.imputed[!rownames(best.var.outcome.cbw.m.imputed)%in% eastern.cluster.cbw,]*(1-mask.cbw[!rownames(mask.cbw)%in% eastern.cluster.cbw,]) + 
-     impute.endog.best.var.outcome.cbw.swiss$Mhat*mask.cbw[!rownames(mask.cbw)%in% eastern.cluster.cbw,])[swiss.cluster.cbw,] 
+   best.var.outcome.cbw.hat <- best.var.outcome.cbw.m.imputed*(1-mask.cbw) + 
+     impute.endog.best.var.outcome.cbw$Mhat*mask.cbw  # only endogenous values imputed
    
    colnames(best.var.outcome.cbw.hat) <- colnames(mask.cbw)
    rownames(best.var.outcome.cbw.hat) <- rownames(mask.cbw)
@@ -192,19 +180,12 @@ for(o in outcomes){
                                      "z_weights"=z_weights,
                                      "ST"=ST,
                                      "AT"=AT,
-                                     "W"= p.weights.cbw.equal,
-                                     "eastern"=eastern.cluster.cbw, 
-                                     "swiss"=swiss.cluster.cbw) 
+                                     "W"= p.weights.cbw.equal) 
    
-   propensity.model.cbw.eastern <- MCEst(outcomes=propensity.model.cbw.data, cluster='eastern', rev=TRUE, covars=TRUE, prop.model=TRUE) 
-   propensity.model.cbw.swiss <- MCEst(outcomes=propensity.model.cbw.data, cluster='swiss', rev=TRUE, covars=TRUE, prop.model=TRUE) 
+   propensity.model.cbw <- MCEst(outcomes=propensity.model.cbw.data, rev=TRUE, covars=TRUE, prop.model=TRUE) 
    
-   propensity.model.cbw.values <- matrix(NA, nrow(mask.cbw),ncol(mask.cbw),
-                                      dimnames = list(rownames(mask.cbw), colnames(mask.cbw)))
-   
-   propensity.model.cbw.values[!rownames(propensity.model.cbw.values)%in% swiss.cluster.cbw,] <- propensity.model.cbw.eastern$Mhat # L + X_hat*B + u + v
-   propensity.model.cbw.values[rownames(propensity.model.cbw.values)%in% swiss.cluster.cbw,] <- propensity.model.cbw.swiss$Mhat[rownames(propensity.model.cbw.swiss$Mhat)%in% swiss.cluster.cbw,] # L + X_hat*B + u + v
-   
+   propensity.model.cbw.values <- boundProbs(propensity.model.cbw$Mhat) # bound probabilities # w_it = L + X_hat*B + u + v
+
    colnames(propensity.model.cbw.values) <- colnames(mask.cbw)
    rownames(propensity.model.cbw.values) <- rownames(mask.cbw)
   
@@ -223,8 +204,8 @@ for(o in outcomes){
                        "ST"=ST,
                        "AT"=AT,
                        "X"=best.var.outcome.cbw.m.imputed, "X.hat"=best.var.outcome.cbw.hat, "X.missing" = best.var.outcome.cbw.m,
-                       "mc.outcome.eastern"=impute.best.var.outcome.cbw.eastern, "mc.outcome.swiss"=impute.best.var.outcome.cbw.swiss, 
-                       "mc.propensity.eastern"=propensity.model.cbw.eastern, "mc.propensity.swiss"=propensity.model.cbw.swiss,
+                       "mc.outcome"=impute.best.var.outcome.cbw,
+                       "mc.propensity"=propensity.model.cbw,
                                "treated"=rownames(mask.cbw)[rownames(mask.cbw)%in%switch.treated.cbw],
                                "control"=rownames(mask.cbw)[rownames(mask.cbw)%in%always.treated.cbw],
                                "eastern"=eastern.cluster.cbw, "swiss"=swiss.cluster.cbw)
