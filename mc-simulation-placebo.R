@@ -111,12 +111,13 @@ SchengenSim <- function(T0,N_t,sim,n,outcome){
   
   est_mc_weights_covars <- mcnnm_wc(M = Y_obs, C = X, mask = treat_mat, W = W, to_estimate_u = 1, to_estimate_v = 1, lambda_L = 0.00108901, lambda_B = 0.100334, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]]
   while(any(is.na(est_mc_weights_covars$B))){
+    print("Re-estimating mc weights + covars")
     est_mc_weights_covars <- mcnnm_wc(M = Y_obs, C = X, mask = treat_mat, W = W, to_estimate_u = 1, to_estimate_v = 1, lambda_L = 0.00108901, lambda_B = 0.100334, niter = 1000, rel_tol = 1e-05, is_quiet = 1)[[1]]
   }
   est_mc_weights_covars$Mhat <- est_mc_weights_covars$L + X.hat*mean(est_mc_weights_covars$B) + replicate(T,est_mc_weights_covars$u) + t(replicate(N,est_mc_weights_covars$v)) # use X with imputed endogenous values
   est_mc_weights_covars$msk_err <- (est_mc_weights_covars$Mhat - Y)*(1-treat_mat)
   est_mc_weights_covars$RMSE <- sqrt((1/sum(1-treat_mat)) * sum(est_mc_weights_covars$msk_err^2, na.rm = TRUE))
-  print(paste("MC-NNM (weights +covars) RMSE:", round(est_mc_weights_covars$RMSE,5)))
+  print(paste("MC-NNM (weights + covars) RMSE:", round(est_mc_weights_covars$RMSE,5)))
   
   est_mc_weights_covars$att <- apply(est_mc_weights_covars$msk_err,1,nzmean)[ST]
   est_mc_weights_covars$att.bar <- mean(est_mc_weights_covars$att)
@@ -207,7 +208,7 @@ SchengenSim <- function(T0,N_t,sim,n,outcome){
 }
 
 # define settings for simulation
-settings <- expand.grid("T0" =c(0.05, 0.25, 0.5),
+settings <- expand.grid("T0" =c(0.5,0.65,0.75,0.95), #0.05, 0.25, 0.5
                         "N_t" =c(0.5))
 
 args <- commandArgs(trailingOnly = TRUE) # command line arguments
