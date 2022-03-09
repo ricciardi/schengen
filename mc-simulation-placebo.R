@@ -19,9 +19,6 @@ source('IFE.R')
 ## Setup parallel processing 
 # Setup parallel processing
 
-cores <- parallel::detectCores()
-print(paste0("number of cores used: ", cores))
-
 doMPI <- TRUE
 if(doMPI){
   library(doMPI)
@@ -44,7 +41,7 @@ if(doMPI){
   doParallel::registerDoParallel(cl) # register cluster
 }
 
-SchengenSim <- function(T0,N_t,sim,n,outcome){
+SchengenSim <- function(T0,N_t,cores,sim,n,outcome){
   
   # set the seed
   print(paste0("run number: ", n))
@@ -222,6 +219,9 @@ outcome <- "CBWbordEMPL"
 
 n.runs <- 1000 # Num. simulation runs
 
+cores <- parallel::detectCores()
+print(paste0("number of cores used: ", cores))
+
 output_dir <- './outputs/'
 simulation_version <- paste0(format(Sys.time(), "%Y%m%d"),"/")
 if(!dir.exists(output_dir)){
@@ -238,7 +238,7 @@ setting <- paste0("T0 = " ,T0, "N_t", N_t)
 tic(print(paste0("setting: ",setting)))
 
 results <- foreach(i = 1:n.runs, .combine='rbind', .packages =c("MCPanel","matrixStats","Matrix","data.table","reshape","reshape2","emfactor"), .verbose = FALSE) %dopar% {
-  SchengenSim(T0,N_t,sim=is_simul,n=i,outcome="CBWbordEMPL")
+  SchengenSim(T0,N_t,cores,sim=is_simul,n=i,outcome="CBWbordEMPL")
 }
 results
 saveRDS(results, paste0(output_dir,"placebo_results_","T0_",T0, "_N_t_", N_t, "_outcome_", outcome,"_is_simul_", is_simul,"_n_",n.runs,".rds"))
